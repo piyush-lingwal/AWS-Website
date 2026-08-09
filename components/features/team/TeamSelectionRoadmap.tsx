@@ -45,8 +45,29 @@ const STEPS = [
 
 export function TeamSelectionRoadmap() {
   const ref = React.useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "center center"] });
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.75", "center center"] });
   const lineWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+
+  // Step 1: appears as line starts at Step 01
+  const step1Opacity = useTransform(scrollYProgress, [0, 0.2], [0, 1]);
+  const step1Y = useTransform(scrollYProgress, [0, 0.2], [30, 0]);
+  const step1Scale = useTransform(scrollYProgress, [0, 0.2], [0.92, 1]);
+
+  // Step 2: appears as line reaches Step 02 (midway, around 50% line progress)
+  const step2Opacity = useTransform(scrollYProgress, [0.35, 0.55], [0, 1]);
+  const step2Y = useTransform(scrollYProgress, [0.35, 0.55], [30, 0]);
+  const step2Scale = useTransform(scrollYProgress, [0.35, 0.55], [0.92, 1]);
+
+  // Step 3: appears as line reaches Step 03 (end, 100% line progress)
+  const step3Opacity = useTransform(scrollYProgress, [0.75, 0.95], [0, 1]);
+  const step3Y = useTransform(scrollYProgress, [0.75, 0.95], [30, 0]);
+  const step3Scale = useTransform(scrollYProgress, [0.75, 0.95], [0.92, 1]);
+
+  const stepTransforms = [
+    { opacity: step1Opacity, y: step1Y, scale: step1Scale },
+    { opacity: step2Opacity, y: step2Y, scale: step2Scale },
+    { opacity: step3Opacity, y: step3Y, scale: step3Scale },
+  ];
 
   return (
     <section ref={ref} className="py-20 px-4 sm:px-6 lg:px-8 max-w-content mx-auto overflow-hidden">
@@ -71,13 +92,15 @@ export function TeamSelectionRoadmap() {
         <div className="grid grid-cols-3 gap-6">
           {STEPS.map((step, idx) => {
             const Icon = step.icon;
+            const transform = stepTransforms[idx];
             return (
               <motion.div
                 key={step.number}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.15, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  opacity: transform.opacity,
+                  y: transform.y,
+                  scale: transform.scale,
+                }}
                 className="relative group"
               >
                 {/* Step circle */}
@@ -119,12 +142,9 @@ export function TeamSelectionRoadmap() {
 
       {/* Mobile vertical timeline */}
       <div className="md:hidden relative pl-8">
-        <div className="absolute left-[15px] top-0 bottom-0 w-px bg-border">
+        <div className="absolute left-[15px] top-0 bottom-0 w-px bg-border overflow-hidden">
           <motion.div
-            initial={{ height: "0%" }}
-            whileInView={{ height: "100%" }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.2, ease: "easeInOut" }}
+            style={{ height: lineWidth }}
             className="w-full bg-gradient-to-b from-primary via-accent to-emerald-400"
           />
         </div>
@@ -132,13 +152,15 @@ export function TeamSelectionRoadmap() {
         <div className="space-y-8">
           {STEPS.map((step, idx) => {
             const Icon = step.icon;
+            const transform = stepTransforms[idx];
             return (
               <motion.div
                 key={step.number}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: idx * 0.12 }}
+                style={{
+                  opacity: transform.opacity,
+                  y: transform.y,
+                  scale: transform.scale,
+                }}
                 className="relative"
               >
                 <div className={`absolute -left-8 w-7 h-7 rounded-full bg-bg-card border ${step.border} flex items-center justify-center`}>
