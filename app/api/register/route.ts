@@ -120,6 +120,8 @@ export async function POST(request: Request) {
         linkedin_url: linkedinUrl?.trim() || null,
         why_join: whyJoin.trim(),
         leadership_experience: leadershipExperience?.trim() || null,
+        used_aws: false,
+        aws_services: [],
       })
       .select("id, created_at")
       .single();
