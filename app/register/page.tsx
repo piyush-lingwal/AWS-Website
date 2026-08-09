@@ -201,7 +201,9 @@ function ProgressBar({ step }: { step: number }) {
 }
 
 /* ─── Page ───────────────────────────────────────────────── */
-export default function RegisterPage() {
+import { Suspense } from "react";
+
+function RegisterPageContent() {
   const searchParams = useSearchParams();
   const { mounted, isOpen } = useRecruitment();
   const [step, setStep] = useState(1);
@@ -629,5 +631,13 @@ export default function RegisterPage() {
         </p>
       </main>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterPageContent />
+    </Suspense>
   );
 }
