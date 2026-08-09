@@ -45,8 +45,8 @@ const STEPS = [
 
 export function TeamSelectionRoadmap() {
   const ref = React.useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const lineWidth = useTransform(scrollYProgress, [0.1, 0.7], ["0%", "100%"]);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "center center"] });
+  const lineWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   return (
     <section ref={ref} className="py-20 px-4 sm:px-6 lg:px-8 max-w-content mx-auto overflow-hidden">
@@ -60,8 +60,8 @@ export function TeamSelectionRoadmap() {
 
       {/* Desktop horizontal timeline */}
       <div className="hidden md:block relative">
-        {/* Animated connecting line */}
-        <div className="absolute top-[52px] left-[calc(50%/3)] right-[calc(50%/3)] h-px bg-border overflow-hidden">
+        {/* Animated connecting line — spans from center of col 1 to center of col 3 */}
+        <div className="absolute top-[52px] left-[calc(100%/6)] right-[calc(100%/6)] h-px bg-border overflow-hidden">
           <motion.div
             style={{ width: lineWidth }}
             className="h-full bg-gradient-to-r from-primary via-accent to-emerald-400"
