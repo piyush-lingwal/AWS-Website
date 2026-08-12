@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Hero } from "@/components/features/home/Hero";
+import { TrustedBy } from "@/components/features/home/TrustedBy";
 import { ScrollRevealSection } from "@/components/features/home/ScrollRevealSection";
 import { WhyCloudMatters } from "@/components/features/home/WhyCloudMatters";
 import { WhatYouCanBuild } from "@/components/features/home/WhatYouCanBuild";
@@ -27,10 +28,11 @@ export default function Home() {
       <Hero />
       <ScrollRevealSection />
       {/* <WhyCloudMatters /> */}
+      <TrustedBy />
       <WhatYouCanBuild />
+      <TeamDepartments />
       <OurMission />
       <WhyJoin />
-      <TeamDepartments />
       <FeaturedEvents />
       <LearningHubPreview />
       {/* <CommunityHighlights /> */}

@@ -7,6 +7,10 @@ export const revalidate = 10; // revalidate every 10 seconds
 
 export async function GET() {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(fallbackResponse());
+    }
+
     const { data, error } = await supabaseAdmin
       .from("site_config")
       .select("value")

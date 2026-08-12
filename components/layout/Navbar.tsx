@@ -15,7 +15,7 @@ import { useState } from "react";
 import { useRecruitment } from "@/hooks/useRecruitment";
 
 export function Navbar() {
-  const MEETUP_URL = "https://www.meetup.com/tulas-university-dehradun/";
+  const BUILDER_CENTER_URL = "https://bit.ly/4cfwwZQ";
 
   const navItems = [
     {
@@ -54,7 +54,7 @@ export function Navbar() {
           <NavbarLogo />
           <NavItems items={navItems} />
           <div className="flex items-center gap-4">
-            <NavbarButton as="a" href={MEETUP_URL} target="_blank" rel="noopener noreferrer" variant="primary">
+            <NavbarButton as="a" href={BUILDER_CENTER_URL} target="_blank" rel="noopener noreferrer" variant="primary">
               Join Community
             </NavbarButton>
           </div>
@@ -87,7 +87,7 @@ export function Navbar() {
             <div className="mt-2 flex w-full flex-col gap-3 border-t border-white/5 pt-3">
               <NavbarButton
                 as="a"
-                href={MEETUP_URL}
+                href={BUILDER_CENTER_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsMobileMenuOpen(false)}

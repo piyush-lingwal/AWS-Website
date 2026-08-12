@@ -96,14 +96,32 @@ export function RecruitmentCTA({
   }
 
   // Default "primary" variant
+  const isExternal = href.startsWith("http");
+  const primaryClass = cn(
+    "group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[13px] font-semibold text-white shadow-[0_0_24px_rgba(124,58,237,0.4)] transition-all duration-300 hover:bg-primary-hover hover:scale-105 hover:shadow-[0_0_35px_rgba(124,58,237,0.65)] cursor-pointer",
+    className
+  );
+
+  if (isExternal) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onClick}
+        className={primaryClass}
+      >
+        <span>{label}</span>
+        {showIcon && <ArrowRight size={15} animateOnHover />}
+      </a>
+    );
+  }
+
   return (
     <Link
       href={href}
       onClick={onClick}
-      className={cn(
-        "group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[13px] font-semibold text-white shadow-[0_0_24px_rgba(124,58,237,0.4)] transition-all duration-300 hover:bg-primary-hover hover:scale-105 hover:shadow-[0_0_35px_rgba(124,58,237,0.65)] cursor-pointer",
-        className
-      )}
+      className={primaryClass}
     >
       <span>{label}</span>
       {showIcon && <ArrowRight size={15} animateOnHover />}

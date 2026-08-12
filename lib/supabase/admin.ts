@@ -10,15 +10,17 @@ const SUPABASE_SERVICE_ROLE_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    "Missing SUPABASE_URL or SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY in environment variables. " +
-      "Check .env.local — never expose the service role key to the frontend."
+  console.warn(
+    "[supabase/admin] Missing SUPABASE_URL or SUPABASE_SECRET_KEY — " +
+    "API routes will use fallback config. Add these to .env.local for DB-driven status."
   );
 }
 
 // IMPORTANT: this client uses the secret / service_role key, which bypasses
 // Row Level Security. It must only ever be used on the server
 // (API routes, Server Components, Server Actions), never shipped to the browser.
-export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+export const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  : null;

@@ -7,7 +7,6 @@ import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight } from "@/components/animate-ui/icons/arrow-right";
 import { PixelHeading } from "@/components/ui/pixel-heading-character";
-import { RecruitmentCTA } from "@/components/recruitment/RecruitmentCTA";
 
 import { useRecruitment } from "@/hooks/useRecruitment";
 
@@ -58,11 +57,14 @@ export function JoinCTA() {
           </p>
 
           <div className="cta-header-el mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5">
-            <RecruitmentCTA
-              variant="primary"
-              openText="Become a Builder"
-              closedText="Join Community"
-            />
+            <a
+              href="https://bit.ly/4cfwwZQ"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[13px] font-semibold text-white shadow-[0_0_24px_rgba(124,58,237,0.4)] transition-all duration-300 hover:bg-primary-hover hover:scale-105 hover:shadow-[0_0_35px_rgba(124,58,237,0.65)]"
+            >
+              Become a Builder
+            </a>
             <a
               href="https://www.meetup.com/tulas-university-dehradun/"
               target="_blank"

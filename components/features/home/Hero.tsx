@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { Users } from "@/components/animate-ui/icons/users";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -104,13 +103,15 @@ export function Hero() {
                 Join on Meetup
               </a>
 
-              <Link
-                href="/about"
+              <a
+                href="https://bit.ly/4cfwwZQ"
+                target="_blank"
+                rel="noopener noreferrer"
                 className={cn(buttonVariants({ size: "lg", variant: "secondary" }), "group font-inter uppercase tracking-wider backdrop-blur-md bg-white/10 hover:bg-white/20 border border-white/20 text-white px-6 sm:px-7 py-3.5 text-xs sm:text-sm flex items-center justify-center w-full sm:w-auto active:scale-[0.98] transition-transform")}
               >
                 <Users size={16} className="mr-2 group-hover:text-primary-light" animateOnHover />
-                <span>About SBG</span>
-              </Link>
+                <span>Join Community</span>
+              </a>
             </div>
           </div>
         </div>
