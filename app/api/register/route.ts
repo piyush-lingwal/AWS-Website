@@ -102,6 +102,13 @@ export async function POST(request: Request) {
       leadershipExperience,
     } = body;
 
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: "Database configuration error. Please try again later." },
+        { status: 500 }
+      );
+    }
+
     // Insert application row
     const { data, error: insertError } = await supabaseAdmin
       .from("sbg_applications")

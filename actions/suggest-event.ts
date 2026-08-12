@@ -32,6 +32,13 @@ export async function submitEventSuggestion(data: SuggestEventInput) {
   }
 
   try {
+    if (!supabaseAdmin) {
+      return {
+        success: false,
+        error: "Database admin client is not configured.",
+      };
+    }
+
     // 2. Insert into Supabase table 'event_suggestions'
     const { error } = await supabaseAdmin
       .from("event_suggestions")
