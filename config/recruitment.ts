@@ -26,16 +26,15 @@ export interface RecruitmentConfig {
  * =========================================================================
  * SINGLE SOURCE OF TRUTH: RECRUITMENT CONFIGURATION
  * =========================================================================
- * To change dates or force the site state, edit the values below:
+ * Registrations are set to "open" by default for live applications.
  */
 export const RECRUITMENT_CONFIG: RecruitmentConfig = {
   // Option 1: Force status manually ("open" | "closed" | "upcoming" | "auto")
-  statusMode: (process.env.NEXT_PUBLIC_RECRUITMENT_STATUS as RecruitmentStatusMode) || "auto",
+  statusMode: (process.env.NEXT_PUBLIC_RECRUITMENT_STATUS as RecruitmentStatusMode) || "open",
 
-  // Option 2: Edit start & end dates (in DD-MM-YYYY HH:mm:ss format)
-  registrationStartDate: "26-07-2026 00:00:00",
-  registrationEndDate: "21-08-2026 23:59:59",
+  // Option 2: Start & end dates
+  registrationStartDate: "01-01-2024 00:00:00",
+  registrationEndDate: "31-12-2030 23:59:59",
 
   communityUrl: "/community",
 };
-

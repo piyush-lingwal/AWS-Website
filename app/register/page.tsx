@@ -207,12 +207,12 @@ function RegisterPageContent() {
       ]);
       const data = await res.json();
       if (!res.ok) {
-        let errMsg = data.error || "Submission failed. Please try again.";
+        let errMsg = data.error || data.message || "Submission failed. Please try again.";
         if (data.fieldErrors && typeof data.fieldErrors === "object") {
           const details = Object.entries(data.fieldErrors)
             .map(([field, msg]) => `${field}: ${msg}`)
             .join(", ");
-          errMsg = `${data.error || "Validation failed"}: ${details}`;
+          errMsg = `${data.error || data.message || "Validation failed"}: ${details}`;
         }
         throw new Error(errMsg);
       }
