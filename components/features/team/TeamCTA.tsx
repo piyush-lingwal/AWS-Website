@@ -36,7 +36,8 @@ export function TeamCTA() {
           scrollTrigger: {
             trigger: cardContainerRef.current,
             start: "top 88%",
-            toggleActions: "play none none none",
+            end: "bottom 10%",
+            toggleActions: "play reverse play reverse",
           },
         }
       );
@@ -57,7 +58,8 @@ export function TeamCTA() {
           scrollTrigger: {
             trigger: pillsRef.current,
             start: "top 88%",
-            toggleActions: "play none none none",
+            end: "bottom 10%",
+            toggleActions: "play reverse play reverse",
           },
         }
       );
@@ -77,7 +79,8 @@ export function TeamCTA() {
           scrollTrigger: {
             trigger: memberCardRef.current,
             start: "top 88%",
-            toggleActions: "play none none none",
+            end: "bottom 10%",
+            toggleActions: "play reverse play reverse",
           },
         }
       );

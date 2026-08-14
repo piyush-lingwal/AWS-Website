@@ -57,7 +57,8 @@ export function TeamFAQ() {
           scrollTrigger: {
             trigger: headerRef.current,
             start: "top 88%",
-            toggleActions: "play none none none",
+            end: "bottom 10%",
+            toggleActions: "play reverse play reverse",
           },
         }
       );
@@ -78,7 +79,8 @@ export function TeamFAQ() {
           scrollTrigger: {
             trigger: faqListRef.current,
             start: "top 85%",
-            toggleActions: "play none none none",
+            end: "bottom 10%",
+            toggleActions: "play reverse play reverse",
           },
         }
       );

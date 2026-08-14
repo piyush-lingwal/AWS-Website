@@ -29,7 +29,8 @@ export function TeamLeadership() {
           scrollTrigger: {
             trigger: item,
             start: "top 88%",
-            toggleActions: "play none none none",
+            end: "bottom 12%",
+            toggleActions: "play reverse play reverse",
           },
         }
       );

@@ -89,7 +89,8 @@ export function TeamSelectionRoadmap() {
           scrollTrigger: {
             trigger: headerRef.current,
             start: "top 88%",
-            toggleActions: "play none none none",
+            end: "bottom 10%",
+            toggleActions: "play reverse play reverse",
           },
         }
       );
@@ -110,7 +111,8 @@ export function TeamSelectionRoadmap() {
           scrollTrigger: {
             trigger: mobileListRef.current,
             start: "top 85%",
-            toggleActions: "play none none none",
+            end: "bottom 10%",
+            toggleActions: "play reverse play reverse",
           },
         }
       );
