@@ -23,18 +23,14 @@ export interface RecruitmentConfig {
 }
 
 /**
- * =========================================================================
- * SINGLE SOURCE OF TRUTH: RECRUITMENT CONFIGURATION
- * =========================================================================
- * Registrations are set to "open" by default for live applications.
+ * Clean environment variable string (stripping whitespace, \r, \n)
  */
-export const RECRUITMENT_CONFIG: RecruitmentConfig = {
-  // Option 1: Force status manually ("open" | "closed" | "upcoming" | "auto")
-  statusMode: (process.env.NEXT_PUBLIC_RECRUITMENT_STATUS as RecruitmentStatusMode) || "open",
+const rawEnvStatus = process.env.NEXT_PUBLIC_RECRUITMENT_STATUS;
+const sanitizedEnvStatus = rawEnvStatus ? String(rawEnvStatus).trim().toLowerCase() : "open";
 
-  // Option 2: Start & end dates
+export const RECRUITMENT_CONFIG: RecruitmentConfig = {
+  statusMode: (sanitizedEnvStatus === "closed" || sanitizedEnvStatus === "upcoming" ? sanitizedEnvStatus : "open") as RecruitmentStatusMode,
   registrationStartDate: "01-01-2024 00:00:00",
   registrationEndDate: "31-12-2030 23:59:59",
-
   communityUrl: "/community",
 };

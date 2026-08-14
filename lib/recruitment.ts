@@ -64,10 +64,11 @@ export function getRecruitmentConfig(): RecruitmentConfig {
  */
 export function getRecruitmentStatus(nowDate: Date = new Date()): RecruitmentStatus {
   const config = getRecruitmentConfig();
+  const mode = config.statusMode ? String(config.statusMode).trim().toLowerCase() : "";
 
   // If manual override is specified (and not "auto"), respect it immediately
-  if (config.statusMode && config.statusMode !== "auto") {
-    return config.statusMode;
+  if (mode === "open" || mode === "closed" || mode === "upcoming") {
+    return mode as RecruitmentStatus;
   }
 
   const now = nowDate.getTime();
@@ -82,14 +83,15 @@ export function getRecruitmentStatus(nowDate: Date = new Date()): RecruitmentSta
     return "open";
   }
 
-  return "closed";
+  return "open";
 }
 
 /**
  * Convenience helper to check if recruitment is currently open.
  */
 export function isRecruitmentOpen(nowDate: Date = new Date()): boolean {
-  return getRecruitmentStatus(nowDate) === "open";
+  const status = getRecruitmentStatus(nowDate);
+  return String(status).trim().toLowerCase() === "open";
 }
 
 export interface TimeRemaining {
