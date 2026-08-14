@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import LightRays from "@/components/ui/light-rays";
 import CursorGrid from "@/components/ui/cursor-grid";
 import { ThemeStyles } from "./ThemeStyles";
@@ -22,6 +24,8 @@ import {
   GraduationCap,
 } from "lucide-react";
 
+gsap.registerPlugin(useGSAP, ScrollTrigger);
+
 export interface SuccessScreenProps {
   result: {
     id?: string;
@@ -40,6 +44,13 @@ export interface SuccessScreenProps {
 }
 
 export function SuccessScreen({ result, formData }: SuccessScreenProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const passCardRef = useRef<HTMLDivElement>(null);
+  const gatewayRef = useRef<HTMLDivElement>(null);
+  const roadmapRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, []);
@@ -52,8 +63,124 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
     formData?.branch && formData.branch !== "N/A" ? formData.branch : "",
   ].filter(Boolean).join(" · ");
 
+  useGSAP(() => {
+    // 1. Header Entrance
+    if (headerRef.current) {
+      gsap.fromTo(
+        headerRef.current.children,
+        { y: 25, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.8,
+          stagger: 0.12,
+          ease: "power3.out",
+        }
+      );
+    }
+
+    // 2. Holographic Boarding Pass Entrance
+    if (passCardRef.current) {
+      gsap.fromTo(
+        passCardRef.current,
+        { y: 40, opacity: 0, scale: 0.96 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.9,
+          delay: 0.25,
+          ease: "power3.out",
+        }
+      );
+    }
+
+    // 3. Community Gateway ScrollTrigger Animation
+    if (gatewayRef.current) {
+      const gatewayCards = gatewayRef.current.querySelectorAll(".gsap-gateway-card");
+      
+      gsap.fromTo(
+        gatewayRef.current,
+        { y: 35, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.75,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: gatewayRef.current,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      if (gatewayCards.length > 0) {
+        gsap.fromTo(
+          gatewayCards,
+          { y: 25, opacity: 0, scale: 0.97 },
+          {
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            duration: 0.65,
+            stagger: 0.15,
+            ease: "back.out(1.2)",
+            scrollTrigger: {
+              trigger: gatewayRef.current,
+              start: "top 82%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+      }
+    }
+
+    // 4. Roadmap Timeline Steps ScrollTrigger Animation
+    if (roadmapRef.current) {
+      const stepCards = roadmapRef.current.querySelectorAll(".gsap-step-card");
+      
+      gsap.fromTo(
+        stepCards,
+        { y: 30, opacity: 0, scale: 0.95 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.6,
+          stagger: 0.12,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: roadmapRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+
+    // 5. Explore CTA ScrollTrigger Animation
+    if (ctaRef.current) {
+      gsap.fromTo(
+        ctaRef.current,
+        { y: 20, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.6,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: ctaRef.current,
+            start: "top 92%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+  }, { scope: containerRef });
+
   return (
-    <div className="register-page-theme relative min-h-screen bg-bg w-full overflow-x-hidden text-text-primary font-sans">
+    <div ref={containerRef} className="register-page-theme relative min-h-screen bg-bg w-full overflow-x-hidden text-text-primary font-sans">
       <ThemeStyles />
 
       {/* ── Ambient Background Lighting ───────────────────────────────── */}
@@ -94,10 +221,8 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
       <main className="relative z-10 w-full max-w-[760px] mx-auto px-3.5 sm:px-6 md:px-8 pt-24 sm:pt-28 md:pt-36 pb-16 sm:pb-24">
 
         {/* ── Header Celebration ───────────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+        <div
+          ref={headerRef}
           className="text-center mb-6 sm:mb-10 px-2"
         >
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold font-display tracking-tight leading-[1.08] mb-2 sm:mb-3">
@@ -110,13 +235,11 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
           <p className="text-xs sm:text-sm md:text-base text-text-secondary max-w-lg mx-auto leading-relaxed">
             Welcome to the builder pipeline. Your application profile has been submitted and queued for evaluation.
           </p>
-        </motion.div>
+        </div>
 
         {/* ── Hero Holographic Builder Boarding Pass ───────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 25 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+        <div
+          ref={passCardRef}
           className="relative mb-8 sm:mb-10 rounded-2xl sm:rounded-3xl border border-white/[0.12] bg-gradient-to-b from-white/[0.06] to-white/[0.02] backdrop-blur-xl shadow-[0_16px_48px_-12px_rgba(0,0,0,0.7),0_0_32px_-10px_rgba(124,58,237,0.25)] overflow-hidden"
         >
           {/* Top glowing accent line */}
@@ -220,13 +343,11 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
               |||||||| | |||||| | |||||||| |||||||| | ||||||||
             </span>
           </div>
-        </motion.div>
+        </div>
 
         {/* ── High-Impact Community Gateway ─────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.25 }}
+        <div
+          ref={gatewayRef}
           className="mb-8 sm:mb-10 rounded-2xl sm:rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-purple-950/40 to-cyan-950/30 p-4 sm:p-6 md:p-8 backdrop-blur-xl shadow-[0_0_40px_-10px_rgba(124,58,237,0.3)] relative overflow-hidden"
         >
           {/* Accent glow orb */}
@@ -249,7 +370,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
 
             {/* Card 1: Official Meetup */}
-            <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/[0.10] bg-white/[0.03] hover:border-[#F64060]/50 hover:bg-[#F64060]/5 transition-all duration-300 flex flex-col justify-between group">
+            <div className="gsap-gateway-card p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/[0.10] bg-white/[0.03] hover:border-[#F64060]/50 hover:bg-[#F64060]/5 transition-all duration-300 flex flex-col justify-between group">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[9px] sm:text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#F64060]/20 text-[#ff6b85] border border-[#F64060]/30 font-semibold">
@@ -277,7 +398,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
             </div>
 
             {/* Card 2: AWS Builder Center */}
-            <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/[0.10] bg-white/[0.03] hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all duration-300 flex flex-col justify-between group">
+            <div className="gsap-gateway-card p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-white/[0.10] bg-white/[0.03] hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all duration-300 flex flex-col justify-between group">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[9px] sm:text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
@@ -321,13 +442,11 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
               Direct AWS Mentorship
             </span>
           </div>
-        </motion.div>
+        </div>
 
         {/* ── Interactive Next Steps Timeline ──────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.35 }}
+        <div
+          ref={roadmapRef}
           className="mb-8 sm:mb-10 space-y-3 sm:space-y-4"
         >
           <div className="flex items-center gap-2 mb-2">
@@ -339,7 +458,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
             {/* Step 1 */}
-            <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm relative group hover:border-primary/40 hover:bg-white/[0.04] transition-all">
+            <div className="gsap-step-card p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm relative group hover:border-primary/40 hover:bg-white/[0.04] transition-all">
               <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-[11px] sm:text-xs font-mono font-bold text-primary-light mb-2 sm:mb-3">
                 01
               </div>
@@ -352,7 +471,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
             </div>
 
             {/* Step 2 */}
-            <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm relative group hover:border-cyan-500/40 hover:bg-white/[0.04] transition-all">
+            <div className="gsap-step-card p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm relative group hover:border-cyan-500/40 hover:bg-white/[0.04] transition-all">
               <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-[11px] sm:text-xs font-mono font-bold text-cyan-300 mb-2 sm:mb-3">
                 02
               </div>
@@ -365,7 +484,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
             </div>
 
             {/* Step 3 */}
-            <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm relative group hover:border-accent/40 hover:bg-white/[0.04] transition-all">
+            <div className="gsap-step-card p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm relative group hover:border-accent/40 hover:bg-white/[0.04] transition-all">
               <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center text-[11px] sm:text-xs font-mono font-bold text-accent mb-2 sm:mb-3">
                 03
               </div>
@@ -377,10 +496,10 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* ── Return Navigation Button ─────────────────────────────────── */}
-        <div className="flex items-center justify-center gap-3">
+        <div ref={ctaRef} className="flex items-center justify-center gap-3">
           <a
             href="/"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl bg-white/[0.05] border border-white/[0.12] hover:border-white/[0.25] text-white font-semibold text-xs sm:text-sm hover:bg-white/[0.08] transition-all"
