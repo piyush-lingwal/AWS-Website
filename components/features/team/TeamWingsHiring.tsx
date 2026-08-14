@@ -4,20 +4,86 @@ import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
-  Code2, Cloud, Palette, Calendar, Video, Megaphone, ArrowUpRight,
+  Code2, Cloud, Palette, Calendar, Video, Megaphone, ArrowUpRight, ArrowRight, Sparkles,
 } from "lucide-react";
 
 const WINGS = [
-  { id: "technology", num: "01", name: "Technology", suffix: "Wing", icon: Code2,     accent: "#A78BFA", accentRgb: "167,139,250", label: "Dev · Web · Bots" },
-  { id: "cloud",      num: "02", name: "Cloud",      suffix: "Wing", icon: Cloud,     accent: "#FCD34D", accentRgb: "252,211,77",  label: "AWS · Labs · Serverless" },
-  { id: "design",     num: "03", name: "Design",     suffix: "Wing", icon: Palette,   accent: "#F472B6", accentRgb: "244,114,182", label: "UI · Brand · Visuals" },
-  { id: "events",     num: "04", name: "Events",     suffix: "& Ops Wing", icon: Calendar, accent: "#38BDF8", accentRgb: "56,189,248",  label: "Hackathons · Jams · Ops" },
-  { id: "media",      num: "05", name: "Media",      suffix: "Wing", icon: Video,     accent: "#34D399", accentRgb: "52,211,153",  label: "Film · Photo · Content" },
-  { id: "outreach",   num: "06", name: "Outreach",   suffix: "Wing", icon: Megaphone, accent: "#FB923C", accentRgb: "251,146,60",  label: "PR · Sponsorships · Network" },
+  {
+    id: "technology",
+    num: "01",
+    name: "Technology",
+    suffix: "Wing",
+    icon: Code2,
+    accent: "#A78BFA",
+    accentRgb: "167,139,250",
+    label: "Dev · Web · Bots · AI",
+    desc: "Architect full-stack platforms, Telegram bots, AI workflows, and cloud-native web apps.",
+    tags: ["Next.js", "Python", "APIs", "AI/ML"],
+  },
+  {
+    id: "cloud",
+    num: "02",
+    name: "Cloud",
+    suffix: "Wing",
+    icon: Cloud,
+    accent: "#FCD34D",
+    accentRgb: "252,211,77",
+    label: "AWS · Labs · Serverless",
+    desc: "Deploy AWS architectures, IAM security policies, serverless Lambdas, and CDK pipelines.",
+    tags: ["EC2/S3", "Lambda", "CDK", "CloudOps"],
+  },
+  {
+    id: "design",
+    num: "03",
+    name: "Design",
+    suffix: "Wing",
+    icon: Palette,
+    accent: "#F472B6",
+    accentRgb: "244,114,182",
+    label: "UI/UX · Brand · Visuals",
+    desc: "Craft high-conversion web interfaces, Figma design systems, motion graphics, and 3D brand assets.",
+    tags: ["Figma", "UI/UX", "3D Motion", "Branding"],
+  },
+  {
+    id: "events",
+    num: "04",
+    name: "Events",
+    suffix: "& Ops Wing",
+    icon: Calendar,
+    accent: "#38BDF8",
+    accentRgb: "56,189,248",
+    label: "Hackathons · Jams · Logistics",
+    desc: "Organize high-energy hackathons, offline cloud workshops, technical jams, and speaker sessions.",
+    tags: ["Hackathons", "Workshops", "Operations"],
+  },
+  {
+    id: "media",
+    num: "05",
+    name: "Media",
+    suffix: "Wing",
+    icon: Video,
+    accent: "#34D399",
+    accentRgb: "52,211,153",
+    label: "Film · Photo · Content",
+    desc: "Produce cinematic event recaps, developer reels, podcast episodes, and social tech content.",
+    tags: ["Video Prod", "Reels", "Podcasts", "Photos"],
+  },
+  {
+    id: "outreach",
+    num: "06",
+    name: "Outreach",
+    suffix: "Wing",
+    icon: Megaphone,
+    accent: "#FB923C",
+    accentRgb: "251,146,60",
+    label: "PR · Sponsorships · Network",
+    desc: "Lead industry outreach, secure campus sponsorships, forge AWS community partnerships, and drive growth.",
+    tags: ["PR & Media", "Sponsors", "Community"],
+  },
 ];
 
-/* ─── Single Wing Row ──────────────────────────────────── */
-function WingRow({ wing, index }: { wing: typeof WINGS[0]; index: number }) {
+/* ─── Desktop Wing Row ─────────────────────────────────── */
+function DesktopWingRow({ wing, index }: { wing: typeof WINGS[0]; index: number }) {
   const [hovered, setHovered] = useState(false);
   const Icon = wing.icon;
 
@@ -27,12 +93,13 @@ function WingRow({ wing, index }: { wing: typeof WINGS[0]; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.55, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      className="hidden md:block"
     >
       <Link
         href={`/register?wing=${encodeURIComponent(wing.name + " " + wing.suffix)}`}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="group relative flex items-center gap-6 sm:gap-10 py-7 border-b border-white/[0.06] overflow-hidden transition-colors duration-300"
+        className="group relative flex items-center gap-6 lg:gap-10 py-7 border-b border-white/[0.06] overflow-hidden transition-colors duration-300"
       >
         {/* Background sweep on hover */}
         <motion.div
@@ -67,14 +134,14 @@ function WingRow({ wing, index }: { wing: typeof WINGS[0]; index: number }) {
             <motion.span
               animate={{ color: hovered ? "#FAFAFA" : "rgba(255,255,255,0.75)" }}
               transition={{ duration: 0.25 }}
-              className="text-3xl sm:text-4xl md:text-5xl font-bold font-display tracking-tight leading-none"
+              className="text-3xl lg:text-5xl font-bold font-display tracking-tight leading-none"
             >
               {wing.name}
             </motion.span>
             <motion.span
               animate={{ color: hovered ? `rgba(${wing.accentRgb},0.85)` : "rgba(255,255,255,0.20)" }}
               transition={{ duration: 0.25 }}
-              className="text-3xl sm:text-4xl md:text-5xl font-bold font-display tracking-tight leading-none"
+              className="text-3xl lg:text-5xl font-bold font-display tracking-tight leading-none"
             >
               {wing.suffix}
             </motion.span>
@@ -91,37 +158,34 @@ function WingRow({ wing, index }: { wing: typeof WINGS[0]; index: number }) {
 
         {/* Right — Icon + Apply */}
         <div className="shrink-0 flex items-center gap-3">
-          {/* Status dot — only on hover */}
           <motion.span
             animate={{ opacity: hovered ? 1 : 0, x: hovered ? 0 : 8 }}
             transition={{ duration: 0.25 }}
-            className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 whitespace-nowrap"
+            className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 whitespace-nowrap"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Apply
+            Apply Now
           </motion.span>
 
-          {/* Icon circle */}
           <motion.div
             animate={{
               background: hovered ? `rgba(${wing.accentRgb},0.15)` : "rgba(255,255,255,0.04)",
               borderColor: hovered ? `rgba(${wing.accentRgb},0.35)` : "rgba(255,255,255,0.08)",
             }}
             transition={{ duration: 0.3 }}
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border flex items-center justify-center"
+            className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl border flex items-center justify-center"
           >
             <motion.div
               animate={{ rotate: hovered ? 10 : 0, scale: hovered ? 1.1 : 1 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             >
               <Icon
-                className="w-5 h-5 sm:w-6 sm:h-6 transition-colors duration-300"
+                className="w-5 h-5 lg:w-6 lg:h-6 transition-colors duration-300"
                 style={{ color: hovered ? wing.accent : "rgba(255,255,255,0.35)" }}
               />
             </motion.div>
           </motion.div>
 
-          {/* Arrow */}
           <motion.div
             animate={{
               x: hovered ? 0 : -6,
@@ -138,29 +202,115 @@ function WingRow({ wing, index }: { wing: typeof WINGS[0]; index: number }) {
   );
 }
 
-/* ─── Section ─────────────────────────────────────────── */
+/* ─── Mobile Interactive Wing Card (UI/UX Pro Max) ─────── */
+function MobileWingCard({ wing, index }: { wing: typeof WINGS[0]; index: number }) {
+  const Icon = wing.icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.5, delay: index * 0.06 }}
+      className="md:hidden relative"
+    >
+      <Link
+        href={`/register?wing=${encodeURIComponent(wing.name + " " + wing.suffix)}`}
+        className="block relative rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 sm:p-5 active:scale-[0.98] transition-all overflow-hidden shadow-lg group"
+      >
+        {/* Ambient colored corner glow */}
+        <div
+          className="absolute -right-10 -top-10 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-20"
+          style={{ background: wing.accent }}
+        />
+
+        {/* Top Header */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-xl border flex items-center justify-center shrink-0"
+              style={{
+                background: `rgba(${wing.accentRgb},0.12)`,
+                borderColor: `rgba(${wing.accentRgb},0.3)`,
+              }}
+            >
+              <Icon className="w-5 h-5" style={{ color: wing.accent }} />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono text-[10px] font-bold" style={{ color: wing.accent }}>
+                  {wing.num}
+                </span>
+                <span className="text-[10px] font-mono text-muted uppercase">· {wing.suffix}</span>
+              </div>
+              <h3 className="text-lg font-bold font-display text-text-primary tracking-tight leading-snug">
+                {wing.name} {wing.suffix !== "Wing" && wing.suffix}
+              </h3>
+            </div>
+          </div>
+
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-mono font-semibold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Hiring
+          </span>
+        </div>
+
+        {/* Description */}
+        <p className="text-xs text-text-secondary leading-relaxed mb-3">
+          {wing.desc}
+        </p>
+
+        {/* Tags */}
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {wing.tags.map((tag, i) => (
+            <span
+              key={i}
+              className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-white/60"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        {/* Bottom CTA Bar */}
+        <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+          <span className="text-[10px] font-mono text-muted">
+            {wing.label}
+          </span>
+          <span
+            className="inline-flex items-center gap-1 text-xs font-semibold font-mono"
+            style={{ color: wing.accent }}
+          >
+            <span>Apply</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </span>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+/* ─── Main Section ─────────────────────────────────────── */
 export function TeamWingsHiring() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "end start"] });
-  const headerY = useTransform(scrollYProgress, [0, 1], [30, -30]);
+  const headerY = useTransform(scrollYProgress, [0, 1], [20, -20]);
 
   return (
-    <section ref={sectionRef} id="wings" className="py-20 px-4 sm:px-6 lg:px-8 max-w-content mx-auto">
+    <section ref={sectionRef} id="wings" className="py-16 sm:py-20 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto">
 
       {/* ── Section header ──────────────────────────── */}
-      <motion.div style={{ y: headerY }} className="mb-16">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+      <motion.div style={{ y: headerY }} className="mb-10 sm:mb-16">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
           <div>
-            {/* Eyebrow */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="h-px w-8 bg-primary/60" />
+            <div className="flex items-center gap-3 mb-3 sm:mb-5">
+              <div className="h-px w-6 sm:w-8 bg-primary/60" />
               <span className="text-[10px] font-mono tracking-[0.25em] text-muted uppercase">
                 Cohort 2026
               </span>
             </div>
 
-            {/* Title */}
-            <h2 className="text-4xl sm:text-6xl font-bold font-display text-text-primary tracking-tight leading-[1.0]">
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold font-display text-text-primary tracking-tight leading-[1.05] sm:leading-[1.0]">
               Choose Your
               <br />
               <span className="bg-gradient-to-r from-primary-light via-accent to-purple-300 bg-clip-text text-transparent">
@@ -169,26 +319,29 @@ export function TeamWingsHiring() {
             </h2>
           </div>
 
-          {/* Right side info */}
-          <div className="sm:text-right space-y-2 shrink-0">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-400">
+          <div className="sm:text-right space-y-1.5 shrink-0">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] sm:text-xs font-mono text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Applications Open · 2026
+              <span>Applications Open · 2026</span>
             </div>
-            <p className="text-xs text-muted font-mono block mt-2">
-              6 wings · Limited slots · All years welcome
+            <p className="text-[11px] sm:text-xs text-muted font-mono block">
+              6 wings · Limited slots · All branches welcome
             </p>
           </div>
         </div>
       </motion.div>
 
-      {/* ── Top border ──────────────────────────────── */}
-      <div className="border-t border-white/[0.08]" />
-
-      {/* ── Wing rows ──────────────────────────────── */}
-      <div>
+      {/* ── Desktop Wing Rows ────────────────────────── */}
+      <div className="hidden md:block border-t border-white/[0.08]">
         {WINGS.map((wing, idx) => (
-          <WingRow key={wing.id} wing={wing} index={idx} />
+          <DesktopWingRow key={wing.id} wing={wing} index={idx} />
+        ))}
+      </div>
+
+      {/* ── Mobile Wing Cards Grid ────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:hidden">
+        {WINGS.map((wing, idx) => (
+          <MobileWingCard key={wing.id} wing={wing} index={idx} />
         ))}
       </div>
 
@@ -197,26 +350,26 @@ export function TeamWingsHiring() {
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.5 }}
-        className="mt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-center sm:text-left"
       >
-        <p className="text-xs text-muted font-mono">
-          Hover a wing to apply → or{" "}
+        <p className="text-[11px] sm:text-xs text-muted font-mono">
+          Tap a wing above to apply or{" "}
           <Link
             href="/register"
             className="text-text-secondary hover:text-text-primary underline underline-offset-4 transition-colors"
           >
-            submit a general application
+            submit general application
           </Link>
         </p>
 
         {/* Mini wing dots */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-center sm:self-auto">
           {WINGS.map(w => (
             <div
               key={w.id}
               className="w-2 h-2 rounded-full"
-              style={{ background: w.accent, opacity: 0.5 }}
+              style={{ background: w.accent, opacity: 0.6 }}
             />
           ))}
         </div>

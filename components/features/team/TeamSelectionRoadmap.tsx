@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { FileText, ClipboardCheck, Rocket, ArrowRight } from "lucide-react";
+import { FileText, ClipboardCheck, Rocket, ArrowRight, Sparkles } from "lucide-react";
 
 const STEPS = [
   {
@@ -15,7 +15,7 @@ const STEPS = [
     title: "Pick Your Wing",
     description:
       "Browse the 6 Builder Wings, understand what each does, and identify the one that resonates with your interests.",
-    detail: "No prerequisites. All branches welcome.",
+    detail: "No prerequisites · All branches welcome",
   },
   {
     number: "02",
@@ -26,8 +26,8 @@ const STEPS = [
     border: "border-accent/30",
     title: "Submit Application",
     description:
-      "Fill out a short application form in under 5 minutes. Tell us why you're excited about your chosen wing.",
-    detail: "Takes less than 5 minutes.",
+      "Fill out a fast registration form in under 2 minutes. Select your wings and tell us your academic year.",
+    detail: "Takes under 2 minutes",
   },
   {
     number: "03",
@@ -38,30 +38,27 @@ const STEPS = [
     border: "border-emerald-500/30",
     title: "Join the Reveal",
     description:
-      "Shortlisted members get an orientation session and are officially unveiled as part of the 2026 Core Team.",
-    detail: "The reveal is the moment.",
+      "Shortlisted candidates receive interview slots and are officially announced as part of the 2026 Core Team.",
+    detail: "Official badge & induction",
   },
 ];
 
 export function TeamSelectionRoadmap() {
   const ref = React.useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.75", "center center"] });
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "center center"] });
   const lineWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
-  // Step 1: appears as line starts at Step 01
   const step1Opacity = useTransform(scrollYProgress, [0, 0.2], [0, 1]);
-  const step1Y = useTransform(scrollYProgress, [0, 0.2], [30, 0]);
-  const step1Scale = useTransform(scrollYProgress, [0, 0.2], [0.92, 1]);
+  const step1Y = useTransform(scrollYProgress, [0, 0.2], [25, 0]);
+  const step1Scale = useTransform(scrollYProgress, [0, 0.2], [0.94, 1]);
 
-  // Step 2: appears as line reaches Step 02 (midway, around 50% line progress)
-  const step2Opacity = useTransform(scrollYProgress, [0.35, 0.55], [0, 1]);
-  const step2Y = useTransform(scrollYProgress, [0.35, 0.55], [30, 0]);
-  const step2Scale = useTransform(scrollYProgress, [0.35, 0.55], [0.92, 1]);
+  const step2Opacity = useTransform(scrollYProgress, [0.3, 0.55], [0, 1]);
+  const step2Y = useTransform(scrollYProgress, [0.3, 0.55], [25, 0]);
+  const step2Scale = useTransform(scrollYProgress, [0.3, 0.55], [0.94, 1]);
 
-  // Step 3: appears as line reaches Step 03 (end, 100% line progress)
-  const step3Opacity = useTransform(scrollYProgress, [0.75, 0.95], [0, 1]);
-  const step3Y = useTransform(scrollYProgress, [0.75, 0.95], [30, 0]);
-  const step3Scale = useTransform(scrollYProgress, [0.75, 0.95], [0.92, 1]);
+  const step3Opacity = useTransform(scrollYProgress, [0.7, 0.95], [0, 1]);
+  const step3Y = useTransform(scrollYProgress, [0.7, 0.95], [25, 0]);
+  const step3Scale = useTransform(scrollYProgress, [0.7, 0.95], [0.94, 1]);
 
   const stepTransforms = [
     { opacity: step1Opacity, y: step1Y, scale: step1Scale },
@@ -70,18 +67,25 @@ export function TeamSelectionRoadmap() {
   ];
 
   return (
-    <section ref={ref} className="py-20 px-4 sm:px-6 lg:px-8 max-w-content mx-auto overflow-hidden">
+    <section ref={ref} className="py-16 sm:py-20 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto overflow-hidden">
+      
       {/* Header */}
-      <div className="text-center max-w-xl mx-auto mb-16">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-muted font-mono mb-3">How It Works</p>
+      <div className="text-center max-w-xl mx-auto mb-10 sm:mb-16">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] uppercase tracking-[0.2em] text-primary-light font-mono mb-3">
+          <Sparkles className="w-3 h-3 text-primary-light" />
+          <span>How Selection Works</span>
+        </div>
         <h2 className="text-3xl sm:text-4xl font-bold font-display text-text-primary tracking-tight">
           3 Steps to Secure Your Wing
         </h2>
+        <p className="text-xs sm:text-sm text-text-secondary mt-2">
+          From application submission to official cohort induction
+        </p>
       </div>
 
       {/* Desktop horizontal timeline */}
       <div className="hidden md:block relative">
-        {/* Animated connecting line — spans from center of col 1 to center of col 3 */}
+        {/* Animated connecting line */}
         <div className="absolute top-[52px] left-[calc(100%/6)] right-[calc(100%/6)] h-px bg-border overflow-hidden">
           <motion.div
             style={{ width: lineWidth }}
@@ -124,7 +128,7 @@ export function TeamSelectionRoadmap() {
                 </div>
 
                 {/* Card */}
-                <div className={`relative rounded-2xl bg-gradient-to-br ${step.bg} border ${step.border} p-6 overflow-hidden`}>
+                <div className={`relative rounded-2xl bg-gradient-to-br ${step.bg} border ${step.border} p-6 overflow-hidden shadow-lg`}>
                   <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${step.bg}`} />
                   <div className="relative z-10">
                     <h3 className="text-lg font-bold font-display text-text-primary mb-2">{step.title}</h3>
@@ -140,41 +144,40 @@ export function TeamSelectionRoadmap() {
         </div>
       </div>
 
-      {/* Mobile vertical timeline */}
-      <div className="md:hidden relative pl-8">
-        <div className="absolute left-[15px] top-0 bottom-0 w-px bg-border overflow-hidden">
-          <motion.div
-            style={{ height: lineWidth }}
-            className="w-full bg-gradient-to-b from-primary via-accent to-emerald-400"
-          />
-        </div>
+      {/* Mobile vertical timeline (UI/UX Pro Max) */}
+      <div className="md:hidden space-y-4">
+        {STEPS.map((step, idx) => {
+          const Icon = step.icon;
+          return (
+            <motion.div
+              key={step.number}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+              className={`relative rounded-2xl bg-gradient-to-br ${step.bg} border ${step.border} p-4 sm:p-5 shadow-lg overflow-hidden`}
+            >
+              {/* Header inside card */}
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className={`w-9 h-9 rounded-xl bg-bg-card/90 border ${step.border} flex items-center justify-center shrink-0`}>
+                  <Icon className={`w-4 h-4 ${step.color}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className={`text-[10px] font-mono font-bold ${step.color}`}>STEP {step.number}</span>
+                  <h3 className="text-base font-bold font-display text-text-primary leading-tight">{step.title}</h3>
+                </div>
+              </div>
 
-        <div className="space-y-8">
-          {STEPS.map((step, idx) => {
-            const Icon = step.icon;
-            const transform = stepTransforms[idx];
-            return (
-              <motion.div
-                key={step.number}
-                style={{
-                  opacity: transform.opacity,
-                  y: transform.y,
-                  scale: transform.scale,
-                }}
-                className="relative"
-              >
-                <div className={`absolute -left-8 w-7 h-7 rounded-full bg-bg-card border ${step.border} flex items-center justify-center`}>
-                  <Icon className={`w-3.5 h-3.5 ${step.color}`} />
-                </div>
-                <div className={`rounded-2xl bg-gradient-to-br ${step.bg} border ${step.border} p-5`}>
-                  <div className={`text-xs font-mono font-bold ${step.color} mb-2`}>{step.number}</div>
-                  <h3 className="text-base font-bold font-display text-text-primary mb-1.5">{step.title}</h3>
-                  <p className="text-sm text-text-secondary leading-relaxed">{step.description}</p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+              <p className="text-xs text-text-secondary leading-relaxed mb-3">
+                {step.description}
+              </p>
+
+              <span className={`inline-block text-[9px] font-mono ${step.color} bg-bg-surface/60 border ${step.border} px-2.5 py-0.5 rounded-full`}>
+                {step.detail}
+              </span>
+            </motion.div>
+          );
+        })}
       </div>
     </section>
   );
