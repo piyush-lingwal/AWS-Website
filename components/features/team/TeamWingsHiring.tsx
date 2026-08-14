@@ -6,6 +6,11 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import {
   Code2, Cloud, Palette, Calendar, Video, Megaphone, ArrowUpRight, ArrowRight, Sparkles,
 } from "lucide-react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const WINGS = [
   {
@@ -88,13 +93,7 @@ function DesktopWingRow({ wing, index }: { wing: typeof WINGS[0]; index: number 
   const Icon = wing.icon;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 32 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.55, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
-      className="hidden md:block"
-    >
+    <div className="gsap-desktop-wing-row hidden md:block">
       <Link
         href={`/register?wing=${encodeURIComponent(wing.name + " " + wing.suffix)}`}
         onMouseEnter={() => setHovered(true)}
@@ -198,22 +197,16 @@ function DesktopWingRow({ wing, index }: { wing: typeof WINGS[0]; index: number 
           </motion.div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 
-/* ─── Mobile Interactive Wing Card (UI/UX Pro Max) ─────── */
+/* ─── Mobile Interactive Wing Card (GSAP Stagger) ─────── */
 function MobileWingCard({ wing, index }: { wing: typeof WINGS[0]; index: number }) {
   const Icon = wing.icon;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.06 }}
-      className="md:hidden relative"
-    >
+    <div className="gsap-mobile-wing-card md:hidden relative">
       <Link
         href={`/register?wing=${encodeURIComponent(wing.name + " " + wing.suffix)}`}
         className="block relative rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-4 sm:p-5 active:scale-[0.98] transition-all overflow-hidden shadow-lg group"
@@ -286,21 +279,87 @@ function MobileWingCard({ wing, index }: { wing: typeof WINGS[0]; index: number 
           </span>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 
 /* ─── Main Section ─────────────────────────────────────── */
 export function TeamWingsHiring() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "end start"] });
-  const headerY = useTransform(scrollYProgress, [0, 1], [20, -20]);
+  const mobileCardsRef = useRef<HTMLDivElement>(null);
+  const desktopRowsRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    // 1. Header reveal
+    if (headerRef.current) {
+      gsap.fromTo(
+        headerRef.current.children,
+        { y: 30, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.7,
+          stagger: 0.1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+
+    // 2. Mobile Cards Stagger
+    if (mobileCardsRef.current) {
+      const mobileCards = mobileCardsRef.current.querySelectorAll(".gsap-mobile-wing-card");
+      gsap.fromTo(
+        mobileCards,
+        { y: 35, opacity: 0, scale: 0.96 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.6,
+          stagger: 0.1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: mobileCardsRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+
+    // 3. Desktop Rows Stagger
+    if (desktopRowsRef.current) {
+      const desktopRows = desktopRowsRef.current.querySelectorAll(".gsap-desktop-wing-row");
+      gsap.fromTo(
+        desktopRows,
+        { y: 30, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.6,
+          stagger: 0.08,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: desktopRowsRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+  }, { scope: sectionRef });
 
   return (
     <section ref={sectionRef} id="wings" className="py-16 sm:py-20 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto">
 
       {/* ── Section header ──────────────────────────── */}
-      <motion.div style={{ y: headerY }} className="mb-10 sm:mb-16">
+      <div ref={headerRef} className="mb-10 sm:mb-16">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
           <div>
             <div className="flex items-center gap-3 mb-3 sm:mb-5">
@@ -329,30 +388,24 @@ export function TeamWingsHiring() {
             </p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* ── Desktop Wing Rows ────────────────────────── */}
-      <div className="hidden md:block border-t border-white/[0.08]">
+      <div ref={desktopRowsRef} className="hidden md:block border-t border-white/[0.08]">
         {WINGS.map((wing, idx) => (
           <DesktopWingRow key={wing.id} wing={wing} index={idx} />
         ))}
       </div>
 
       {/* ── Mobile Wing Cards Grid ────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:hidden">
+      <div ref={mobileCardsRef} className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:hidden">
         {WINGS.map((wing, idx) => (
           <MobileWingCard key={wing.id} wing={wing} index={idx} />
         ))}
       </div>
 
       {/* ── Footer ─────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-center sm:text-left"
-      >
+      <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-center sm:text-left">
         <p className="text-[11px] sm:text-xs text-muted font-mono">
           Tap a wing above to apply or{" "}
           <Link
@@ -373,7 +426,7 @@ export function TeamWingsHiring() {
             />
           ))}
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }

@@ -1,8 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { FileText, ClipboardCheck, Rocket, ArrowRight, Sparkles } from "lucide-react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const STEPS = [
   {
@@ -44,8 +49,11 @@ const STEPS = [
 ];
 
 export function TeamSelectionRoadmap() {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "center center"] });
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const mobileListRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start 0.8", "center center"] });
   const lineWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   const step1Opacity = useTransform(scrollYProgress, [0, 0.2], [0, 1]);
@@ -66,11 +74,54 @@ export function TeamSelectionRoadmap() {
     { opacity: step3Opacity, y: step3Y, scale: step3Scale },
   ];
 
+  // GSAP on-view animations for mobile steps & header
+  useGSAP(() => {
+    if (headerRef.current) {
+      gsap.fromTo(
+        headerRef.current.children,
+        { y: 25, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.65,
+          stagger: 0.1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+
+    if (mobileListRef.current) {
+      const mobileSteps = mobileListRef.current.querySelectorAll(".gsap-mobile-step");
+      gsap.fromTo(
+        mobileSteps,
+        { y: 30, opacity: 0, scale: 0.95 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.6,
+          stagger: 0.12,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: mobileListRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+  }, { scope: sectionRef });
+
   return (
-    <section ref={ref} className="py-16 sm:py-20 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto overflow-hidden">
+    <section ref={sectionRef} className="py-16 sm:py-20 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto overflow-hidden">
       
       {/* Header */}
-      <div className="text-center max-w-xl mx-auto mb-10 sm:mb-16">
+      <div ref={headerRef} className="text-center max-w-xl mx-auto mb-10 sm:mb-16">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] uppercase tracking-[0.2em] text-primary-light font-mono mb-3">
           <Sparkles className="w-3 h-3 text-primary-light" />
           <span>How Selection Works</span>
@@ -144,18 +195,14 @@ export function TeamSelectionRoadmap() {
         </div>
       </div>
 
-      {/* Mobile vertical timeline (UI/UX Pro Max) */}
-      <div className="md:hidden space-y-4">
+      {/* Mobile vertical timeline (GSAP on-view stagger) */}
+      <div ref={mobileListRef} className="md:hidden space-y-4">
         {STEPS.map((step, idx) => {
           const Icon = step.icon;
           return (
-            <motion.div
+            <div
               key={step.number}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className={`relative rounded-2xl bg-gradient-to-br ${step.bg} border ${step.border} p-4 sm:p-5 shadow-lg overflow-hidden`}
+              className={`gsap-mobile-step relative rounded-2xl bg-gradient-to-br ${step.bg} border ${step.border} p-4 sm:p-5 shadow-lg overflow-hidden`}
             >
               {/* Header inside card */}
               <div className="flex items-center gap-3 mb-2.5">
@@ -175,7 +222,7 @@ export function TeamSelectionRoadmap() {
               <span className={`inline-block text-[9px] font-mono ${step.color} bg-bg-surface/60 border ${step.border} px-2.5 py-0.5 rounded-full`}>
                 {step.detail}
               </span>
-            </motion.div>
+            </div>
           );
         })}
       </div>

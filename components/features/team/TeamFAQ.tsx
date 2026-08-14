@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, HelpCircle, Mail } from "lucide-react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const FAQS = [
   {
@@ -33,13 +38,59 @@ const FAQS = [
 
 export function TeamFAQ() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const faqListRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    // 1. Header reveal
+    if (headerRef.current) {
+      gsap.fromTo(
+        headerRef.current.children,
+        { y: 25, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.65,
+          stagger: 0.1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+
+    // 2. FAQ list stagger
+    if (faqListRef.current) {
+      const items = faqListRef.current.querySelectorAll(".gsap-faq-item");
+      gsap.fromTo(
+        items,
+        { y: 25, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.55,
+          stagger: 0.08,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: faqListRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+  }, { scope: sectionRef });
 
   return (
-    <section className="py-16 sm:py-24 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto">
+    <section ref={sectionRef} className="py-16 sm:py-24 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8 lg:gap-20 items-start">
 
         {/* Left sticky header (Desktop) / Top header (Mobile) */}
-        <div className="lg:sticky lg:top-28">
+        <div ref={headerRef} className="lg:sticky lg:top-28">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] uppercase tracking-[0.2em] text-primary-light font-mono mb-3">
             <HelpCircle className="w-3 h-3 text-primary-light" />
             <span>Got Questions?</span>
@@ -69,18 +120,14 @@ export function TeamFAQ() {
           </div>
         </div>
 
-        {/* Right — FAQ accordion */}
-        <div className="space-y-3">
+        {/* Right — FAQ accordion with GSAP Stagger */}
+        <div ref={faqListRef} className="space-y-3">
           {FAQS.map((faq, idx) => {
             const isOpen = openIdx === idx;
             return (
-              <motion.div
+              <div
                 key={idx}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: idx * 0.05 }}
-                className={`rounded-2xl border overflow-hidden transition-all duration-300 ${
+                className={`gsap-faq-item rounded-2xl border overflow-hidden transition-all duration-300 ${
                   isOpen
                     ? "border-primary/40 bg-gradient-to-br from-primary/10 via-bg-card to-bg-card shadow-lg"
                     : "border-border bg-bg-card/80 hover:border-border/80"
@@ -113,12 +160,12 @@ export function TeamFAQ() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </div>
             );
           })}
 
-          {/* Mobile Contact Card (shows at bottom of accordion on mobile) */}
-          <div className="lg:hidden mt-6 p-4 rounded-2xl bg-bg-card border border-border text-center">
+          {/* Mobile Contact Card */}
+          <div className="gsap-faq-item lg:hidden mt-6 p-4 rounded-2xl bg-bg-card border border-border text-center">
             <p className="text-xs text-muted font-mono mb-1">Have a different question?</p>
             <a
               href="mailto:awssbg@tulas.edu.in"

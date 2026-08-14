@@ -2,8 +2,13 @@
 
 import React, { useRef } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowRight, Shield, Sparkles, Trophy, Users, Terminal } from "lucide-react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const BENEFITS = [
   { icon: Trophy, label: "Official AWS Badge & Certificate" },
@@ -13,15 +18,76 @@ const BENEFITS = [
 ];
 
 export function TeamCTA() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "center center"] });
-  const y = useTransform(scrollYProgress, [0, 1], [40, 0]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const cardContainerRef = useRef<HTMLDivElement>(null);
+  const pillsRef = useRef<HTMLDivElement>(null);
+  const memberCardRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (cardContainerRef.current) {
+      gsap.fromTo(
+        cardContainerRef.current,
+        { y: 35, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.75,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: cardContainerRef.current,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+
+    if (pillsRef.current) {
+      const pills = pillsRef.current.querySelectorAll(".gsap-cta-pill");
+      gsap.fromTo(
+        pills,
+        { y: 20, opacity: 0, scale: 0.94 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.5,
+          stagger: 0.08,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: pillsRef.current,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+
+    if (memberCardRef.current) {
+      gsap.fromTo(
+        memberCardRef.current,
+        { y: 30, opacity: 0, scale: 0.94 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.8,
+          delay: 0.15,
+          ease: "back.out(1.2)",
+          scrollTrigger: {
+            trigger: memberCardRef.current,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }
+  }, { scope: sectionRef });
 
   return (
-    <section ref={ref} className="py-16 sm:py-24 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto">
-      <motion.div
-        style={{ y, opacity }}
+    <section ref={sectionRef} className="py-16 sm:py-24 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto">
+      <div
+        ref={cardContainerRef}
         className="relative rounded-3xl overflow-hidden border border-primary/30 shadow-[0_0_50px_-15px_rgba(124,58,237,0.35)]"
       >
         {/* Background layers */}
@@ -82,11 +148,11 @@ export function TeamCTA() {
             </p>
 
             {/* Benefit pills */}
-            <div className="flex flex-wrap gap-2 justify-center lg:justify-start mb-6 sm:mb-8">
+            <div ref={pillsRef} className="flex flex-wrap gap-2 justify-center lg:justify-start mb-6 sm:mb-8">
               {BENEFITS.map(({ icon: Icon, label }) => (
                 <div
                   key={label}
-                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-bg-surface/80 border border-border text-[10px] sm:text-xs font-mono text-text-secondary"
+                  className="gsap-cta-pill flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-bg-surface/80 border border-border text-[10px] sm:text-xs font-mono text-text-secondary"
                 >
                   <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary-light shrink-0" />
                   <span>{label}</span>
@@ -113,7 +179,7 @@ export function TeamCTA() {
           </div>
 
           {/* Right — Holographic Pass Card */}
-          <div className="w-full sm:w-auto shrink-0 lg:w-72 flex justify-center">
+          <div ref={memberCardRef} className="w-full sm:w-auto shrink-0 lg:w-72 flex justify-center">
             <motion.div
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
@@ -151,7 +217,7 @@ export function TeamCTA() {
             </motion.div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }
