@@ -510,10 +510,15 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
         </div>
 
         {/* ── Footer Security Badge ────────────────────────────────────── */}
-        <p className="text-center text-[10px] sm:text-[11px] text-muted font-mono mt-6 sm:mt-8 flex items-center justify-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span>Official AWS Student Builders Group at Tula&apos;s University · No spam, ever.</span>
-        </p>
+        <div className="mt-8 sm:mt-10 flex flex-col items-center justify-center text-center px-4 max-w-md mx-auto">
+          <div className="inline-flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] text-muted font-mono leading-relaxed">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>Official AWS Student Builders Group at Tula&apos;s University</span>
+          </div>
+          <p className="text-[10px] text-muted/70 font-mono mt-0.5">
+            No spam, ever.
+          </p>
+        </div>
 
       </main>
     </div>

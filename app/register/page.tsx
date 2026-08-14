@@ -681,9 +681,14 @@ function RegisterPageContent() {
               </span>
             </button>
 
-            <div className="flex items-center gap-2 text-[11px] font-mono text-muted text-center pt-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Official AWS SBG Tula&apos;s Portal · Shortlisted applicants notified via email</span>
+            <div className="flex flex-col items-center justify-center text-center px-4 max-w-md mx-auto pt-2">
+              <div className="inline-flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-muted leading-relaxed">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Official AWS SBG Tula&apos;s Portal</span>
+              </div>
+              <p className="text-[10px] text-muted/70 font-mono mt-0.5">
+                Shortlisted applicants notified via email
+              </p>
             </div>
           </motion.div>
 
