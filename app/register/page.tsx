@@ -187,7 +187,6 @@ function RegisterPageContent() {
       const fd = new FormData();
       fd.append("fullName", form.fullName.trim());
       fd.append("universityEmail", form.universityEmail.trim());
-      fd.append("personalEmail", form.universityEmail.trim());
       fd.append("phoneNumber", form.phoneNumber.trim());
       fd.append("rollNumber", form.rollNumber.trim());
       fd.append("course", finalCourse);
@@ -195,11 +194,6 @@ function RegisterPageContent() {
       fd.append("year", form.year);
       fd.append("wing", form.wings.join(" + "));
       fd.append("interestAreas", JSON.stringify(form.wings));
-      fd.append("whyJoin", "Direct application via AWS SBG fast portal");
-      fd.append("githubUrl", "");
-      fd.append("linkedinUrl", "");
-      fd.append("usedAws", "Not specified");
-      fd.append("leadershipExperience", "");
 
       const [res] = await Promise.all([
         fetch("/api/register", { method: "POST", body: fd }),

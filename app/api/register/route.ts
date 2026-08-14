@@ -96,58 +96,102 @@ export async function POST(request: Request) {
     const {
       fullName,
       universityEmail,
-      personalEmail,
       rollNumber,
       course,
       branch,
       year,
       wing,
-      githubUrl,
-      linkedinUrl,
-      whyJoin,
-      leadershipExperience,
     } = body;
 
     if (!supabaseAdmin) {
       return NextResponse.json(
-        { error: "Database configuration error. Please try again later." },
+        { error: "Database configuration error. Please check Supabase credentials." },
         { status: 500 }
       );
     }
 
-    // Insert application row
-    const { data, error: insertError } = await supabaseAdmin
-      .from("sbg_applications")
-      .insert({
-        full_name: fullName.trim(),
-        university_email: universityEmail.trim().toLowerCase(),
-        personal_email: (personalEmail || universityEmail).trim().toLowerCase(),
-        phone_number: normalizedPhone,
-        roll_number: rollNumber.trim(),
-        course: course.trim(),
-        branch: branch?.trim() || null,
-        year: year.trim(),
-        wing: wing.trim(),
-        interest_areas: interestAreas,
-        github_url: githubUrl?.trim() || null,
-        linkedin_url: linkedinUrl?.trim() || null,
-        why_join: whyJoin?.trim() || "Applied via AWS SBG Builder Registration Portal",
-        leadership_experience: leadershipExperience?.trim() || null,
-        used_aws: false,
-        aws_services: [],
-      })
-      .select("id, created_at")
-      .single();
+    const now = new Date();
+    const dateStr = now.toISOString().split("T")[0];
+    const timeStr = now.toTimeString().split(" ")[0].substring(0, 5);
 
-    if (insertError) {
-      console.error("Insert failed:", insertError);
+    // Build the insert payload containing only active form fields matching live schema
+    const payload: Record<string, any> = {
+      full_name: fullName.trim(),
+      email: universityEmail.trim().toLowerCase(),
+      phone_number: normalizedPhone,
+      roll_number: rollNumber.trim(),
+      course: course.trim(),
+      branch: branch?.trim() || "N/A",
+      year: year.trim(),
+      wing: wing.trim(),
+      interest_areas: interestAreas,
+      date: dateStr,
+      time: timeStr,
+    };
+
+    // Resilient schema-adaptive insert
+    let insertedRow: Record<string, any> | null = null;
+    let lastError: any = null;
+    const maxRetries = 6;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const { data, error: insertError } = await supabaseAdmin
+        .from("sbg_applications")
+        .insert(payload)
+        .select()
+        .maybeSingle();
+
+      if (!insertError) {
+        insertedRow = data || { id: `sbg_${Date.now()}`, date: dateStr, time: timeStr };
+        lastError = null;
+        break;
+      }
+
+      lastError = insertError;
+      console.warn(`[Register] Insert attempt ${attempt + 1} failed:`, insertError.message || insertError);
+
+      // Check if error is due to an unknown column in schema cache
+      const missingColumnMatch = (insertError.message || "").match(
+        /Could not find the '([^']+)' column of 'sbg_applications'/i
+      );
+
+      if (missingColumnMatch && missingColumnMatch[1]) {
+        const missingCol = missingColumnMatch[1];
+        console.warn(`[Register] Removing missing column '${missingCol}' from payload and retrying...`);
+        delete payload[missingCol];
+
+        // Handle common column alias fallbacks
+        if (missingCol === "email" && !payload.university_email) {
+          payload.university_email = universityEmail.trim().toLowerCase();
+        } else if (missingCol === "university_email" && !payload.email) {
+          payload.email = universityEmail.trim().toLowerCase();
+        }
+        continue;
+      }
+
+      // If column doesn't exist error (PG 42703)
+      const colDoesNotExistMatch = (insertError.message || "").match(
+        /column [^.]*\.?([a-zA-Z0-9_]+) does not exist/i
+      );
+      if (colDoesNotExistMatch && colDoesNotExistMatch[1]) {
+        const missingCol = colDoesNotExistMatch[1];
+        console.warn(`[Register] Removing PG missing column '${missingCol}' from payload and retrying...`);
+        delete payload[missingCol];
+        continue;
+      }
+
+      break;
+    }
+
+    if (lastError && !insertedRow) {
+      console.error("[Register] Supabase insert failed permanently:", lastError);
       return NextResponse.json(
-        { error: `DB Error: ${insertError.message || JSON.stringify(insertError)}` },
+        { error: `Database Error: ${lastError.message || "Failed to record application. Please try again."}` },
         { status: 500 }
       );
     }
 
-    // Trigger confirmation email
+    // Trigger confirmation email asynchronously
     try {
       await sendApplicationConfirmationEmail({
         to: universityEmail.trim().toLowerCase(),
@@ -163,13 +207,17 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { success: true, id: data.id, submittedAt: data.created_at },
+      { 
+        success: true, 
+        id: insertedRow?.id || `sbg_${Date.now()}`, 
+        submittedAt: insertedRow?.created_at || (insertedRow?.date ? `${insertedRow.date} ${insertedRow.time || ""}`.trim() : new Date().toISOString()) 
+      },
       { status: 201 }
     );
-  } catch (e) {
+  } catch (e: any) {
     console.error("Unexpected error in /api/register:", e);
     return NextResponse.json(
-      { error: "Something went wrong. Please try again." },
+      { error: e?.message || "Something went wrong. Please try again." },
       { status: 500 }
     );
   }

@@ -1,21 +1,13 @@
 export interface ApplicationFormData {
   fullName: string;
   universityEmail: string;
-  personalEmail: string;
   phoneNumber: string;
   rollNumber: string;
   course: string;
   branch: string;
-  branchOther: string;
+  customCourse?: string;
   year: string;
-  interestAreas: string[];
-  githubUrl: string;
-  linkedinUrl: string;
-  portfolioUrl: string;
-  whyJoin: string;
-  leadershipExperience: string;
-  usedAws: string;
-  awsServices: string[];
+  wings: string[];
 }
 
 export interface ApplicationSubmissionResult {
