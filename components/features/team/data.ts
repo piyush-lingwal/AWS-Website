@@ -58,7 +58,7 @@ export interface DepartmentInfo {
 export const LEADERSHIP_TEAM: LeadershipMember[] = [
   {
     id: "faculty-coordinator",
-    name: "Dr. XYZ",
+    name: "Abhishek Rawat",
     role: "Faculty Coordinator",
     department: "Advisory & Governance",
     avatar: "/members/boy2.png",

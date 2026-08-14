@@ -467,11 +467,10 @@ function RegisterPageContent() {
                       key={yr}
                       type="button"
                       onClick={() => update("year", yr)}
-                      className={`py-2.5 px-3 rounded-xl border text-xs font-mono font-medium transition-all text-center ${
-                        isSelected
+                      className={`py-2.5 px-3 rounded-xl border text-xs font-mono font-medium transition-all text-center ${isSelected
                           ? "bg-primary/25 border-primary/60 text-primary-light shadow-[0_0_15px_-3px_rgba(168,85,247,0.4)]"
                           : "bg-white/[0.03] border-white/[0.08] text-white/60 hover:border-white/[0.2] hover:text-white"
-                      }`}
+                        }`}
                     >
                       {yr}
                     </button>
@@ -500,11 +499,10 @@ function RegisterPageContent() {
                         update("course", c);
                         if (c !== "B.Tech") update("branch", "");
                       }}
-                      className={`px-3.5 py-2 rounded-xl border text-xs font-mono font-medium transition-all ${
-                        isSelected
+                      className={`px-3.5 py-2 rounded-xl border text-xs font-mono font-medium transition-all ${isSelected
                           ? "bg-cyan-500/20 border-cyan-500/60 text-cyan-200 shadow-[0_0_15px_-3px_rgba(6,182,212,0.3)]"
                           : "bg-white/[0.03] border-white/[0.08] text-white/60 hover:border-white/[0.2] hover:text-white"
-                      }`}
+                        }`}
                     >
                       {c}
                     </button>
@@ -557,11 +555,10 @@ function RegisterPageContent() {
                           key={br}
                           type="button"
                           onClick={() => update("branch", br)}
-                          className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all ${
-                            isSelected
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all ${isSelected
                               ? "bg-purple-500/20 border-purple-500/60 text-purple-200"
                               : "bg-white/[0.03] border-white/[0.08] text-white/50 hover:border-white/[0.2] hover:text-white/80"
-                          }`}
+                            }`}
                         >
                           {br}
                         </button>
@@ -616,13 +613,12 @@ function RegisterPageContent() {
                     type="button"
                     onClick={() => toggleWing(wing.label)}
                     disabled={isMaxed}
-                    className={`relative text-left p-3.5 rounded-2xl border transition-all duration-200 group flex items-start justify-between gap-3 ${
-                      isSelected
+                    className={`relative text-left p-3.5 rounded-2xl border transition-all duration-200 group flex items-start justify-between gap-3 ${isSelected
                         ? wing.activeClass
                         : isMaxed
-                        ? "bg-white/[0.01] border-white/[0.04] text-white/20 cursor-not-allowed opacity-40"
-                        : "bg-white/[0.03] border-white/[0.08] text-white/70 hover:border-white/[0.2] hover:bg-white/[0.05] hover:text-white"
-                    }`}
+                          ? "bg-white/[0.01] border-white/[0.04] text-white/20 cursor-not-allowed opacity-40"
+                          : "bg-white/[0.03] border-white/[0.08] text-white/70 hover:border-white/[0.2] hover:bg-white/[0.05] hover:text-white"
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-9 h-9 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-lg">
@@ -643,11 +639,10 @@ function RegisterPageContent() {
                       </div>
                     </div>
 
-                    <div className={`w-5 h-5 shrink-0 rounded-full border flex items-center justify-center mt-0.5 transition-colors ${
-                      isSelected
+                    <div className={`w-5 h-5 shrink-0 rounded-full border flex items-center justify-center mt-0.5 transition-colors ${isSelected
                         ? "border-primary-light bg-primary text-white"
                         : "border-white/20 bg-white/[0.02]"
-                    }`}>
+                      }`}>
                       {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
                     </div>
                   </button>
