@@ -47,7 +47,7 @@ const COMMUNITY_CHANNELS = [
     hoverTitle: "group-hover:bg-gradient-to-r group-hover:from-[#f09433] group-hover:via-[#dc2743] group-hover:to-[#bc1888] group-hover:bg-clip-text group-hover:text-transparent",
     hoverCta: "group-hover:bg-gradient-to-r group-hover:from-[#f09433] group-hover:via-[#dc2743] group-hover:to-[#bc1888] group-hover:bg-clip-text group-hover:text-transparent",
     arrowColor: "group-hover:text-[#E4405F]",
-    iconColor: "[&:hover_svg_*]:stroke-[url(#insta-gradient)] group-hover:text-[#E4405F]",
+    iconColor: "group-hover:text-[#E4405F]",
     iconBoxBg: "bg-gradient-to-tr from-[#f09433]/15 via-[#dc2743]/15 to-[#bc1888]/15 text-[#E4405F]",
   },
   {

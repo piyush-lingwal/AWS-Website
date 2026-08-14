@@ -37,7 +37,7 @@ const FOOTER_LINKS = [
       { label: "Meetup", href: "https://www.meetup.com/tulas-university-dehradun/", hoverClass: "group-hover:text-[#F64060]", arrowColor: "group-hover:text-[#F64060]" },
       { label: "WhatsApp Channel", href: "https://whatsapp.com/channel/0029VbDJ4jD6WaKnCQZRWF2Z", hoverClass: "group-hover:text-[#25D366]", arrowColor: "group-hover:text-[#25D366]" },
       { label: "LinkedIn", href: "#", hoverClass: "group-hover:text-[#0A66C2]", arrowColor: "group-hover:text-[#0A66C2]" },
-      { label: "Instagram", href: "https://www.instagram.com/aws.sbgtulas", hoverClass: "group-hover:bg-gradient-to-r group-hover:from-[#f09433] group-hover:via-[#dc2743] group-hover:to-[#bc1888] group-hover:bg-clip-text group-hover:text-transparent", arrowColor: "group-hover:text-[#E4405F]" },
+      { label: "Instagram", href: "https://www.instagram.com/aws.sbgtulas", hoverClass: "group-hover:text-[#E4405F]", arrowColor: "group-hover:text-[#E4405F]" },
       { label: "Email Us", href: "mailto:awssbg@tulas.edu.in", hoverClass: "group-hover:text-[#FF9900]", arrowColor: "group-hover:text-[#FF9900]" },
     ],
   },
@@ -94,7 +94,7 @@ const SOCIALS = [
     icon: Instagram,
     href: "https://www.instagram.com/aws.sbgtulas",
     label: "Instagram",
-    hoverClass: "hover:bg-gradient-to-tr hover:from-[#f09433]/20 hover:via-[#dc2743]/20 hover:to-[#bc1888]/20 hover:border-[#E4405F]/50 hover:shadow-[0_0_18px_rgba(228,64,95,0.4)] [&:hover_svg_*]:stroke-[url(#insta-gradient)]",
+    hoverClass: "hover:text-[#E4405F] hover:bg-[#E4405F]/15 hover:border-[#E4405F]/40 hover:shadow-[0_0_15px_rgba(228,64,95,0.35)]",
   },
   {
     icon: Mail,
