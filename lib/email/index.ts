@@ -33,7 +33,7 @@ function createGmailTransporter(user: string, pass: string, port = 465, secure =
 
 /**
  * Sends an official application confirmation email to the applicant.
- * Multi-layer fallback strategy optimized for Vercel Serverless:
+ * Multi-layer fallback strategy optimized for serverless environments:
  * 1. Gmail SMTP (port 465 -> fallback port 587)
  * 2. Resend REST API (over HTTPS port 443 - zero serverless blocking)
  * 3. Custom SMTP
@@ -69,7 +69,7 @@ export async function sendApplicationConfirmationEmail(
       console.log(`[Email/Gmail-465] Confirmation email sent successfully to ${to} (ID: ${info.messageId})`);
       return { success: true, provider: "gmail", messageId: info.messageId };
     } catch (err465: any) {
-      console.warn("[Email/Gmail-465] Port 465 attempt failed on Vercel, trying port 587 (STARTTLS):", err465.message);
+      console.warn("[Email/Gmail-465] Port 465 attempt failed, trying port 587 (STARTTLS):", err465.message);
 
       // Attempt 2: Port 587 (STARTTLS)
       try {
@@ -141,8 +141,8 @@ export async function sendApplicationConfirmationEmail(
   // ── 4. Missing Credentials Notice ─────────────────────────────────────
   console.warn("==================================================================");
   console.warn("[Email/Warning] No email credentials found in environment variables!");
-  console.warn("On Vercel: Add GMAIL_USER & GMAIL_APP_PASSWORD (or RESEND_API_KEY) in");
-  console.warn("Vercel Dashboard -> Project -> Settings -> Environment Variables.");
+  console.warn("Add GMAIL_USER & GMAIL_APP_PASSWORD (or RESEND_API_KEY) in your");
+  console.warn("deployment platform's Environment Variables settings.");
   console.warn(`Attempted recipient: ${to} (${fullName})`);
   console.warn("==================================================================");
 

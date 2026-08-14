@@ -20,7 +20,7 @@ const poppins = Poppins({
   display: "swap",
 });
 
-const siteUrl = "https://aws-sbg-tulas.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://awstulas.org";
 const siteName =
   "AWS Student Builders Group at Tula's University | Official AWS Cloud Community";
 const siteDescription =
@@ -124,14 +124,12 @@ export const metadata: Metadata = {
 
   manifest: "/manifest.webmanifest",
 
-  verification: {
-    google: "GOOGLE_SEARCH_CONSOLE_VERIFICATION_CODE",
-    // yandex: "YANDEX_VERIFICATION_CODE",
-    // other: { "msvalidate.01": "BING_VERIFICATION_CODE" },
-  },
+  // verification: {
+  //   google: "ADD_YOUR_GOOGLE_SEARCH_CONSOLE_CODE_HERE",
+  // },
 
   other: {
-    "apple-mobile-web-app-capable": "yes",
+    "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
     "apple-mobile-web-app-title": "AWS SBG",
   },
@@ -151,6 +149,7 @@ export default function RootLayout({
         <WebSiteJsonLd />
       </head>
       <body
+        suppressHydrationWarning
         className={`${GeistPixelSquare.variable} ${GeistPixelGrid.variable} ${GeistPixelCircle.variable} ${GeistPixelTriangle.variable} ${GeistPixelLine.variable}`}
       >
         <Toaster richColors theme="dark" position="top-right" />
