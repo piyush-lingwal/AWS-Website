@@ -211,17 +211,6 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
                   {formData?.phoneNumber || "Registered Mobile"}
                 </p>
               </div>
-
-              <div>
-                <p className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-muted flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                  <span>Verification</span>
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5 text-[11px] font-mono text-emerald-400/90">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>LOGGED TO AWS SBG POOL</span>
-                </div>
-              </div>
             </div>
           </div>
 
