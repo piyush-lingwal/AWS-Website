@@ -19,9 +19,9 @@ const ROW_2 = [...ROW_1].reverse();
 
 /* ─── Stats ──────────────────────────────────────────────────────────────── */
 const STATS = [
-  { value: 50, suffix: "+", label: "Members" },
-  { value: 20, suffix: "+", label: "Events held" },
+  { value: 50, suffix: "+", label: "Builders" },
   { value: 6,  suffix: "",  label: "Active wings" },
+  { value: 10, suffix: "+", label: "AWS services" },
 ];
 
 /* ─── Animated counter ───────────────────────────────────────────────────── */
