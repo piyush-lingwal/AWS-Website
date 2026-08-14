@@ -1,12 +1,35 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Sparkles } from "lucide-react";
 
+gsap.registerPlugin(useGSAP, ScrollTrigger);
+
 export function TeamDepartments() {
+  const containerRef = React.useRef<HTMLElement>(null);
+
+  useGSAP(() => {
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
+    gsap.from(".team-dept-el", {
+      opacity: 0,
+      y: 20,
+      stagger: 0.12,
+      duration: 0.65,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: ".team-dept-header",
+        start: isMobile ? "top 95%" : "top 85%",
+        toggleActions: "play reverse play reverse",
+      },
+    });
+  }, { scope: containerRef });
+
   return (
-    <section className="relative w-full overflow-hidden">
+    <section ref={containerRef} id="team" className="relative w-full overflow-hidden">
 
       {/* Full-width cinematic banner */}
       <div className="relative w-full bg-bg border-y border-border/60 py-20 sm:py-28 px-4 sm:px-6">
@@ -21,44 +44,26 @@ export function TeamDepartments() {
         {/* Top glow line */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-        <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center text-center gap-8">
+        <div className="team-dept-header relative z-10 max-w-3xl mx-auto flex flex-col items-center text-center gap-8">
 
           {/* Eyebrow */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] font-mono uppercase tracking-[0.2em] text-muted"
-          >
+          <div className="team-dept-el inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] font-mono uppercase tracking-[0.2em] text-muted">
             <Sparkles className="w-3 h-3 text-primary-light" />
             Our Team · Cohort 2026
-          </motion.div>
+          </div>
 
           {/* Main headline */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="space-y-2"
-          >
+          <div className="team-dept-el space-y-2">
             <h2 className="font-display text-[42px] sm:text-[56px] md:text-[68px] font-bold leading-none tracking-tight text-white">
               Team
             </h2>
             <h2 className="font-display text-[42px] sm:text-[56px] md:text-[68px] font-bold leading-none tracking-tight bg-gradient-to-r from-primary-light via-accent to-purple-300 bg-clip-text text-transparent pb-3">
               Revealing Soon
             </h2>
-          </motion.div>
+          </div>
 
           {/* CTAs */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.45 }}
-            className="flex flex-col sm:flex-row items-center gap-3"
-          >
+          <div className="team-dept-el flex flex-col sm:flex-row items-center gap-3">
             <a
               href="/register"
               className="group relative px-8 py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-sm overflow-hidden shadow-[0_0_28px_-5px_rgba(124,58,237,0.6)] hover:shadow-[0_0_40px_-5px_rgba(124,58,237,0.85)] transition-all duration-300 hover:scale-[1.03]"
@@ -72,7 +77,7 @@ export function TeamDepartments() {
             >
               Explore Wings
             </a>
-          </motion.div>
+          </div>
 
         </div>
       </div>

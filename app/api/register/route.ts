@@ -1,61 +1,65 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { isRecruitmentOpen } from "@/lib/recruitment";
+import { sendApplicationConfirmationEmail } from "@/lib/email";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^\+91 \d{10}$/;
 
-// Must match INTERESTS array in app/register/page.tsx exactly
-const VALID_INTEREST_AREAS = [
-  "AWS & Cloud",
-  "Web / App Development",
-  "AI & Machine Learning",
-  "UI/UX Design",
-  "Graphic Design",
-  "Photography",
-  "Video Editing",
-  "Content & Copywriting",
-  "Social Media",
-  "Event Planning",
-  "Public Relations",
-  "Sponsorships & Outreach",
-  "DevOps & Linux",
-  "Cyber Security",
-  "Teaching & Mentoring",
-];
-
 function validatePayload(body: Record<string, string>) {
   const errors: Record<string, string> = {};
 
-  if (!body.fullName?.trim()) errors.fullName = "Full name is required.";
-  if (!body.universityEmail?.trim() || !EMAIL_RE.test(body.universityEmail)) {
-    errors.universityEmail = "A valid email is required.";
+  if (!body.fullName?.trim()) {
+    errors.fullName = "Full name is required.";
   }
-  if (!body.phoneNumber?.trim() || !PHONE_RE.test(body.phoneNumber)) {
-    errors.phoneNumber = "A valid phone number (+91 XXXXXXXXXX) is required.";
+
+  if (!body.universityEmail?.trim() || !EMAIL_RE.test(body.universityEmail.trim())) {
+    errors.universityEmail = "A valid email address is required.";
   }
-  if (!body.rollNumber?.trim()) errors.rollNumber = "Roll number is required.";
-  if (!body.course?.trim()) errors.course = "Course is required.";
-  if (!body.year?.trim()) errors.year = "Year is required.";
-  if (!body.wing?.trim()) errors.wing = "Please select at least one wing.";
+
+  // Normalize phone number (handle raw 10-digit or +91 formatted)
+  let rawPhone = (body.phoneNumber || "").trim();
+  const digits = rawPhone.replace(/\D/g, "");
+  let normalizedPhone = "";
+  if (digits.length === 10) {
+    normalizedPhone = `+91 ${digits}`;
+  } else if (digits.length === 12 && digits.startsWith("91")) {
+    normalizedPhone = `+91 ${digits.slice(2)}`;
+  } else {
+    normalizedPhone = rawPhone;
+  }
+
+  if (!normalizedPhone || !PHONE_RE.test(normalizedPhone)) {
+    errors.phoneNumber = "A valid 10-digit phone number (+91 XXXXXXXXXX) is required.";
+  }
+
+  if (!body.rollNumber?.trim()) {
+    errors.rollNumber = "Roll number is required.";
+  }
+
+  if (!body.course?.trim()) {
+    errors.course = "Course is required.";
+  }
+
+  if (!body.year?.trim()) {
+    errors.year = "Year is required.";
+  }
+
+  if (!body.wing?.trim()) {
+    errors.wing = "Please select at least one wing.";
+  }
 
   let interestAreas: string[] = [];
   try {
-    interestAreas = JSON.parse(body.interestAreas || "[]");
+    const parsed = JSON.parse(body.interestAreas || "[]");
+    if (Array.isArray(parsed)) {
+      interestAreas = parsed.map(item => String(item).trim()).filter(Boolean);
+    }
   } catch {
-    errors.interestAreas = "Interest areas were malformed.";
-  }
-  if (!Array.isArray(interestAreas) || interestAreas.length === 0) {
-    errors.interestAreas = "Select at least one area of interest.";
-  } else if (!interestAreas.every((a) => VALID_INTEREST_AREAS.includes(a))) {
-    errors.interestAreas = "Interest areas contain an invalid value.";
+    interestAreas = [];
   }
 
-  if (!body.whyJoin?.trim() || body.whyJoin.trim().length < 20) {
-    errors.whyJoin = "Please write at least a couple of sentences.";
-  }
-
-  return { errors, interestAreas };
+  return { errors, interestAreas, normalizedPhone };
 }
 
 export async function POST(request: Request) {
@@ -77,7 +81,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const { errors, interestAreas } = validatePayload(body);
+    const { errors, interestAreas, normalizedPhone } = validatePayload(body);
 
     if (Object.keys(errors).length > 0) {
       return NextResponse.json(
@@ -90,7 +94,6 @@ export async function POST(request: Request) {
       fullName,
       universityEmail,
       personalEmail,
-      phoneNumber,
       rollNumber,
       course,
       branch,
@@ -115,17 +118,17 @@ export async function POST(request: Request) {
       .insert({
         full_name: fullName.trim(),
         university_email: universityEmail.trim().toLowerCase(),
-        personal_email: (personalEmail ?? universityEmail).trim().toLowerCase(),
-        phone_number: phoneNumber.trim(),
+        personal_email: (personalEmail || universityEmail).trim().toLowerCase(),
+        phone_number: normalizedPhone,
         roll_number: rollNumber.trim(),
         course: course.trim(),
-        branch: course.trim() === "B.Tech" ? (branch?.trim() || null) : null,
+        branch: branch?.trim() || null,
         year: year.trim(),
         wing: wing.trim(),
         interest_areas: interestAreas,
         github_url: githubUrl?.trim() || null,
         linkedin_url: linkedinUrl?.trim() || null,
-        why_join: whyJoin.trim(),
+        why_join: whyJoin?.trim() || "Applied via AWS SBG Builder Registration Portal",
         leadership_experience: leadershipExperience?.trim() || null,
         used_aws: false,
         aws_services: [],
@@ -139,6 +142,21 @@ export async function POST(request: Request) {
         { error: `DB Error: ${insertError.message || JSON.stringify(insertError)}` },
         { status: 500 }
       );
+    }
+
+    // Trigger confirmation email
+    try {
+      await sendApplicationConfirmationEmail({
+        to: universityEmail.trim().toLowerCase(),
+        fullName: fullName.trim(),
+        year: year.trim(),
+        course: course.trim(),
+        branch: branch?.trim() || "N/A",
+        wings: interestAreas.length > 0 ? interestAreas : [wing.trim()],
+        rollNumber: rollNumber.trim(),
+      });
+    } catch (emailError) {
+      console.error("[Register] Failed to send confirmation email:", emailError);
     }
 
     return NextResponse.json(

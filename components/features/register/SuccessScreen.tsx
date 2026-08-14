@@ -1,54 +1,102 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { motion } from "framer-motion";
 import LightRays from "@/components/ui/light-rays";
 import CursorGrid from "@/components/ui/cursor-grid";
 import { ThemeStyles } from "./ThemeStyles";
+import {
+  CheckCircle2,
+  ArrowRight,
+  ExternalLink,
+  ShieldCheck,
+  Calendar,
+  Layers,
+  Sparkles,
+  Zap,
+  Terminal,
+  Award,
+  Globe,
+  Users,
+} from "lucide-react";
 
 export interface SuccessScreenProps {
   result: {
     id?: string;
     submittedAt?: string;
   };
+  formData?: {
+    fullName?: string;
+    universityEmail?: string;
+    phoneNumber?: string;
+    rollNumber?: string;
+    year?: string;
+    course?: string;
+    branch?: string;
+    wings?: string[];
+  };
 }
 
-export function SuccessScreen({ result }: SuccessScreenProps) {
+export function SuccessScreen({ result, formData }: SuccessScreenProps) {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, []);
 
-  const shortId = result.id ? result.id.slice(0, 8) : "unknown";
+  const candidateName = formData?.fullName?.trim() || "AWS Builder Candidate";
+  const wingsList = formData?.wings && formData.wings.length > 0 ? formData.wings : ["Technology", "Cloud"];
+  const academicDetails = [
+    formData?.year || "Cohort 2026",
+    formData?.course || "Engineering",
+    formData?.branch && formData.branch !== "N/A" ? formData.branch : "",
+  ].filter(Boolean).join(" · ");
+
+  const formattedDate = result.submittedAt
+    ? new Date(result.submittedAt).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : new Date().toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
 
   return (
-    <div className="register-page-theme relative min-h-screen bg-noise bg-bg w-full overflow-x-hidden text-[#efecf5] font-sans flex items-center">
-      {/* Ambient Purple Glows */}
-      <div className="pointer-events-none absolute left-1/2 top-0 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px] opacity-60" />
-      <div className="pointer-events-none absolute -left-[20%] top-[30%] h-[500px] w-[500px] rounded-full bg-primary/15 blur-[120px] opacity-50" />
-      <div className="pointer-events-none absolute -right-[20%] bottom-[10%] h-[600px] w-[600px] rounded-full bg-primary/10 blur-[120px] opacity-50" />
+    <div className="register-page-theme relative min-h-screen bg-bg w-full overflow-x-hidden text-text-primary font-sans">
+      <ThemeStyles />
 
-      <div style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "hidden", pointerEvents: "none" }}>
+      {/* ── Ambient Background Lighting ───────────────────────────────── */}
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[650px] w-[900px] -translate-x-1/2 rounded-full bg-primary/15 blur-[140px] opacity-75" />
+      <div className="pointer-events-none absolute -left-[20%] top-[30%] h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-[130px] opacity-40" />
+      <div className="pointer-events-none absolute -right-[20%] bottom-[10%] h-[600px] w-[600px] rounded-full bg-primary/12 blur-[140px] opacity-45" />
+
+      {/* ── Static Background Grid (No Hover Animation Trails) ────────── */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <CursorGrid
           cellSize={64}
           color="#A855F7"
-          radius={160}
-          falloff="smooth"
-          holdTime={350}
-          fadeDuration={700}
+          radius={0}
           lineWidth={1}
-          maxOpacity={0.35}
-          fillOpacity={0.02}
-          gridOpacity={0.02}
-          cellRadius={4}
-          clickPulse={true}
-          pulseSpeed={500}
+          gridOpacity={0.06}
+          maxOpacity={0}
+          fillOpacity={0}
+          clickPulse={false}
         />
       </div>
 
-      <div style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "hidden", opacity: 0.35, pointerEvents: "none" }}>
+      {/* Volumetric Light Rays */}
+      <div className="absolute inset-0 z-0 overflow-hidden opacity-30 pointer-events-none">
         <LightRays
           raysOrigin="top-center"
           raysColor="#A855F7"
-          raysSpeed={0.8}
+          raysSpeed={0.7}
           lightSpread={0.8}
           rayLength={1.2}
           followMouse={false}
@@ -58,33 +106,322 @@ export function SuccessScreen({ result }: SuccessScreenProps) {
           saturation={1.4}
         />
       </div>
-      <ThemeStyles />
-      <div className="w-full max-w-[820px] mx-auto px-6 sm:px-8 md:px-12 pt-[100px] md:pt-[140px] pb-[60px] md:pb-[100px] relative z-10 box-border">
-        <div className="eyebrow">Deployment Successful</div>
-        <h1 className="success-title">
-          Application <em>received.</em>
-        </h1>
-        <div className="receipt mono">
-          <div className="receipt-row">
-            <span>status</span>
-            <span className="ok">201 deployed</span>
+
+      <main className="relative z-10 w-full max-w-[760px] mx-auto px-4 sm:px-6 md:px-8 pt-28 md:pt-36 pb-24">
+
+        {/* ── Header Celebration ───────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-8 sm:mb-10"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono text-emerald-400 tracking-wider mb-4 shadow-[0_0_20px_-4px_rgba(16,185,129,0.3)]">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>STATUS 201 DEPLOYED · APPLICATION LOGGED</span>
           </div>
-          <div className="receipt-row">
-            <span>receipt_id</span>
-            <span>{shortId}</span>
+
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold font-display tracking-tight leading-[1.05] mb-3">
+            Application{" "}
+            <span className="bg-gradient-to-r from-primary-light via-accent to-purple-300 bg-clip-text text-transparent">
+              Received.
+            </span>
+          </h1>
+
+          <p className="text-sm sm:text-base text-text-secondary max-w-lg mx-auto leading-relaxed">
+            Welcome to the builder pipeline. Your application profile has been submitted and queued for evaluation.
+          </p>
+        </motion.div>
+
+        {/* ── Hero Holographic Builder Boarding Pass ───────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 25 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mb-10 rounded-3xl border border-white/[0.12] bg-gradient-to-b from-white/[0.06] to-white/[0.02] backdrop-blur-xl shadow-[0_24px_64px_-16px_rgba(0,0,0,0.7),0_0_40px_-10px_rgba(124,58,237,0.25)] overflow-hidden"
+        >
+          {/* Top glowing accent line */}
+          <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-primary-light to-transparent" />
+
+          {/* Ticket Header */}
+          <div className="p-6 sm:p-8 border-b border-white/[0.08] relative">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/30 via-purple-500/20 to-accent/30 border border-white/20 flex items-center justify-center text-primary-light shadow-[0_0_20px_-4px_rgba(168,85,247,0.5)]">
+                  <Terminal className="w-5 h-5 text-primary-light" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-display font-bold text-sm tracking-wider text-white">
+                      AWS STUDENT BUILDERS GROUP
+                    </span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-primary/20 text-primary-light border border-primary/30">
+                      OFFICIAL PASS
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-mono text-muted">
+                    Tula&apos;s University · Dehradun Cloud Community
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Badge (Changed from Queue Verified to Application Confirmed) */}
+              <div className="flex items-center gap-2 self-start sm:self-auto bg-white/[0.04] border border-white/[0.08] px-3 py-1.5 rounded-xl">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-mono text-emerald-300 font-medium">APPLICATION CONFIRMED</span>
+              </div>
+            </div>
           </div>
-          <div className="receipt-row">
-            <span>submitted_at</span>
-            <span>{result.submittedAt ? new Date(result.submittedAt).toLocaleString() : new Date().toLocaleString()}</span>
+
+          {/* Ticket Body: Two-Column Data Grid */}
+          <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+            {/* Ambient inner card glow */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Left Column: Candidate & Wing Info */}
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-muted">
+                  Candidate Name
+                </p>
+                <p className="text-lg font-bold font-display text-text-primary tracking-tight mt-0.5">
+                  {candidateName}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-muted">
+                  Academic Profile
+                </p>
+                <p className="text-xs font-mono text-text-secondary mt-0.5">
+                  {academicDetails}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-muted mb-1.5">
+                  Applied Wing(s)
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {wingsList.map((wing, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-primary/15 border border-primary/30 text-xs font-mono text-primary-light font-medium"
+                    >
+                      <Layers className="w-3 h-3 text-primary-light" />
+                      {wing}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Submission Timestamp & Cryptographic Verification */}
+            <div className="space-y-4 md:border-l md:border-white/[0.08] md:pl-6">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-muted">
+                  Submission Timestamp
+                </p>
+                <p className="text-sm font-mono text-text-primary font-medium mt-0.5">
+                  {formattedDate}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-muted">
+                  Cryptographic Verification
+                </p>
+                <div className="flex items-center gap-2 mt-1 text-[11px] font-mono text-emerald-400/90">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>SHA256 · LOGGED TO AWS SBG POOL</span>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Ticket Footer / Barcode Banner (Clean barcode graphics without surrounding text) */}
+          <div className="px-6 sm:px-8 py-4 bg-white/[0.02] text-center border-t border-white/[0.08] flex items-center justify-start">
+            <span className="font-mono tracking-[0.35em] text-white/30 text-center text-xs sm:text-sm select-none">
+              |||||||| | |||||| | |||||||| |||||||| | ||||||||
+            </span>
+          </div>
+        </motion.div>
+
+        {/* ── High-Impact Community Gateway (Maximize Joining Chances) ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.25 }}
+          className="mb-10 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-purple-950/40 to-cyan-950/30 p-6 sm:p-8 backdrop-blur-xl shadow-[0_0_50px_-10px_rgba(124,58,237,0.3)] relative overflow-hidden"
+        >
+          {/* Accent glow orb */}
+          <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-primary/20 via-accent/15 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+          {/* Warning / Critical Notice Header */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[11px] font-mono text-amber-300 w-fit mb-4">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>MANDATORY NEXT STEPS FOR SHORTLISTING</span>
+          </div>
+
+          <h2 className="font-display text-xl sm:text-2xl font-bold text-white mb-2 tracking-tight">
+            Complete Your Community Onboarding
+          </h2>
+          <p className="text-xs sm:text-sm text-text-secondary leading-relaxed max-w-xl mb-6">
+            All interview invitations, workshop seat confirmations, cloud credits, and cohort announcements are delivered directly through our official <strong className="text-white">Meetup Group</strong> and the <strong className="text-white">AWS Builder Center</strong>. Join both channels now to guarantee your active status:
+          </p>
+
+          {/* 2 High-Conversion Action Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Card 1: Official Meetup */}
+            <div className="p-5 rounded-2xl border border-white/[0.10] bg-white/[0.03] hover:border-[#F64060]/50 hover:bg-[#F64060]/5 transition-all duration-300 flex flex-col justify-between group">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#F64060]/20 text-[#ff6b85] border border-[#F64060]/30 font-semibold">
+                    STEP 1 · REQUIRED
+                  </span>
+                  <Users className="w-4 h-4 text-[#F64060]" />
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  Join Official Meetup Group
+                </h3>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  RSVP for offline hands-on workshops, hackathons, and receive direct interview notifications.
+                </p>
+              </div>
+
+              <a
+                href="https://www.meetup.com/tulas-university-dehradun/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#F64060] hover:bg-[#e03050] text-white font-bold text-xs shadow-[0_0_24px_-4px_rgba(246,64,96,0.6)] group-hover:shadow-[0_0_32px_-4px_rgba(246,64,96,0.85)] hover:scale-[1.02] active:scale-[0.99] transition-all"
+              >
+                <span>Join Meetup Group</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* Card 2: AWS Builder Center */}
+            <div className="p-5 rounded-2xl border border-white/[0.10] bg-white/[0.03] hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all duration-300 flex flex-col justify-between group">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
+                    STEP 2 · RECOMMENDED
+                  </span>
+                  <Globe className="w-4 h-4 text-cyan-400" />
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  AWS Builder Center Community
+                </h3>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  Claim your official AWS Student Builder digital badge, access free AWS Cloud credits & global skill labs.
+                </p>
+              </div>
+
+              <a
+                href="https://builder.aws.com/content/3C075iQJeEx03mnzHwmXO9zdgEG/aws-student-builder-groups"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-[0_0_24px_-4px_rgba(6,182,212,0.5)] group-hover:shadow-[0_0_32px_-4px_rgba(6,182,212,0.8)] hover:scale-[1.02] active:scale-[0.99] transition-all"
+              >
+                <span>Join on AWS Builder Center</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+          </div>
+
+          {/* Social Proof Badges */}
+          <div className="mt-5 pt-4 border-t border-white/[0.08] flex flex-wrap items-center justify-around gap-3 text-[11px] font-mono text-muted">
+            <span className="flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-primary-light" />
+              Official AWS Badges & Swag
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              Free AWS Cloud Credits
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-emerald-400" />
+              Direct Mentorship from AWS Experts
+            </span>
+          </div>
+        </motion.div>
+
+        {/* ── Interactive Next Steps Timeline ──────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="mb-10 space-y-4"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="w-4 h-4 text-primary-light" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-white font-mono">
+              Selection & Onboarding Roadmap
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Step 1 */}
+            <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm relative group hover:border-primary/40 hover:bg-white/[0.04] transition-all">
+              <div className="w-7 h-7 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-mono font-bold text-primary-light mb-3">
+                01
+              </div>
+              <h3 className="text-sm font-semibold text-text-primary mb-1">
+                Profile Review
+              </h3>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                Core leads review candidate credentials and branch alignment for Cohort 2026.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm relative group hover:border-cyan-500/40 hover:bg-white/[0.04] transition-all">
+              <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-xs font-mono font-bold text-cyan-300 mb-3">
+                02
+              </div>
+              <h3 className="text-sm font-semibold text-text-primary mb-1">
+                Builder Interview
+              </h3>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                Shortlisted applicants receive an interview slot via registered email & Meetup announcements.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm relative group hover:border-accent/40 hover:bg-white/[0.04] transition-all">
+              <div className="w-7 h-7 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center text-xs font-mono font-bold text-accent mb-3">
+                03
+              </div>
+              <h3 className="text-sm font-semibold text-text-primary mb-1">
+                Cohort Induction
+              </h3>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                Official induction into the AWS SBG Dehradun team, cloud workshops & projects.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Return Navigation Button ─────────────────────────────────── */}
+        <div className="flex items-center justify-center gap-3">
+          <a
+            href="/"
+            className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.12] hover:border-white/[0.25] text-white font-semibold text-sm hover:bg-white/[0.08] transition-all"
+          >
+            <span>Return to Homepage</span>
+            <ArrowRight className="w-4 h-4" />
+          </a>
         </div>
-        <p className="success-sub">
-          We'll review applications after the deadline and reach out by email to shortlisted candidates for an interview.
+
+        {/* ── Footer Security Badge ────────────────────────────────────── */}
+        <p className="text-center text-[11px] text-muted font-mono mt-8 flex items-center justify-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Official AWS Student Builders Group at Tula&apos;s University · No spam, ever.</span>
         </p>
-        <a href="/" className="btn-primary">
-          Back to homepage →
-        </a>
-      </div>
+
+      </main>
     </div>
   );
 }

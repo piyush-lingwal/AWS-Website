@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useInView, useMotionValue, useSpring } from "framer-motion";
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* ─── Marquee logos ──────────────────────────────────────────────────────── */
 const ROW_1 = [
@@ -22,13 +27,17 @@ const STATS = [
 /* ─── Animated counter ───────────────────────────────────────────────────── */
 function Counter({ to, suffix }: { to: number; suffix: string }) {
   const ref = React.useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { margin: "-40px" });
   const motionVal = useMotionValue(0);
   const spring = useSpring(motionVal, { stiffness: 60, damping: 18 });
   const [display, setDisplay] = React.useState(0);
 
   React.useEffect(() => {
-    if (inView) motionVal.set(to);
+    if (inView) {
+      motionVal.set(to);
+    } else {
+      motionVal.set(0);
+    }
   }, [inView, to, motionVal]);
 
   React.useEffect(() =>
@@ -93,8 +102,65 @@ function MarqueeRow({ items, reverse = false }: { items: typeof ROW_1; reverse?:
 
 /* ─── Section ────────────────────────────────────────────────────────────── */
 export function TrustedBy() {
+  const containerRef = React.useRef<HTMLElement>(null);
+
+  useGSAP(() => {
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
+    gsap.from(".ecosystem-header-el", {
+      opacity: 0,
+      y: 20,
+      stagger: 0.1,
+      duration: 0.6,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: ".ecosystem-header",
+        start: isMobile ? "top 95%" : "top 85%",
+        toggleActions: "play reverse play reverse",
+      },
+    });
+
+    gsap.from(".ecosystem-marquee", {
+      opacity: 0,
+      y: 25,
+      scale: 0.98,
+      duration: 0.65,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: ".ecosystem-marquee",
+        start: isMobile ? "top 95%" : "top 85%",
+        toggleActions: "play reverse play reverse",
+      },
+    });
+
+    gsap.from(".ecosystem-spotlight-visual", {
+      opacity: 0,
+      scale: 0.85,
+      duration: 0.7,
+      ease: "back.out(1.5)",
+      scrollTrigger: {
+        trigger: ".ecosystem-spotlight",
+        start: isMobile ? "top 95%" : "top 85%",
+        toggleActions: "play reverse play reverse",
+      },
+    });
+
+    gsap.from(".ecosystem-spotlight-el", {
+      opacity: 0,
+      y: 20,
+      stagger: 0.1,
+      duration: 0.6,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: ".ecosystem-spotlight",
+        start: isMobile ? "top 95%" : "top 85%",
+        toggleActions: "play reverse play reverse",
+      },
+    });
+  }, { scope: containerRef });
+
   return (
-    <section id="ecosystem" className="relative overflow-hidden bg-bg py-14 sm:py-20">
+    <section ref={containerRef} id="ecosystem" className="relative overflow-hidden bg-bg py-14 sm:py-20 border-t border-border">
 
       {/* Hairlines */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
@@ -104,8 +170,8 @@ export function TrustedBy() {
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.05] blur-[130px]" />
 
       {/* ── Heading ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col items-center gap-3 mb-10 px-4">
-        <div className="flex items-center gap-4 w-full max-w-[280px]">
+      <div className="ecosystem-header flex flex-col items-center gap-3 mb-10 px-4">
+        <div className="ecosystem-header-el flex items-center gap-4 w-full max-w-[280px]">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent to-white/15" />
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-primary-light/60">
             <span className="h-1 w-1 rounded-full bg-primary-light/80 animate-pulse" />
@@ -113,7 +179,7 @@ export function TrustedBy() {
           </span>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent to-white/15" />
         </div>
-        <h2 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-center leading-snug">
+        <h2 className="ecosystem-header-el font-display text-xl sm:text-2xl font-semibold tracking-tight text-center leading-snug">
           <span className="text-white/50">Powered by platforms</span>{" "}
           <span className="bg-gradient-to-r from-primary-light via-accent to-purple-300 bg-clip-text text-transparent">
             built for builders
@@ -122,17 +188,17 @@ export function TrustedBy() {
       </div>
 
       {/* ── Dual marquee ────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-3 mb-16 sm:mb-24">
+      <div className="ecosystem-marquee flex flex-col gap-3 mb-16 sm:mb-24">
         <MarqueeRow items={ROW_1} />
         <MarqueeRow items={ROW_2} reverse />
       </div>
 
       {/* ── Meetup Spotlight ────────────────────────────────────────────── */}
-      <div className="relative mx-auto max-w-content px-4 sm:px-6 lg:px-8">
+      <div className="ecosystem-spotlight relative mx-auto max-w-content px-4 sm:px-6 lg:px-8">
         <div className="relative grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-12 lg:gap-20 items-center">
 
           {/* Left — Visual centerpiece */}
-          <div className="flex items-center justify-center lg:justify-end">
+          <div className="ecosystem-spotlight-visual flex items-center justify-center lg:justify-end">
             <div className="relative w-56 h-56 sm:w-72 sm:h-72 flex items-center justify-center">
 
               {/* Outer slow ring */}
@@ -165,19 +231,13 @@ export function TrustedBy() {
               />
 
               {/* Logo — no box, just the mark */}
-              <motion.div
-                initial={{ scale: 0.85, opacity: 0 }}
-                whileInView={{ scale: 1, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                className="relative z-10"
-              >
+              <div className="relative z-10">
                 <img
                   src="/logos/logo-meetup.svg"
                   alt="Meetup"
                   style={{ height: "44px", width: "auto", objectFit: "contain" }}
                 />
-              </motion.div>
+              </div>
 
             </div>
           </div>
@@ -185,50 +245,31 @@ export function TrustedBy() {
           {/* Right — Copy + stats + CTA */}
           <div className="flex flex-col gap-6">
 
-            {/* Headline staggered reveal */}
-            <motion.div
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.3 }}
-              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
-            >
+            {/* Headline */}
+            <div>
               {["Every event.", "Every announcement.", "One place."].map((line, i) => (
-                <motion.p
+                <p
                   key={i}
-                  variants={{
-                    hidden: { opacity: 0, y: 16 },
-                    show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } },
-                  }}
                   className={
-                    i === 2
-                      ? "font-display text-3xl sm:text-4xl font-bold leading-tight tracking-tight text-[#F64060]"
-                      : "font-display text-3xl sm:text-4xl font-bold leading-tight tracking-tight text-white"
+                    `ecosystem-spotlight-el ${
+                      i === 2
+                        ? "font-display text-3xl sm:text-4xl font-bold leading-tight tracking-tight text-[#F64060]"
+                        : "font-display text-3xl sm:text-4xl font-bold leading-tight tracking-tight text-white"
+                    }`
                   }
                 >
                   {line}
-                </motion.p>
+                </p>
               ))}
-            </motion.div>
+            </div>
 
             {/* Description */}
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.35 }}
-              className="text-[14px] sm:text-[15px] leading-relaxed text-white/45 max-w-sm"
-            >
+            <p className="ecosystem-spotlight-el text-[14px] sm:text-[15px] leading-relaxed text-white/45 max-w-sm">
               Our official Meetup group is the single source of truth — workshops, hackathons, speaker sessions, and community updates all flow through here. RSVP and get reminders.
-            </motion.p>
+            </p>
 
             {/* Stats row */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.45 }}
-              className="flex gap-8"
-            >
+            <div className="ecosystem-spotlight-el flex gap-8">
               {STATS.map((s) => (
                 <div key={s.label} className="flex flex-col gap-0.5">
                   <span className="font-display text-2xl sm:text-3xl font-bold text-white">
@@ -237,19 +278,13 @@ export function TrustedBy() {
                   <span className="text-[11px] text-muted uppercase tracking-wider">{s.label}</span>
                 </div>
               ))}
-            </motion.div>
+            </div>
 
             {/* Divider */}
             <div className="h-px w-full bg-gradient-to-r from-[#F64060]/20 via-white/5 to-transparent" />
 
             {/* CTA row */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: 0.55 }}
-              className="flex flex-wrap items-center gap-4"
-            >
+            <div className="ecosystem-spotlight-el flex flex-wrap items-center gap-4">
               <a
                 href="https://www.meetup.com/tulas-university-dehradun/"
                 target="_blank"
@@ -276,7 +311,7 @@ export function TrustedBy() {
                   </span>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
           </div>
         </div>
