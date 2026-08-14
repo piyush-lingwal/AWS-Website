@@ -20,6 +20,10 @@ import {
   CheckCircle2,
   Layers,
   ShieldCheck,
+  FileText,
+  X,
+  UploadCloud,
+  Sparkles,
 } from "lucide-react";
 
 /* ─── Config ─────────────────────────────────────────────── */
@@ -125,10 +129,29 @@ function RegisterPageContent() {
     ...INIT,
     wings: matchedWing ? [matchedWing.label] : [],
   });
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [result, setResult] = useState<any>(null);
+
+  const handleFileSelect = (file: File | undefined | null) => {
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setErrors(e => ({ ...e, resume: "Only PDF files are accepted (.pdf)" }));
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setErrors(e => ({ ...e, resume: "PDF file size must be under 10MB" }));
+      return;
+    }
+    setResumeFile(file);
+    setErrors(e => {
+      const n = { ...e };
+      delete n.resume;
+      return n;
+    });
+  };
 
   const update = (key: keyof Form, value: any) => {
     setForm(f => ({ ...f, [key]: value }));
@@ -189,6 +212,10 @@ function RegisterPageContent() {
       fd.append("universityEmail", form.universityEmail.trim());
       fd.append("phoneNumber", form.phoneNumber.trim());
       fd.append("rollNumber", form.rollNumber.trim());
+      if (resumeFile) {
+        fd.append("resume", resumeFile);
+        fd.append("resumeName", resumeFile.name);
+      }
       fd.append("course", finalCourse);
       fd.append("branch", form.course === "B.Tech" ? (form.branch || "N/A") : (form.branch || "N/A"));
       fd.append("year", form.year);
@@ -219,7 +246,7 @@ function RegisterPageContent() {
   }
 
   if (mounted && !isOpen) return <ClosedRegistrations />;
-  if (result) return <SuccessScreen result={result} formData={form} />;
+  if (result) return <SuccessScreen result={result} formData={{ ...form, resumeName: resumeFile?.name }} />;
 
   return (
     <div className="register-page-theme relative min-h-screen bg-bg w-full overflow-x-hidden text-text-primary font-sans">
@@ -642,6 +669,142 @@ function RegisterPageContent() {
                   </button>
                 );
               })}
+            </div>
+          </motion.div>
+
+          {/* ── Section 4: Resume Upload (Fourth & Final) ──────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
+            className="rounded-3xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-md p-5 sm:p-7 relative overflow-hidden space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center">
+                  <FileText className="w-3.5 h-3.5 text-purple-300" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-text-primary">
+                      4. Resume
+                    </h2>
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-white/[0.06] text-white/50 border border-white/[0.10]">
+                      Optional
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-mono text-muted">
+                    Attach your resume document in PDF format
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-primary/15 text-primary-light border border-primary/25 font-semibold hidden sm:inline-block">
+                PDF ONLY
+              </span>
+            </div>
+
+            {/* Dynamic Wing Selection Tip */}
+            <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/5 to-cyan-500/10 border border-primary/20 text-xs">
+              <Sparkles className="w-4 h-4 shrink-0 text-primary-light mt-0.5" />
+              <div className="space-y-0.5 min-w-0">
+                <p className="font-semibold text-text-primary text-[12px] flex items-center gap-1.5 flex-wrap">
+                  <span>Boost Your Selection Chances</span>
+                  {form.wings.length > 0 && (
+                    <span className="text-[10px] font-mono uppercase px-1.5 py-0.2 rounded bg-primary/20 text-primary-light border border-primary/30">
+                      {form.wings.join(" & ")}
+                    </span>
+                  )}
+                </p>
+                <p className="text-white/70 text-[11px] leading-relaxed">
+                  {form.wings.length === 0 && (
+                    "Attaching your resume/CV is optional, but strongly recommended to increase your shortlist chances across all wings."
+                  )}
+                  {form.wings.length === 1 && form.wings[0] === "Technology" && (
+                    "Highlighting your GitHub repos, coding projects, or tech stack gives the Tech Leads direct proof of your engineering skills!"
+                  )}
+                  {form.wings.length === 1 && form.wings[0] === "Cloud" && (
+                    "Showcasing AWS certifications, cloud architecture labs, or DevOps experience gives you a major advantage for cloud roles!"
+                  )}
+                  {form.wings.length === 1 && form.wings[0] === "Design" && (
+                    "Including links to your portfolio, Figma files, or UI/UX case studies directly elevates your creative assessment!"
+                  )}
+                  {form.wings.length === 1 && form.wings[0] === "Events & Ops" && (
+                    "Highlighting past event management, college fests, or team coordination experience strengthens your operational profile!"
+                  )}
+                  {form.wings.length === 1 && form.wings[0] === "Media" && (
+                    "Sharing past videography, photo reels, or post-production editing samples accelerates your selection!"
+                  )}
+                  {form.wings.length === 1 && form.wings[0] === "Outreach" && (
+                    "Showcasing public speaking, community building, or PR communication skills gives you a distinct edge!"
+                  )}
+                  {form.wings.length > 1 && (
+                    `Attaching your resume helps our wing leads review your hands-on experience and fast-tracks your shortlisting for both ${form.wings.join(" and ")} roles!`
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div id="field-resume" className="space-y-1.5 pt-1">
+              {!resumeFile ? (
+                <label
+                  htmlFor="resume-upload"
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const file = e.dataTransfer.files?.[0];
+                    handleFileSelect(file);
+                  }}
+                  className="relative flex flex-col items-center justify-center p-5 sm:p-6 rounded-2xl border border-dashed border-white/[0.15] bg-white/[0.02] hover:border-primary/50 hover:bg-white/[0.04] cursor-pointer transition-all duration-200 group text-center"
+                >
+                  <input
+                    id="resume-upload"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      handleFileSelect(file);
+                    }}
+                  />
+                  <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+                    <UploadCloud className="w-5 h-5 text-primary-light" />
+                  </div>
+                  <p className="text-xs sm:text-sm font-medium text-text-primary">
+                    <span className="text-primary-light underline underline-offset-2">Click to upload</span> or drag & drop your resume
+                  </p>
+                  <p className="text-[10px] font-mono text-muted mt-1">
+                    PDF document only · Maximum file size 10MB
+                  </p>
+                </label>
+              ) : (
+                <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-sm">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5 text-emerald-300" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-semibold text-text-primary truncate">
+                        {resumeFile.name}
+                      </p>
+                      <p className="text-[10px] font-mono text-emerald-300/80 mt-0.5">
+                        {(resumeFile.size / (1024 * 1024)).toFixed(2)} MB · PDF Attached ✓
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setResumeFile(null)}
+                    className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white/60 hover:text-white transition-colors ml-2 shrink-0"
+                    aria-label="Remove resume"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {errors.resume && <p className="text-[11px] font-mono text-red-400 mt-1">✕ {errors.resume}</p>}
             </div>
           </motion.div>
 

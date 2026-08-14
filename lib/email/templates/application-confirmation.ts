@@ -6,10 +6,11 @@ export interface ApplicationEmailData {
   branch: string;
   wings: string[];
   rollNumber: string;
+  resumeUrl?: string;
 }
 
 export function generateApplicationEmailHtml(data: ApplicationEmailData): string {
-  const { fullName, year, course, branch, wings, rollNumber } = data;
+  const { fullName, year, course, branch, wings, rollNumber, resumeUrl } = data;
   const wingsString = wings.join(" & ");
   const academicProfile = [year, course, branch && branch !== "N/A" ? `(${branch})` : ""].filter(Boolean).join(" · ");
 
@@ -144,6 +145,14 @@ export function generateApplicationEmailHtml(data: ApplicationEmailData): string
                 <td style="padding: 6px 0; color: #64748B;">Student Roll No</td>
                 <td style="padding: 6px 0; color: #334155; font-family: monospace; font-weight: 600;">${rollNumber}</td>
               </tr>
+              ${resumeUrl ? `
+              <tr>
+                <td style="padding: 6px 0; color: #64748B;">Resume (PDF)</td>
+                <td style="padding: 6px 0; color: #7C3AED; font-family: monospace; font-size: 12px;">
+                  <a href="${resumeUrl}" target="_blank" style="color: #7C3AED; font-weight: 600; text-decoration: underline;">View Candidate Resume (PDF) &rarr;</a>
+                </td>
+              </tr>
+              ` : ""}
               <tr>
                 <td style="padding: 6px 0; color: #64748B;">Applied Wing(s)</td>
                 <td style="padding: 6px 0; color: #7C3AED; font-weight: 700;">${wingsString}</td>
@@ -221,7 +230,7 @@ export function generateApplicationEmailHtml(data: ApplicationEmailData): string
 }
 
 export function generateApplicationEmailText(data: ApplicationEmailData): string {
-  const { fullName, year, course, branch, wings, rollNumber } = data;
+  const { fullName, year, course, branch, wings, rollNumber, resumeUrl } = data;
   const wingsString = wings.join(" & ");
   const academicProfile = [year, course, branch && branch !== "N/A" ? `(${branch})` : ""].filter(Boolean).join(" · ");
 
@@ -238,7 +247,7 @@ Your builder credentials have been securely logged in our database.
 Candidate: ${fullName}
 Academic Profile: ${academicProfile}
 Roll Number: ${rollNumber}
-Applied Wing(s): ${wingsString}
+${resumeUrl ? `Resume (PDF): ${resumeUrl}\n` : ""}Applied Wing(s): ${wingsString}
 Status: Queued for Shortlist Review
 
 --- MANDATORY NEXT STEPS ---
@@ -255,3 +264,5 @@ AWS Student Builders Group Team
 Tula's University, Dehradun
   `.trim();
 }
+
+

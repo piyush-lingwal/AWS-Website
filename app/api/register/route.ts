@@ -110,6 +110,53 @@ export async function POST(request: Request) {
       );
     }
 
+    // Handle PDF Resume Upload to Supabase Storage
+    const resumeEntry = formData.get("resume");
+    let resumeUrl = "";
+
+    if (resumeEntry && typeof resumeEntry === "object" && "arrayBuffer" in resumeEntry) {
+      const file = resumeEntry as File;
+      if (file.size > 0) {
+        if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+          return NextResponse.json(
+            { error: "Validation failed.", fieldErrors: { resume: "Only PDF files are accepted (.pdf)." } },
+            { status: 400 }
+          );
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+          return NextResponse.json(
+            { error: "Validation failed.", fieldErrors: { resume: "PDF file size must not exceed 10MB." } },
+            { status: 400 }
+          );
+        }
+
+        try {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+          const storagePath = `candidates/${Date.now()}_${rollNumber.trim()}_${cleanFileName}`;
+
+          const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+            .from("resumes")
+            .upload(storagePath, buffer, {
+              contentType: "application/pdf",
+              upsert: true,
+            });
+
+          if (uploadError) {
+            console.error("[Register] Resume upload error:", uploadError);
+          } else if (uploadData) {
+            const { data: signedData } = await supabaseAdmin.storage
+              .from("resumes")
+              .createSignedUrl(storagePath, 60 * 60 * 24 * 365); // 1 year signed URL
+            resumeUrl = signedData?.signedUrl || uploadData.path;
+          }
+        } catch (uploadCatchErr) {
+          console.error("[Register] Unexpected error uploading resume PDF:", uploadCatchErr);
+        }
+      }
+    }
+
     const now = new Date();
     const dateStr = now.toISOString().split("T")[0];
     const timeStr = now.toTimeString().split(" ")[0].substring(0, 5);
@@ -120,11 +167,12 @@ export async function POST(request: Request) {
       email: universityEmail.trim().toLowerCase(),
       phone_number: normalizedPhone,
       roll_number: rollNumber.trim(),
+      resume_url: resumeUrl || null,
       course: course.trim(),
       branch: branch?.trim() || "N/A",
       year: year.trim(),
       wing: wing.trim(),
-      interest_areas: interestAreas,
+      interest_areas: resumeUrl ? [...interestAreas, `Resume: ${resumeUrl}`] : interestAreas,
       date: dateStr,
       time: timeStr,
     };
@@ -201,6 +249,7 @@ export async function POST(request: Request) {
         branch: branch?.trim() || "N/A",
         wings: interestAreas.length > 0 ? interestAreas : [wing.trim()],
         rollNumber: rollNumber.trim(),
+        resumeUrl: resumeUrl || undefined,
       });
     } catch (emailError) {
       console.error("[Register] Failed to send confirmation email:", emailError);

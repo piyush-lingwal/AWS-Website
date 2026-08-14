@@ -22,6 +22,7 @@ import {
   Phone,
   User,
   GraduationCap,
+  FileText,
 } from "lucide-react";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -36,6 +37,8 @@ export interface SuccessScreenProps {
     universityEmail?: string;
     phoneNumber?: string;
     rollNumber?: string;
+    resumeName?: string;
+    resumeUrl?: string;
     year?: string;
     course?: string;
     branch?: string;
@@ -334,6 +337,19 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
                   {formData?.phoneNumber || "Registered Mobile"}
                 </p>
               </div>
+
+              {(formData?.resumeName || formData?.resumeUrl) && (
+                <div>
+                  <p className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-muted flex items-center gap-1">
+                    <FileText className="w-3 h-3 text-primary-light" />
+                    <span>Attached Resume (PDF)</span>
+                  </p>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/25 text-primary-light text-xs font-mono mt-1 font-medium truncate max-w-full">
+                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{formData.resumeName || "Resume.pdf"}</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
