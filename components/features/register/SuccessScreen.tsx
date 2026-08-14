@@ -50,24 +50,6 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
     formData?.branch && formData.branch !== "N/A" ? formData.branch : "",
   ].filter(Boolean).join(" · ");
 
-  const formattedDate = result.submittedAt
-    ? new Date(result.submittedAt).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-    : new Date().toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
-
   return (
     <div className="register-page-theme relative min-h-screen bg-bg w-full overflow-x-hidden text-text-primary font-sans">
       <ThemeStyles />
@@ -116,11 +98,6 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
           transition={{ duration: 0.6 }}
           className="text-center mb-8 sm:mb-10"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono text-emerald-400 tracking-wider mb-4 shadow-[0_0_20px_-4px_rgba(16,185,129,0.3)]">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>STATUS 201 DEPLOYED · APPLICATION LOGGED</span>
-          </div>
-
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold font-display tracking-tight leading-[1.05] mb-3">
             Application{" "}
             <span className="bg-gradient-to-r from-primary-light via-accent to-purple-300 bg-clip-text text-transparent">
@@ -163,12 +140,6 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
                     Tula&apos;s University · Dehradun Cloud Community
                   </p>
                 </div>
-              </div>
-
-              {/* Status Badge (Changed from Queue Verified to Application Confirmed) */}
-              <div className="flex items-center gap-2 self-start sm:self-auto bg-white/[0.04] border border-white/[0.08] px-3 py-1.5 rounded-xl">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-mono text-emerald-300 font-medium">APPLICATION CONFIRMED</span>
               </div>
             </div>
           </div>
@@ -216,25 +187,24 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
               </div>
             </div>
 
-            {/* Right Column: Submission Timestamp & Cryptographic Verification */}
+            {/* Right Column: Email Address & Mobile Number */}
             <div className="space-y-4 md:border-l md:border-white/[0.08] md:pl-6">
               <div>
                 <p className="text-[10px] font-mono uppercase tracking-widest text-muted">
-                  Submission Timestamp
+                  Email Address
                 </p>
-                <p className="text-sm font-mono text-text-primary font-medium mt-0.5">
-                  {formattedDate}
+                <p className="text-sm font-mono text-text-primary font-medium mt-0.5 break-all">
+                  {formData?.universityEmail || "Registered Email"}
                 </p>
               </div>
 
               <div>
                 <p className="text-[10px] font-mono uppercase tracking-widest text-muted">
-                  Cryptographic Verification
+                  Mobile Number
                 </p>
-                <div className="flex items-center gap-2 mt-1 text-[11px] font-mono text-emerald-400/90">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>SHA256 · LOGGED TO AWS SBG POOL</span>
-                </div>
+                <p className="text-sm font-mono text-text-primary font-medium mt-0.5">
+                  {formData?.phoneNumber || "Registered Mobile"}
+                </p>
               </div>
             </div>
           </div>
@@ -410,7 +380,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
             href="/"
             className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.12] hover:border-white/[0.25] text-white font-semibold text-sm hover:bg-white/[0.08] transition-all"
           >
-            <span>Return to Homepage</span>
+            <span>Explore Our Site</span>
             <ArrowRight className="w-4 h-4" />
           </a>
         </div>

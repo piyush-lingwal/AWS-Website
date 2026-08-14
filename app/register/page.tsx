@@ -319,8 +319,8 @@ function RegisterPageContent() {
                   Full Name <span className="text-primary-light">*</span>
                 </label>
                 {form.fullName.trim() && (
-                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-0.5">
-                    ✓ Valid
+                  <span className="text-xs font-mono text-emerald-400 font-bold">
+                    ✓
                   </span>
                 )}
               </div>
@@ -347,8 +347,8 @@ function RegisterPageContent() {
                     Email Address <span className="text-primary-light">*</span>
                   </label>
                   {EMAIL_RE.test(form.universityEmail) && (
-                    <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-0.5">
-                      ✓ Valid
+                    <span className="text-xs font-mono text-emerald-400 font-bold">
+                      ✓
                     </span>
                   )}
                 </div>
@@ -372,8 +372,8 @@ function RegisterPageContent() {
                     Phone Number <span className="text-primary-light">*</span>
                   </label>
                   {PHONE_RE.test(form.phoneNumber) && (
-                    <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-0.5">
-                      ✓ Valid
+                    <span className="text-xs font-mono text-emerald-400 font-bold">
+                      ✓
                     </span>
                   )}
                 </div>
@@ -401,11 +401,11 @@ function RegisterPageContent() {
             <div id="field-rollNumber" className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-mono uppercase tracking-wider text-white/50">
-                  Student Roll / ID Number <span className="text-primary-light">*</span>
+                  Roll no. <span className="text-primary-light">*</span>
                 </label>
                 {form.rollNumber.trim() && (
-                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-0.5">
-                    ✓ Valid
+                  <span className="text-xs font-mono text-emerald-400 font-bold">
+                    ✓
                   </span>
                 )}
               </div>
