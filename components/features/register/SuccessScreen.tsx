@@ -271,9 +271,10 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
           </div>
 
           {/* Ticket Body: Two-Column Data Grid */}
-          <div className="p-4 sm:p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 relative">
+          <div className="p-4 sm:p-6 md:p-8 relative overflow-hidden">
             {/* Ambient inner card glow */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-48 sm:w-64 h-48 sm:h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-48 sm:w-64 h-48 sm:h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none z-0" />
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
 
             {/* Left Column: Candidate & Academic Info */}
             <div className="space-y-3.5 sm:space-y-4">
@@ -350,6 +351,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
                   </span>
                 </div>
               )}
+            </div>
             </div>
           </div>
 
