@@ -186,7 +186,7 @@ export function TeamHero() {
 
         {/* Subtitle */}
         <p className="gsap-hero-anim mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-text-secondary max-w-xl mx-auto leading-relaxed px-2">
-          6 specialized Builder Wings. Limited slots. Open to every branch and year at Tula&apos;s University.
+          6 specialized Builder Wings. Limited slots. Open to every branch and year at Tulas University.
         </p>
 
         {/* CTAs */}

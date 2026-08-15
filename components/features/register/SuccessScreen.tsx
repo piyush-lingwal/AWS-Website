@@ -264,7 +264,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
                   </span>
                 </div>
                 <p className="text-[10px] sm:text-[11px] font-mono text-muted truncate mt-0.5">
-                  Tula&apos;s University · Dehradun Cloud Community
+                  Tulas University · Dehradun Cloud Community
                 </p>
               </div>
             </div>
@@ -531,7 +531,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
         <div className="mt-8 sm:mt-10 flex flex-col items-center justify-center text-center px-4 max-w-md mx-auto">
           <div className="inline-flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] text-muted font-mono leading-relaxed">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>Official AWS Student Builders Group at Tula&apos;s University</span>
+            <span>Official AWS Student Builders Group at Tulas University</span>
           </div>
           <p className="text-[10px] text-muted/70 font-mono mt-0.5">
             No spam, ever.

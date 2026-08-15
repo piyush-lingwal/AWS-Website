@@ -98,7 +98,7 @@ export function SuggestEventSection() {
             <div className="mt-3.5 flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-xs sm:text-sm text-text-secondary">
               <Users size={18} className="shrink-0 text-primary-light mt-0.5" />
               <p className="leading-relaxed">
-                <strong className="text-text-primary font-medium">Open to Everyone:</strong> You don&apos;t have to be a Tula&apos;s student! External students, developers, industry professionals, and tech enthusiasts from anywhere can suggest or request an event.
+                <strong className="text-text-primary font-medium">Open to Everyone:</strong> You don&apos;t have to be a Tulas student! External students, developers, industry professionals, and tech enthusiasts from anywhere can suggest or request an event.
               </p>
             </div>
           </div>

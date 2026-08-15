@@ -101,7 +101,7 @@ export function generateApplicationEmailHtml(data: ApplicationEmailData): string
                   AWS STUDENT BUILDERS GROUP
                 </span>
                 <span style="font-size: 13px; color: #64748B; font-family: -apple-system, sans-serif;">
-                  Tula&apos;s University · Dehradun Chapter
+                  Tulas University · Dehradun Chapter
                 </span>
               </td>
               <td style="text-align: right;">
@@ -214,7 +214,7 @@ export function generateApplicationEmailHtml(data: ApplicationEmailData): string
       <tr>
         <td style="padding: 20px 32px; background-color: #F8FAFC; border-top: 1px solid #E2E8F0; text-align: center;">
           <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748B; font-family: monospace; font-weight: 600;">
-            AWS STUDENT BUILDERS GROUP · TULA&apos;S UNIVERSITY DEHRADUN
+            AWS STUDENT BUILDERS GROUP · Tulas UNIVERSITY DEHRADUN
           </p>
           <p style="margin: 0; font-size: 11px; color: #94A3B8;">
             This is an automated confirmation for your application to AWS SBG Cohort 2026.
@@ -235,7 +235,7 @@ export function generateApplicationEmailText(data: ApplicationEmailData): string
   const academicProfile = [year, course, branch && branch !== "N/A" ? `(${branch})` : ""].filter(Boolean).join(" · ");
 
   return `
-AWS STUDENT BUILDERS GROUP - TULA'S UNIVERSITY
+AWS STUDENT BUILDERS GROUP - Tulas UNIVERSITY
 Application Received & Logged
 
 Hi ${fullName},
@@ -261,7 +261,7 @@ https://builder.aws.com/content/3C075iQJeEx03mnzHwmXO9zdgEG/aws-student-builder-
 
 Best regards,
 AWS Student Builders Group Team
-Tula's University, Dehradun
+Tulas University, Dehradun
   `.trim();
 }
 

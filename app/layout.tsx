@@ -22,9 +22,9 @@ const poppins = Poppins({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://awstulas.org";
 const siteName =
-  "AWS Student Builders Group at Tula's University | Official AWS Cloud Community";
+  "AWS Student Builders Group at Tulas University | Official AWS Cloud Community";
 const siteDescription =
-  "Official website of AWS Student Builders Group at Tula's University, Dehradun. Join workshops, cloud events, hackathons, AWS learning programs, technical communities, and student innovation initiatives.";
+  "Official website of AWS Student Builders Group at Tulas University, Dehradun. Join workshops, cloud events, hackathons, AWS learning programs, technical communities, and student innovation initiatives.";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 
   title: {
     default: siteName,
-    template: "%s | AWS Student Builders Group — Tula's University",
+    template: "%s | AWS Student Builders Group — Tulas University",
   },
 
   description: siteDescription,
@@ -50,12 +50,12 @@ export const metadata: Metadata = {
     "AWS SBG",
     "AWS SBG Tulas",
     "AWS SBG Dehradun",
-    "AWS Student Builders Group Tula's University",
+    "AWS Student Builders Group Tulas University",
     "AWS Cloud Club",
     "Cloud Computing",
     "AWS Community",
     "Student Builders Group",
-    "Tula's University",
+    "Tulas University",
     "Dehradun",
     "AWS Workshops",
     "AWS Events",
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
   ],
 
   applicationName: "AWS Student Builders Group",
-  creator: "AWS Student Builders Group at Tula's University",
+  creator: "AWS Student Builders Group at Tulas University",
   publisher: "AWS Student Builders Group",
   category: "Education",
   referrer: "origin-when-cross-origin",
@@ -101,7 +101,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "AWS Student Builders Group at Tula's University",
+        alt: "AWS Student Builders Group at Tulas University",
       },
     ],
   },

@@ -466,7 +466,7 @@ function RegisterPageContent() {
                   2. Academic Details
                 </h2>
                 <p className="text-[11px] font-mono text-muted">
-                  Your year and course at Tula&apos;s University
+                  Your year and course at Tulas University
                 </p>
               </div>
             </div>
@@ -847,7 +847,7 @@ function RegisterPageContent() {
             <div className="flex flex-col items-center justify-center text-center px-4 max-w-md mx-auto pt-2">
               <div className="inline-flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-muted leading-relaxed">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Official AWS SBG Tula&apos;s Portal</span>
+                <span>Official AWS SBG Tulas Portal</span>
               </div>
               <p className="text-[10px] text-muted/70 font-mono mt-0.5">
                 Shortlisted applicants notified via email

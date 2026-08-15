@@ -4,12 +4,12 @@ export function OrganizationJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": ["Organization", "EducationalOrganization"],
-    name: "AWS Student Builders Group at Tula's University",
-    alternateName: ["AWS SBG Tulas", "AWS Cloud Club Tula's University"],
+    name: "AWS Student Builders Group at Tulas University",
+    alternateName: ["AWS SBG Tulas", "AWS Cloud Club Tulas University"],
     url: "https://aws-sbg-tulas.vercel.app",
     logo: "https://aws-sbg-tulas.vercel.app/icon.png",
     description:
-      "Official AWS Student Builders Group at Tula's University, Dehradun. A student community focused on AWS cloud computing, technical workshops, and hackathons.",
+      "Official AWS Student Builders Group at Tulas University, Dehradun. A student community focused on AWS cloud computing, technical workshops, and hackathons.",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Dehradun",
@@ -18,7 +18,7 @@ export function OrganizationJsonLd() {
     },
     parentOrganization: {
       "@type": "CollegeOrUniversity",
-      name: "Tula's University",
+      name: "Tulas University",
       location: {
         "@type": "Place",
         address: {
@@ -46,7 +46,7 @@ export function WebSiteJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "AWS Student Builders Group at Tula's University",
+    name: "AWS Student Builders Group at Tulas University",
     alternateName: ["AWS SBG Tulas", "AWS Cloud Club Dehradun"],
     url: "https://aws-sbg-tulas.vercel.app",
     potentialAction: {

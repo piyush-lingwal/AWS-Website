@@ -2,10 +2,10 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "AWS Student Builders Group Tula's University",
+    name: "AWS Student Builders Group Tulas University",
     short_name: "AWS SBG Tulas",
     description:
-      "Official AWS Student Builders Group at Tula's University.",
+      "Official AWS Student Builders Group at Tulas University.",
 
     start_url: "/",
 

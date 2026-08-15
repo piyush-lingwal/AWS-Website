@@ -195,7 +195,7 @@ export function TeamCTA() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-1.5">
                     <Terminal className="w-3.5 h-3.5 text-primary-light" />
-                    <span className="text-[9px] font-mono text-primary-light tracking-widest uppercase">AWS SBG Tula&apos;s</span>
+                    <span className="text-[9px] font-mono text-primary-light tracking-widest uppercase">AWS SBG Tulas</span>
                   </div>
                   <span className="text-[9px] font-mono text-muted">2026</span>
                 </div>

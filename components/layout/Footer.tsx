@@ -175,7 +175,7 @@ export function Footer() {
               AWS Student Builder Group
             </Link>
             <p className="max-w-[320px] text-[15px] leading-relaxed text-text-secondary">
-              A student-led community at Tula&apos;s University, Dehradun dedicated to building,
+              A student-led community at Tulas University, Dehradun dedicated to building,
               learning, and deploying real-world applications on AWS.
             </p>
           </div>
@@ -225,7 +225,7 @@ export function Footer() {
             })}
           </div>
           <p className="text-[13px] text-muted">
-            © {new Date().getFullYear()}&nbsp;&nbsp;AWS SBG, Tula&apos;s University. All rights reserved.
+            © {new Date().getFullYear()}&nbsp;&nbsp;AWS SBG, Tulas University. All rights reserved.
           </p>
         </div>
       </div>

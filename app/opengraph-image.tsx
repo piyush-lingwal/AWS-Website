@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "AWS Student Builders Group at Tula's University";
+export const alt = "AWS Student Builders Group at Tulas University";
 export const size = {
   width: 1200,
   height: 630,
@@ -62,7 +62,7 @@ export default async function Image() {
               fontWeight: 500,
             }}
           >
-            Tula's University, Dehradun
+            Tulas University, Dehradun
           </p>
         </div>
       </div>

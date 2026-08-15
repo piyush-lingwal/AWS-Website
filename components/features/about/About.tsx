@@ -60,7 +60,7 @@ export function About() {
             </h2>
             <div className="about-header-element mt-6 sm:mt-8 max-w-2xl space-y-4">
               <p className="text-[15px] sm:text-[16px] leading-relaxed text-text-secondary">
-                AWS Student Builder Group at Tula&apos;s University is a student-led community where
+                AWS Student Builder Group at Tulas University is a student-led community where
                 aspiring developers, cloud engineers, AI enthusiasts, and builders come together to
                 learn by building.
               </p>
@@ -121,7 +121,7 @@ export function About() {
               <div className="relative z-10 w-[150px] h-[150px] sm:w-[200px] sm:h-[200px] md:w-[260px] md:h-[260px] rounded-full bg-white flex items-center justify-center shadow-[0_0_50px_-10px_rgba(124,58,237,0.4)] pointer-events-none overflow-hidden border-[4px] border-primary/20">
                 <Image
                   src="/logos/tulas+sbg.png"
-                  alt="Tula's University and AWS SBG Logo"
+                  alt="Tulas University and AWS SBG Logo"
                   width={250}
                   height={250}
                   className="w-[85%] h-[85%] object-contain"

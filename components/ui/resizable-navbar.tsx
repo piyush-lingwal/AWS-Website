@@ -345,10 +345,10 @@ export const NavbarLogo = ({ visible }: { visible?: boolean }) => {
             AWS Student Builders Group
           </span>
           <span className="text-text-secondary text-[10px] leading-tight hidden sm:block">
-            at Tula's University Dehradun
+            at Tulas University Dehradun
           </span>
           <span className="text-text-secondary text-[9px] leading-tight sm:hidden">
-            Tula&apos;s University
+            Tulas University
           </span>
         </motion.div>
       )}

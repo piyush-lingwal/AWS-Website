@@ -4,7 +4,7 @@ import { Gallery } from "@/components/features/gallery/Gallery";
 export const metadata: Metadata = {
   title: "Gallery",
   description:
-    "Photos and moments from AWS Student Builders Group workshops, hackathons, study jams, and community events at Tula's University.",
+    "Photos and moments from AWS Student Builders Group workshops, hackathons, study jams, and community events at Tulas University.",
   alternates: {
     canonical: "/gallery",
   },

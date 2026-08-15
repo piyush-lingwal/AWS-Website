@@ -11,7 +11,7 @@ import { AboutCTA } from "@/components/features/about/AboutCTA";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Learn what the AWS Student Builders Group at Tula's University is about — cloud-first learning, peer-driven community, hackathons, AWS certifications, and building real-world projects on AWS.",
+    "Learn what the AWS Student Builders Group at Tulas University is about — cloud-first learning, peer-driven community, hackathons, AWS certifications, and building real-world projects on AWS.",
   alternates: {
     canonical: "/about",
   },

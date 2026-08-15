@@ -12,7 +12,7 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 const FAQS = [
   {
     q: "Who can apply to a Builder Wing?",
-    a: "Any student at Tula's University — any branch, any year (1st to 4th). We value curiosity and enthusiasm over prior experience. If you're excited about AWS and cloud, you belong here.",
+    a: "Any student at Tulas University — any branch, any year (1st to 4th). We value curiosity and enthusiasm over prior experience. If you're excited about AWS and cloud, you belong here.",
   },
   {
     q: "Do I need AWS knowledge or certifications?",
