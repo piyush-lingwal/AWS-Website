@@ -351,3 +351,25 @@
     opacity: var(--opacity, 0);
   }
 }
+
+/* ── Running aurora gradient – hero heading & CTA ── */
+@keyframes aurora-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-aurora {
+  background-size: 300% 300%;
+  animation: aurora-shift 4s ease infinite;
+}
+
+.animate-cta-shimmer {
+  animation: cta-hue 8s linear infinite;
+}
+
+@keyframes cta-hue {
+  0%   { filter: hue-rotate(0deg) brightness(1); }
+  50%  { filter: hue-rotate(-25deg) brightness(1.08); }
+  100% { filter: hue-rotate(0deg) brightness(1); }
+}
