@@ -138,6 +138,7 @@ export const metadata: Metadata = {
 import SmoothScroll from "@/components/layout/SmoothScroll";
 import { MotionConfigWrapper } from "@/components/layout/MotionConfigWrapper";
 import { Toaster } from "sonner";
+import { ChatbotMascot } from "@/components/layout/ChatbotMascot";
 
 export default function RootLayout({
   children,
@@ -160,6 +161,7 @@ export default function RootLayout({
             <Footer />
           </SmoothScroll>
         </MotionConfigWrapper>
+        <ChatbotMascot />
       </body>
     </html>
   );
