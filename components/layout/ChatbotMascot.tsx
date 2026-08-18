@@ -3,6 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
+interface ApiMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+
 interface Message {
   id: number;
   role: "bot" | "user";
@@ -17,23 +23,6 @@ const SUGGESTIONS = [
   "Meet the team",
 ];
 
-const BOT_RESPONSES: Record<string, string> = {
-  "what is aws sbg": "AWS Student Builders Group (SBG) at Tulas University is an official AWS-powered student community focused on cloud learning, workshops, hackathons, and building real-world tech skills! ☁️",
-  "upcoming events": "We regularly host AWS workshops, cloud bootcamps, and hackathons. Check out our Events section on the website for the latest schedule! 🎉",
-  "how to join": "Joining is easy! Head over to the Register section on our website and fill out the form. We'd love to have you in the community! 🚀",
-  "meet the team": "Our amazing team of cloud enthusiasts, student leads, and mentors are here to guide you. Visit the Team page to meet everyone! 👥",
-};
-
-function getBotResponse(input: string): string {
-  const lower = input.toLowerCase().trim().replace(/[?]/g, "");
-  for (const key of Object.keys(BOT_RESPONSES)) {
-    if (lower.includes(key)) {
-      return BOT_RESPONSES[key];
-    }
-  }
-  return "Great question! 🤔 For detailed info, feel free to explore our website or reach out to us on our social channels. We are always happy to help! 💜";
-}
-
 export function ChatbotMascot() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -43,6 +32,8 @@ export function ChatbotMascot() {
       text: "Hey there! 👋 I'm Kio, your AWS SBG guide. How can I help you today?",
     },
   ]);
+  // Conversation history for multi-turn context sent to Bedrock
+  const [history, setHistory] = useState<ApiMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
@@ -66,22 +57,57 @@ export function ChatbotMascot() {
     return () => clearTimeout(timer);
   }, []);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isTyping) return;
+
     const userMsg: Message = { id: Date.now(), role: "user", text };
     setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const botMsg: Message = {
-        id: Date.now() + 1,
-        role: "bot",
-        text: getBotResponse(text),
-      };
-      setMessages((prev) => [...prev, botMsg]);
+    // Build history including the new user message
+    const newHistory: ApiMessage[] = [...history, { role: "user", content: text }];
+
+    // Placeholder bot message that we'll stream into
+    const botId = Date.now() + 1;
+    setMessages((prev) => [...prev, { id: botId, role: "bot", text: "" }]);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newHistory }),
+      });
+
+      if (!res.ok || !res.body) throw new Error("API error");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullText += decoder.decode(value, { stream: true });
+        // Update the last bot message in place as chunks arrive
+        setMessages((prev) =>
+          prev.map((m) => (m.id === botId ? { ...m, text: fullText } : m))
+        );
+      }
+
+      // Save full exchange to history
+      setHistory([...newHistory, { role: "assistant", content: fullText }]);
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botId
+            ? { ...m, text: "Hmm, I'm having trouble connecting right now. Please try again in a moment! 🙏" }
+            : m
+        )
+      );
+    } finally {
       setIsTyping(false);
-    }, 900 + Math.random() * 600);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -94,7 +120,7 @@ export function ChatbotMascot() {
       <div
         className={`chatbot-panel ${open ? "chatbot-panel--open" : ""}`}
         role="dialog"
-        aria-label="Chat with Nimbus"
+        aria-label="Chat with Kio"
         aria-hidden={!open}
       >
         {/* Header */}
@@ -127,22 +153,19 @@ export function ChatbotMascot() {
             <div key={msg.id} className={`chatbot-message chatbot-message--${msg.role}`}>
               {msg.role === "bot" && (
                 <div className="chatbot-bot-avatar">
-                  <Image src="/chatbotmascot.png" alt="Nimbus" width={28} height={28} className="chatbot-bot-avatar-img" />
+                  <Image src="/chatbotmascot.png" alt="Kio" width={28} height={28} className="chatbot-bot-avatar-img" />
                 </div>
               )}
-              <div className={`chatbot-bubble chatbot-bubble--${msg.role}`}>{msg.text}</div>
+              {/* Show typing dots while the bot message is still empty (streaming hasn't started) */}
+              {msg.role === "bot" && msg.text === "" ? (
+                <div className="chatbot-bubble chatbot-bubble--bot chatbot-typing">
+                  <span /><span /><span />
+                </div>
+              ) : (
+                <div className={`chatbot-bubble chatbot-bubble--${msg.role}`}>{msg.text}</div>
+              )}
             </div>
           ))}
-          {isTyping && (
-            <div className="chatbot-message chatbot-message--bot">
-              <div className="chatbot-bot-avatar">
-                <Image src="/chatbotmascot.png" alt="Nimbus" width={28} height={28} className="chatbot-bot-avatar-img" />
-              </div>
-              <div className="chatbot-bubble chatbot-bubble--bot chatbot-typing">
-                <span /><span /><span />
-              </div>
-            </div>
-          )}
           <div ref={messagesEndRef} />
         </div>
 
