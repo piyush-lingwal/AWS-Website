@@ -33,30 +33,34 @@ export function Team() {
       {/* ─── 1. Hero ─────────────────────────────────── */}
       <TeamHero />
 
-      {/* ─── 2. How Selection Works ──────────────────── */}
-      <div className="border-t border-border/40">
-        <TeamSelectionRoadmap />
+      {/* ─── Content Sections with Grid Background ─── */}
+      <div className="bg-grid bg-noise relative bg-bg">
+        {/* ─── 2. How Selection Works ──────────────────── */}
+        <div className="border-t border-border/40">
+          <TeamSelectionRoadmap />
+        </div>
+
+        {/* ─── 3. Builder Wings Directory ──────────────── */}
+        <div className="border-t border-border/40">
+          <TeamWingsHiring />
+        </div>
+
+        {/* ─── 4. Advisory Leadership ──────────────────── */}
+        <div className="border-t border-border/40">
+          <TeamLeadership />
+        </div>
+
+        {/* ─── 5. FAQ ──────────────────────────────────── */}
+        <div className="border-t border-border/40">
+          <TeamFAQ />
+        </div>
       </div>
 
-      {/* ─── 3. Builder Wings Directory ──────────────── */}
-      <div className="border-t border-border/40">
-        <TeamWingsHiring />
-      </div>
-
-      {/* ─── 4. Advisory Leadership ──────────────────── */}
-      <div className="border-t border-border/40">
-        <TeamLeadership />
-      </div>
-
-      {/* ─── 5. FAQ ──────────────────────────────────── */}
-      <div className="border-t border-border/40">
-        <TeamFAQ />
-      </div>
-
-      {/* ─── 6. Join CTA ─────────────────────────────── */}
-      <div className="border-t border-border/40">
+      {/* ─── 6. Join CTA (Limited Slots · Cohort 2026) ─── */}
+      <div className="relative bg-bg border-t border-border/40">
         <TeamCTA />
       </div>
     </div>
   );
 }
+

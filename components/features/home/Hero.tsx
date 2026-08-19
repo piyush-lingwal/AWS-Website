@@ -62,7 +62,7 @@ export function Hero() {
   const slide = HERO_SLIDES[currentSlide];
 
   return (
-    <section id="top" className="relative min-h-[100dvh] w-full overflow-hidden bg-gradient-to-br from-[#0A0A0F] via-[#1a0b2e] to-[#0A0A0F] text-white flex flex-col justify-center select-none pt-14 sm:pt-12 md:pt-16 -mt-6">
+    <section id="top" className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#0A0A0F] via-[#1a0b2e] to-[#0A0A0F] text-white flex flex-col justify-center select-none pt-24 pb-12 sm:pt-28 sm:pb-16">
       
       {/* Animated gradient orbs */}
       <div className="pointer-events-none absolute top-20 right-10 w-[400px] h-[400px] rounded-full bg-primary/20 blur-[100px] animate-float-slow" />

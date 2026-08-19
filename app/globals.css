@@ -361,8 +361,9 @@
 
 .animate-aurora {
   background-size: 300% 300%;
-  animation: aurora-shift 4s ease infinite;
+  animation: aurora-shift 12s ease-in-out infinite;
 }
+
 
 .animate-cta-shimmer {
   animation: cta-hue 8s linear infinite;

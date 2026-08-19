@@ -38,24 +38,38 @@ export function ChatbotMascot() {
   const [isTyping, setIsTyping] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
   const [videoEnded, setVideoEnded] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 300);
+      setTimeout(() => {
+        inputRef.current?.focus();
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      }, 300);
     }
   }, [open]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      // Auto scroll only if user is already near bottom (within 120px)
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+      if (isNearBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
   }, [messages, isTyping]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowBubble(false), 5000);
     return () => clearTimeout(timer);
   }, []);
+
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isTyping) return;
@@ -116,21 +130,32 @@ export function ChatbotMascot() {
 
   return (
     <>
+      {/* ── Mobile Backdrop Blur ── */}
+      <div
+        className={`chatbot-backdrop ${open ? "chatbot-backdrop--open" : ""}`}
+        onClick={() => setOpen(false)}
+        aria-hidden="true"
+      />
+
       {/* ── Chat Panel ── */}
       <div
         className={`chatbot-panel ${open ? "chatbot-panel--open" : ""}`}
         role="dialog"
         aria-label="Chat with Kio"
         aria-hidden={!open}
+        data-lenis-prevent
+        onWheel={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="chatbot-header">
           <div className="chatbot-header-avatar">
             <Image
               src="/chatbotmascot.png"
-              alt="Nimbus mascot"
-              width={40}
-              height={40}
+              alt="Kio mascot"
+              width={120}
+              height={120}
+              quality={100}
+              unoptimized
               className="chatbot-header-avatar-img"
             />
             <span className="chatbot-online-dot" />
@@ -148,14 +173,17 @@ export function ChatbotMascot() {
         </div>
 
         {/* Messages */}
-        <div className="chatbot-messages">
+        <div ref={messagesContainerRef} className="chatbot-messages" data-lenis-prevent onWheel={(e) => e.stopPropagation()}>
+
+
           {messages.map((msg) => (
             <div key={msg.id} className={`chatbot-message chatbot-message--${msg.role}`}>
               {msg.role === "bot" && (
                 <div className="chatbot-bot-avatar">
-                  <Image src="/chatbotmascot.png" alt="Kio" width={28} height={28} className="chatbot-bot-avatar-img" />
+                  <Image src="/chatbotmascot.png" alt="Kio" width={80} height={80} quality={100} unoptimized className="chatbot-bot-avatar-img" />
                 </div>
               )}
+
               {/* Show typing dots while the bot message is still empty (streaming hasn't started) */}
               {msg.role === "bot" && msg.text === "" ? (
                 <div className="chatbot-bubble chatbot-bubble--bot chatbot-typing">
@@ -215,33 +243,25 @@ export function ChatbotMascot() {
           aria-expanded={open}
         >
           <span className="chatbot-trigger-ring" />
-          {videoEnded ? (
+          <div className="chatbot-trigger-avatar">
             <Image
               src="/chatbotmascot.png"
               alt="Kio mascot"
-              width={70}
-              height={70}
+              width={200}
+              height={200}
+              quality={100}
+              unoptimized
+              priority
               className="chatbot-trigger-video"
             />
-          ) : (
-            <video
-              ref={videoRef}
-              src="/Chatbot.webm"
-              autoPlay
-              muted
-              playsInline
-              onEnded={() => setVideoEnded(true)}
-              className="chatbot-trigger-video"
-            />
-          )}
-          {open && (
-            <span className="chatbot-trigger-close-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </span>
-          )}
+          </div>
+
+          <div className="chatbot-trigger-close-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </div>
         </button>
       </div>
 
@@ -318,7 +338,10 @@ export function ChatbotMascot() {
           flex: 1; overflow-y: auto; padding: 16px;
           display: flex; flex-direction: column; gap: 12px;
           scrollbar-width: thin; scrollbar-color: rgba(124,58,237,.3) transparent;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
         }
+
         .chatbot-messages::-webkit-scrollbar { width: 4px; }
         .chatbot-messages::-webkit-scrollbar-track { background: transparent; }
         .chatbot-messages::-webkit-scrollbar-thumb { background: rgba(124,58,237,.4); border-radius: 4px; }
@@ -370,33 +393,64 @@ export function ChatbotMascot() {
         .chatbot-send-btn:disabled { opacity:.4; cursor:not-allowed; }
 
         .chatbot-trigger {
-          position:relative; width:70px; height:70px; border-radius:50%;
+          position:relative; width:72px; height:72px; border-radius:50%;
           border:none; cursor:pointer; background:transparent; padding:0;
           display:flex; align-items:center; justify-content:center;
           transition:transform .3s cubic-bezier(.23,1,.32,1);
         }
         .chatbot-trigger:hover { transform:scale(1.08); }
-        .chatbot-trigger--active { transform:scale(.95); }
+        .chatbot-trigger--active { transform:scale(1); }
         .chatbot-trigger-ring {
           position:absolute; inset:-4px; border-radius:50%;
           border:2px solid rgba(124,58,237,.5);
           animation:ring-pulse 2.5s ease-in-out infinite;
+          transition:opacity .3s ease;
         }
         @keyframes ring-pulse {
           0%,100% { transform:scale(1); opacity:.6; }
           50% { transform:scale(1.1); opacity:.2; }
         }
-        .chatbot-trigger-video {
-          width:70px; height:70px; border-radius:50%; object-fit:cover;
-          border:3px solid rgba(124,58,237,.7);
-          box-shadow:0 0 0 3px rgba(124,58,237,.15),0 8px 30px rgba(0,0,0,.5),0 0 20px rgba(124,58,237,.3);
-          transition:opacity .2s;
+        .chatbot-trigger--active .chatbot-trigger-ring { opacity:0; }
+
+        .chatbot-trigger-avatar {
+          position:absolute; inset:0;
+          display:flex; align-items:center; justify-content:center;
+          transition:transform .3s cubic-bezier(.23,1,.32,1), opacity .25s ease;
         }
-        .chatbot-trigger--active .chatbot-trigger-video { opacity:.3; }
+        .chatbot-trigger--active .chatbot-trigger-avatar {
+          opacity:0;
+          transform:scale(0.5) rotate(-45deg);
+          pointer-events:none;
+        }
+
+        .chatbot-trigger-video {
+          width:72px; height:72px; border-radius:50%; object-fit:contain;
+          background: radial-gradient(circle, rgba(26,16,48,0.95) 0%, rgba(10,10,18,0.98) 100%);
+          border:2px solid rgba(167,139,250,.5);
+          box-shadow:0 0 0 3px rgba(124,58,237,.2),0 8px 32px rgba(0,0,0,.6),0 0 25px rgba(124,58,237,.35);
+          padding:2px;
+          image-rendering: -webkit-optimize-contrast;
+          transform: translateZ(0);
+        }
+
+
+
         .chatbot-trigger-close-icon {
           position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-          color:#fafafa; background:rgba(124,58,237,.85); border-radius:50%;
+          color:#fafafa; background:linear-gradient(135deg,#7c3aed,#6d28d9);
+          border:2px solid rgba(167,139,250,.6); border-radius:50%;
+          box-shadow:0 0 25px rgba(124,58,237,.5),0 8px 24px rgba(0,0,0,.4);
+          opacity:0;
+          transform:scale(0.5) rotate(45deg);
+          transition:transform .3s cubic-bezier(.23,1,.32,1), opacity .25s ease;
+          pointer-events:none;
         }
+        .chatbot-trigger--active .chatbot-trigger-close-icon {
+          opacity:1;
+          transform:scale(1) rotate(0deg);
+          pointer-events:auto;
+        }
+
 
         .chatbot-speech-bubble {
           position:relative; background:linear-gradient(135deg,#1f2937,#111827);
@@ -415,9 +469,40 @@ export function ChatbotMascot() {
         .chatbot-speech-close { position:absolute; top:4px; right:8px; background:none; border:none; color:#71717a; font-size:16px; cursor:pointer; line-height:1; padding:0; transition:color .2s; }
         .chatbot-speech-close:hover { color:#ef4444; }
 
-        @media (max-width:420px) {
-          .chatbot-panel { width:calc(100vw - 24px); right:12px; bottom:100px; }
-          .chatbot-trigger-wrapper { right:16px; bottom:20px; }
+        .chatbot-backdrop {
+          display: none;
+          position: fixed;
+          inset: 0;
+          z-index: 9997;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity .3s cubic-bezier(.23,1,.32,1);
+        }
+
+        @media (max-width: 640px) {
+          .chatbot-backdrop {
+            display: block;
+          }
+          .chatbot-backdrop--open {
+            opacity: 1;
+            pointer-events: auto;
+          }
+          .chatbot-panel {
+            width: calc(100vw - 28px);
+            right: 14px;
+            bottom: 96px;
+            max-height: calc(100dvh - 120px);
+            background: linear-gradient(145deg, rgba(17, 24, 39, 0.95) 0%, rgba(13, 13, 20, 0.95) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+          }
+          .chatbot-trigger-wrapper {
+            right: 16px;
+            bottom: 20px;
+          }
         }
       `}</style>
     </>

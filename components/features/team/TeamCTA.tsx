@@ -98,15 +98,6 @@ export function TeamCTA() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-bg-card to-bg-card" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(124,58,237,0.25)_0%,_transparent_65%)]" />
 
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{
-            backgroundImage: `linear-gradient(rgba(167,139,250,1) 1px, transparent 1px), linear-gradient(to right, rgba(167,139,250,1) 1px, transparent 1px)`,
-            backgroundSize: "48px 48px",
-          }}
-        />
-
         <div className="relative z-10 p-6 sm:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-10 lg:gap-14">
           {/* Left — Text content */}
           <div className="flex-1 text-center lg:text-left">

@@ -43,7 +43,7 @@ export function JoinCTA() {
 
       <div className="relative mx-auto max-w-2xl text-center z-10">
         <div className="cta-header">
-          <p className="cta-header-el text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-muted">
+          <p className="cta-header-el text-[11px] uppercase tracking-[0.16em] text-muted">
             Start Your Journey
           </p>
 

@@ -41,7 +41,15 @@ export default function SmoothScroll({
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
+
+    // Recalculate all ScrollTrigger positions after route change
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [pathname]);
+
 
   return <>{children}</>;
 }

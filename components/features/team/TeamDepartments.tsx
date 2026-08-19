@@ -47,10 +47,9 @@ export function TeamDepartments() {
         <div className="team-dept-header relative z-10 max-w-3xl mx-auto flex flex-col items-center text-center gap-8">
 
           {/* Eyebrow */}
-          <div className="team-dept-el inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] font-mono uppercase tracking-[0.2em] text-muted">
-            <Sparkles className="w-3 h-3 text-primary-light" />
+          <p className="team-dept-el text-[11px] uppercase tracking-[0.16em] text-muted">
             Our Team · Cohort 2026
-          </div>
+          </p>
 
           {/* Main headline */}
           <div className="team-dept-el space-y-2">

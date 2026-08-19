@@ -2,7 +2,7 @@ import { ScrollReveal } from "@/components/lightswind/scroll-reveal";
 
 export function ScrollRevealSection() {
   return (
-    <section className="relative min-h-[50vh] sm:min-h-screen py-20 sm:py-32 flex items-center justify-center bg-black overflow-hidden select-none">
+    <section className="bg-grid bg-noise relative min-h-[50vh] sm:min-h-screen py-20 sm:py-32 flex items-center justify-center bg-[#0A0A0F] overflow-hidden select-none">
       {/* Ambient background glow */}
       <div
         aria-hidden

@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useInView, useMotionValue, useSpring } from "framer-motion";
+import { PixelHeading } from "@/components/ui/pixel-heading-character";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -160,7 +161,7 @@ export function TrustedBy() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef} id="ecosystem" className="relative overflow-hidden bg-bg py-14 sm:py-20 border-t border-border">
+    <section ref={containerRef} id="ecosystem" className="bg-grid bg-noise relative overflow-hidden bg-bg py-14 sm:py-20 border-t border-border">
 
       {/* Hairlines */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
@@ -170,20 +171,15 @@ export function TrustedBy() {
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.05] blur-[130px]" />
 
       {/* ── Heading ─────────────────────────────────────────────────────── */}
-      <div className="ecosystem-header flex flex-col items-center gap-3 mb-10 px-4">
-        <div className="ecosystem-header-el flex items-center gap-4 w-full max-w-[280px]">
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent to-white/15" />
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.07] px-3 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-primary-light/60">
-            <span className="h-1 w-1 rounded-full bg-primary-light/80 animate-pulse" />
-            Ecosystem
-          </span>
-          <div className="flex-1 h-px bg-gradient-to-l from-transparent to-white/15" />
-        </div>
-        <h2 className="ecosystem-header-el font-display text-xl sm:text-2xl font-semibold tracking-tight text-center leading-snug">
-          <span className="text-white/50">Powered by platforms</span>{" "}
-          <span className="bg-gradient-to-r from-primary-light via-accent to-purple-300 bg-clip-text text-transparent">
-            built for builders
-          </span>
+      <div className="ecosystem-header flex flex-col items-center text-center mb-10 px-4">
+        <p className="ecosystem-header-el text-[11px] uppercase tracking-[0.16em] text-muted">
+          Ecosystem
+        </p>
+        <h2 className="ecosystem-header-el mt-3 font-display text-[28px] sm:text-[34px] md:text-[42px] font-semibold leading-[1.1] tracking-tight text-text-primary">
+          Powered by Platforms{" "}
+          <PixelHeading mode="uniform" className="text-gradient">
+            Built for Builders
+          </PixelHeading>
         </h2>
       </div>
 
