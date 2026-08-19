@@ -6,9 +6,7 @@ import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { PixelHeading } from "@/components/ui/pixel-heading-character";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(useGSAP, ScrollTrigger);
-}
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /* ─── SVG Icons ──────────────────────────────────────────────────── */
 const IconWeb = () => (
@@ -154,12 +152,13 @@ function BuildCard({ project, large = false }: { project: typeof projects[0]; la
   const Icon = project.icon;
   return (
     <div
-      className={`build-card group relative rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-1.5 cursor-default ${large ? "h-full min-h-[340px]" : "min-h-[200px]"}`}
+      className={`build-card group relative rounded-2xl overflow-hidden cursor-default transition-all duration-300 hover:-translate-y-1.5 ${large ? "h-full min-h-[340px]" : "min-h-[200px]"}`}
       style={{
         background: "linear-gradient(135deg, rgba(15,15,25,0.95) 0%, rgba(20,15,35,0.9) 100%)",
         border: "1px solid rgba(255,255,255,0.06)",
       }}
     >
+
       {/* Animated border glow on hover */}
       <div
         className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
@@ -280,39 +279,63 @@ export function WhatYouCanBuild() {
   useGSAP(
     () => {
       const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+      const initialY = isMobile ? 20 : 30;
 
-      // Header animation
+      // Header slide-up animation
       gsap.from(".build-header-el", {
         opacity: 0,
-        y: 24,
-        stagger: 0.12,
-        duration: 0.8,
-        ease: "power3.out",
-        immediateRender: false,
+        y: 20,
+        stagger: 0.1,
+        duration: 0.6,
+        ease: "power2.out",
         scrollTrigger: {
           trigger: ".build-header",
-          start: isMobile ? "top 92%" : "top 82%",
-          toggleActions: "play none none reverse",
+          start: isMobile ? "top 95%" : "top 85%",
+          toggleActions: "play reverse play reverse",
         },
       });
 
-      // Card animation
-      gsap.from(".build-card", {
-        opacity: 0,
-        y: 48,
-        scale: 0.96,
-        stagger: 0.08,
-        duration: 0.9,
-        ease: "power3.out",
-        immediateRender: false,
-        scrollTrigger: {
-          trigger: ".build-grid",
-          start: isMobile ? "top 88%" : "top 78%",
-          toggleActions: "play none none reverse",
+      // Cards batch animation as each enters viewport
+      gsap.set(".build-card", { opacity: 0, y: initialY, scale: 0.97 });
+
+      ScrollTrigger.batch(".build-card", {
+        onEnter: (elements) => {
+          gsap.to(elements, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: "power3.out",
+            overwrite: true,
+          });
         },
+        onEnterBack: (elements) => {
+          gsap.to(elements, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: "power3.out",
+            overwrite: true,
+          });
+        },
+        onLeaveBack: (elements) => {
+          gsap.to(elements, {
+            opacity: 0,
+            y: initialY,
+            scale: 0.97,
+            duration: 0.4,
+            stagger: 0.06,
+            ease: "power2.inOut",
+            overwrite: true,
+          });
+        },
+        start: isMobile ? "top 95%" : "top 85%",
       });
 
-      // Refresh after a short delay to sync with Lenis
+      // Sync with Lenis smooth scroll
       const refreshTimer = setTimeout(() => {
         ScrollTrigger.refresh();
       }, 200);
@@ -321,6 +344,7 @@ export function WhatYouCanBuild() {
     },
     { scope: containerRef }
   );
+
 
 
   return (
@@ -340,15 +364,7 @@ export function WhatYouCanBuild() {
           style={{ background: "radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)" }} />
       </div>
 
-      {/* ── Grid overlay ── */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: "linear-gradient(rgba(124,58,237,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,0.04) 1px,transparent 1px)",
-          backgroundSize: "56px 56px",
-          maskImage: "radial-gradient(ellipse 85% 70% at 50% 50%,black,transparent)",
-        }}
-      />
+
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 

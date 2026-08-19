@@ -161,7 +161,8 @@ export function TrustedBy() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef} id="ecosystem" className="bg-grid bg-noise relative overflow-hidden bg-bg py-14 sm:py-20 border-t border-border">
+    <section ref={containerRef} id="ecosystem" className="bg-noise relative overflow-hidden bg-bg py-14 sm:py-20 border-t border-border">
+
 
       {/* Hairlines */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
