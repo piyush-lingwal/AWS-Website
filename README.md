@@ -1,7 +1,7 @@
 <a name="readme-top"></a>
 <div align="center">
 
-<img src="./.github/assets/banner.svg" alt="AWS Student Builder Group — Tula's Institute, Dehradun" width="100%" />
+<img src="./.github/assets/banner.svg" alt="AWS Student Builder Group — Tulas University, Dehradun" width="100%" />
 
 <br/>
 
