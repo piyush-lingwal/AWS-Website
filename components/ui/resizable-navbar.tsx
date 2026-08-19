@@ -321,15 +321,28 @@ export const NavbarLogo = ({ visible }: { visible?: boolean }) => {
   return (
     <a
       href="/"
-      className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal"
+      className="relative z-20 mr-4 flex items-center space-x-2.5 px-1 py-1 text-sm font-normal"
     >
-      <img
-        src="/logos/SBG_logo.png"
-        alt="AWS SBG Logo"
-        width={32}
-        height={32}
-        className="rounded-md object-contain"
-      />
+      <div className="relative bg-black/40 border rounded-xl flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 p-1.5 overflow-hidden shrink-0">
+
+        <img
+          src="/logos/SBG_logo.png"
+          alt="AWS SBG Logo"
+          className="w-full h-full object-contain relative z-10"
+        />
+        <motion.div
+          className="absolute top-0 left-0 size-full bg-gradient-to-r from-transparent via-white to-transparent opacity-30 pointer-events-none"
+          initial={{ x: "-100%" }}
+          animate={{ x: "100%" }}
+          transition={{
+            duration: 2,
+            ease: "linear",
+            repeat: Infinity,
+            repeatType: "loop",
+          }}
+          style={{ willChange: "transform" }}
+        />
+      </div>
       {!visible && (
         <motion.div
           initial={{ opacity: 0, x: -10 }}
@@ -355,6 +368,7 @@ export const NavbarLogo = ({ visible }: { visible?: boolean }) => {
     </a>
   );
 };
+
 
 export const NavbarButton = ({
   href,
