@@ -249,21 +249,10 @@ function MobileWingCard({ wing, index }: { wing: typeof WINGS[0]; index: number 
         </div>
 
         {/* Description */}
-        <p className="text-xs text-text-secondary leading-relaxed mb-3">
+        <p className="text-xs text-text-secondary leading-relaxed mb-4">
           {wing.desc}
         </p>
 
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {wing.tags.map((tag, i) => (
-            <span
-              key={i}
-              className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-white/60"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
 
         {/* Bottom CTA Bar */}
         <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">

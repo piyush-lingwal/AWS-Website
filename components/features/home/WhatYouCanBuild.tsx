@@ -237,22 +237,6 @@ function BuildCard({ project, large = false }: { project: typeof projects[0]; la
           </p>
         </div>
 
-        {/* Tech tags */}
-        <div className="flex flex-wrap gap-1.5 mt-5">
-          {project.tech.map((t) => (
-            <span
-              key={t}
-              className="text-[11px] px-2.5 py-1 rounded-lg font-medium transition-colors duration-200"
-              style={{
-                background: `rgba(${project.glowColor},0.1)`,
-                border: `1px solid rgba(${project.glowColor},0.2)`,
-                color: project.accentLight,
-              }}
-            >
-              {t}
-            </span>
-          ))}
-        </div>
 
         {/* Large card extra visual */}
         {large && (

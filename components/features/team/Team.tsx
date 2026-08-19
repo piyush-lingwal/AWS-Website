@@ -33,8 +33,9 @@ export function Team() {
       {/* ─── 1. Hero ─────────────────────────────────── */}
       <TeamHero />
 
-      {/* ─── Content Sections with Grid Background ─── */}
-      <div className="bg-grid bg-noise relative bg-bg">
+      {/* ─── Content Sections (Plain Background) ─── */}
+      <div className="relative bg-bg">
+
         {/* ─── 2. How Selection Works ──────────────────── */}
         <div className="border-t border-border/40">
           <TeamSelectionRoadmap />

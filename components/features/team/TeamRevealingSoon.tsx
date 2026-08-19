@@ -211,17 +211,7 @@ export function TeamRevealingSoon() {
                 </h3>
               </div>
 
-              {/* Skill Tags */}
-              <div className="flex flex-wrap justify-center gap-1.5 mt-4 pt-3 border-t border-border/60">
-                {role.tags.map((tag, tIdx) => (
-                  <span
-                    key={tIdx}
-                    className="px-2.5 py-0.5 rounded-md bg-bg-surface/80 border border-border text-[10px] font-mono text-text-secondary"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+
 
               {/* Apply / Claim CTA Trigger on Hover */}
               <div className="mt-5 pt-3 text-center">

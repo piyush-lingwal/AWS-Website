@@ -66,9 +66,18 @@ export function ChatbotMascot() {
   }, [messages, isTyping]);
 
   useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {
+        setVideoEnded(true);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     const timer = setTimeout(() => setShowBubble(false), 5000);
     return () => clearTimeout(timer);
   }, []);
+
 
 
   const sendMessage = async (text: string) => {
@@ -232,7 +241,6 @@ export function ChatbotMascot() {
         {showBubble && !open && (
           <div className="chatbot-speech-bubble">
             Hi! I&apos;m Kio 👋
-            <button className="chatbot-speech-close" onClick={() => setShowBubble(false)} aria-label="Dismiss">×</button>
           </div>
         )}
 
@@ -244,26 +252,42 @@ export function ChatbotMascot() {
         >
           <span className="chatbot-trigger-ring" />
           <div className="chatbot-trigger-avatar">
-            <Image
-              src="/chatbotmascot.png"
-              alt="Kio mascot"
-              width={200}
-              height={200}
-              quality={100}
-              unoptimized
-              priority
-              className="chatbot-trigger-video"
-            />
+            {videoEnded ? (
+              <Image
+                src="/chatbotmascot.png"
+                alt="Kio mascot"
+                width={200}
+                height={200}
+                quality={100}
+                unoptimized
+                priority
+                className="chatbot-trigger-video"
+              />
+            ) : (
+              <video
+                ref={videoRef}
+                src="/Chatbot.webm"
+                autoPlay
+                muted
+                playsInline
+                onEnded={() => setVideoEnded(true)}
+                className="chatbot-trigger-video"
+              />
+            )}
           </div>
 
-          <div className="chatbot-trigger-close-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </div>
+
+          {open && (
+            <div className="chatbot-trigger-close-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </div>
+          )}
         </button>
       </div>
+
 
       <style jsx>{`
         .chatbot-trigger-wrapper {
@@ -283,7 +307,7 @@ export function ChatbotMascot() {
           z-index: 9998;
           width: 360px;
           max-height: 560px;
-          display: flex;
+          display: none;
           flex-direction: column;
           background: linear-gradient(145deg,#111827 0%,#0d0d14 100%);
           border: 1px solid rgba(124,58,237,.35);
@@ -296,7 +320,13 @@ export function ChatbotMascot() {
           transition: transform .3s cubic-bezier(.23,1,.32,1), opacity .25s ease;
           transform-origin: bottom right;
         }
-        .chatbot-panel--open { transform: scale(1) translateY(0); opacity: 1; pointer-events: all; }
+        .chatbot-panel--open {
+          display: flex;
+          transform: scale(1) translateY(0);
+          opacity: 1;
+          pointer-events: all;
+        }
+
 
         .chatbot-header {
           display: flex;
@@ -393,7 +423,7 @@ export function ChatbotMascot() {
         .chatbot-send-btn:disabled { opacity:.4; cursor:not-allowed; }
 
         .chatbot-trigger {
-          position:relative; width:72px; height:72px; border-radius:50%;
+          position:relative; width:70px; height:70px; border-radius:50%;
           border:none; cursor:pointer; background:transparent; padding:0;
           display:flex; align-items:center; justify-content:center;
           transition:transform .3s cubic-bezier(.23,1,.32,1);
@@ -424,14 +454,15 @@ export function ChatbotMascot() {
         }
 
         .chatbot-trigger-video {
-          width:72px; height:72px; border-radius:50%; object-fit:contain;
-          background: radial-gradient(circle, rgba(26,16,48,0.95) 0%, rgba(10,10,18,0.98) 100%);
-          border:2px solid rgba(167,139,250,.5);
-          box-shadow:0 0 0 3px rgba(124,58,237,.2),0 8px 32px rgba(0,0,0,.6),0 0 25px rgba(124,58,237,.35);
-          padding:2px;
+          width:70px; height:70px; border-radius:50%; object-fit:cover;
+          background:#07050e;
+          border:3px solid #7c3aed;
+          box-shadow:0 0 0 3px rgba(124,58,237,.25), 0 0 25px rgba(124,58,237,.5), 0 8px 30px rgba(0,0,0,.6);
           image-rendering: -webkit-optimize-contrast;
           transform: translateZ(0);
         }
+
+
 
 
 
@@ -440,16 +471,13 @@ export function ChatbotMascot() {
           color:#fafafa; background:linear-gradient(135deg,#7c3aed,#6d28d9);
           border:2px solid rgba(167,139,250,.6); border-radius:50%;
           box-shadow:0 0 25px rgba(124,58,237,.5),0 8px 24px rgba(0,0,0,.4);
-          opacity:0;
-          transform:scale(0.5) rotate(45deg);
-          transition:transform .3s cubic-bezier(.23,1,.32,1), opacity .25s ease;
-          pointer-events:none;
+          animation: close-icon-pop .25s cubic-bezier(.23,1,.32,1);
         }
-        .chatbot-trigger--active .chatbot-trigger-close-icon {
-          opacity:1;
-          transform:scale(1) rotate(0deg);
-          pointer-events:auto;
+        @keyframes close-icon-pop {
+          from { opacity:0; transform:scale(0.5) rotate(45deg); }
+          to { opacity:1; transform:scale(1) rotate(0deg); }
         }
+
 
 
         .chatbot-speech-bubble {
