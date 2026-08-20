@@ -23,9 +23,9 @@ export interface RecruitmentCTAProps {
 export function RecruitmentCTA({
   variant = "primary",
   openText = "Register Now",
-  closedText = "Join Community",
+  closedText = "Join Group",
   openHref = "/register",
-  closedHref = "/community",
+  closedHref = "/register",
   className,
   containerClassName,
   onClick,

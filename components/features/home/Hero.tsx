@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { 
   Sparkles, 
@@ -143,17 +144,10 @@ export function Hero() {
               </span>
             </h1>
 
-            {/* Description */}
-            <p className="text-xs sm:text-base md:text-lg text-white/80 max-w-xl sm:max-w-2xl leading-relaxed mb-5 sm:mb-7 font-normal px-2 sm:px-4">
-              Learn by building real-world projects, exploring AWS technologies, and collaborating with a community of student builders.
-            </p>
-
             {/* ── High-Impact CTA Buttons (Stacked on Mobile, Side-by-Side on Desktop) ── */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 max-w-xs sm:max-w-none">
-              <a
-                href="https://www.meetup.com/tulas-university-dehradun/"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/register"
                 className="group relative w-full sm:w-auto px-6 sm:px-10 py-3.5 sm:py-3.5 bg-gradient-to-r from-primary via-purple-600 to-purple-500 text-white font-bold text-sm md:text-base rounded-xl sm:rounded-2xl transition-all duration-300 shadow-[0_0_25px_-5px_rgba(124,58,237,0.6)] hover:shadow-[0_0_45px_rgba(124,58,237,0.9)] hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2 overflow-hidden border border-white/20 whitespace-nowrap"
               >
                 <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -162,15 +156,15 @@ export function Hero() {
                   Join Group
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300 shrink-0" />
                 </span>
-              </a>
+              </Link>
 
-              <a
+              <Link
                 href="/about"
                 className="group inline-flex items-center justify-center gap-1.5 py-2 px-4 sm:px-9 sm:py-3.5 text-white/70 hover:text-white font-medium text-xs sm:text-base rounded-xl sm:rounded-2xl sm:bg-white/[0.08] sm:hover:bg-white/[0.14] sm:border sm:border-white/15 backdrop-blur-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
               >
                 <span>About Us</span>
                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 shrink-0" />
-              </a>
+              </Link>
             </div>
           </motion.div>
         </div>

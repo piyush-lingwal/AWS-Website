@@ -57,25 +57,18 @@ export function JoinCTA() {
           </p>
 
           <div className="cta-header-el mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5">
-            <a
-              href="https://bit.ly/4cfwwZQ"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/register"
               className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[13px] font-semibold text-white shadow-[0_0_24px_rgba(124,58,237,0.4)] transition-all duration-300 hover:bg-primary-hover hover:scale-105 hover:shadow-[0_0_35px_rgba(124,58,237,0.65)]"
             >
               Become a Builder
-            </a>
-            <a
-              href="https://www.meetup.com/tulas-university-dehradun/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-[#F64060]/30 bg-[#F64060]/10 px-6 py-3 text-[13px] font-semibold text-[#F64060] transition-all duration-200 hover:bg-[#F64060]/20 hover:border-[#F64060]/50"
+            </Link>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-6 py-3 text-[13px] font-semibold text-primary-light transition-all duration-200 hover:bg-primary/20 hover:border-primary/50"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M21.16 11.23c-1.35-1.92-3.13-2.61-4.81-2.07-1 .31-1.74 1.07-2.18 1.96a4.29 4.29 0 0 0-4.04-1.96c-1.63.15-2.85 1.15-3.4 2.45-.19-.4-.44-.76-.78-1.07-1.12-1.07-2.6-1.11-3.6-.1-1.03 1.03-1.07 2.62.1 3.73.54.51 1.25.75 1.95.73-1.03 1.05-1 2.7.07 3.76 1.05 1.03 2.72 1.02 3.78-.05.57-.57.88-1.32.93-2.1.84.58 1.83.74 2.7.53 1.1-.28 2.05-1 2.62-1.94 1.16 1.54 3.03 1.95 4.67 1.06 1.7-.93 2.37-3.04 1.99-4.93z"/>
-              </svg>
-              Join on Meetup
-            </a>
+              <span>Join Group</span>
+            </Link>
           </div>
 
           <p className="cta-header-el mt-6 text-[12px] text-muted">

@@ -54,7 +54,7 @@ export function Navbar() {
           <NavbarLogo />
           <NavItems items={navItems} />
           <div className="flex items-center gap-4">
-            <NavbarButton as="a" href={BUILDER_CENTER_URL} target="_blank" rel="noopener noreferrer" variant="primary">
+            <NavbarButton as={Link} href="/register" variant="primary">
               Join Group
             </NavbarButton>
           </div>
@@ -86,10 +86,8 @@ export function Navbar() {
             ))}
             <div className="mt-2 flex w-full flex-col gap-3 border-t border-white/5 pt-3">
               <NavbarButton
-                as="a"
-                href={BUILDER_CENTER_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+                as={Link}
+                href="/register"
                 onClick={() => setIsMobileMenuOpen(false)}
                 variant="primary"
                 className="w-full"

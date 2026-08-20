@@ -34,10 +34,10 @@ export function ClosedRegistrations() {
         {/* Action Button */}
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <Link
-            href="/community"
+            href="/register"
             className="group inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-white shadow-[0_0_24px_rgba(124,58,237,0.4)] transition-all duration-300 hover:bg-primary-hover hover:scale-105"
           >
-            <span>Join Our Community</span>
+            <span>Join Group</span>
             <ArrowRight size={16} animateOnHover />
           </Link>
 
