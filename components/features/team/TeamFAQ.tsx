@@ -106,7 +106,7 @@ export function TeamFAQ() {
           </h2>
           
           <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-            Everything you need to know about joining the AWS Student Builders Group.
+            Everything you need to know about joining the AWS Student Builder Group.
           </p>
 
           {/* Desktop Contact Card */}

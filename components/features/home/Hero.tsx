@@ -134,15 +134,14 @@ export function Hero() {
 
               {/* Mobile layout */}
               <span className="block sm:hidden">
-                <span className="text-white drop-shadow-md block">Where Student Builders</span>
+                <span className="text-white drop-shadow-md block">Where Student Builder</span>
                 <FlipText
                   words={[
-                    "Create the Cloud Future",
                     "Build on AWS Cloud",
                     "Architect AI Systems",
                     "Innovate Together",
                   ]}
-                  duration={3200}
+                  duration={5000}
                   className="text-transparent bg-clip-text animate-aurora"
                   style={{
                     backgroundImage: "linear-gradient(90deg, #9333EA, #C084FC, #38BDF8, #A855F7, #9333EA)",
@@ -151,6 +150,11 @@ export function Hero() {
                 />
               </span>
             </h1>
+
+            {/* Subheading / Subtext Description */}
+            <p className="text-sm sm:text-base md:text-lg text-text-secondary max-w-2xl text-center mb-6 sm:mb-8 font-sans leading-relaxed px-4">
+              Join a community where students learn by building — through <span className="text-text-primary font-semibold">hands-on workshops, hackathons, mentorship, and real projects</span> that prepare you for the future.
+            </p>
 
             {/* ── High-Impact CTA Buttons (Stacked on Mobile, Side-by-Side on Desktop) ── */}
             <div className="relative z-20 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 max-w-xs sm:max-w-none">
@@ -167,11 +171,11 @@ export function Hero() {
               </Link>
 
               <Link
-                href="/register"
+                href="/about"
                 className="group relative z-30 inline-flex items-center justify-center gap-2 px-6 sm:px-9 py-3.5 sm:py-3.5 text-white bg-white/[0.08] hover:bg-white/[0.16] border border-white/20 font-bold text-xs sm:text-base rounded-xl sm:rounded-2xl backdrop-blur-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap cursor-pointer"
               >
                 <Users className="w-4 h-4 text-primary-light shrink-0" />
-                <span>Join Community</span>
+                <span>About Us</span>
                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 shrink-0" />
               </Link>
             </div>

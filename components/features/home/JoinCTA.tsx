@@ -72,7 +72,7 @@ export function JoinCTA() {
           </div>
 
           <p className="cta-header-el mt-6 text-[12px] text-muted">
-            50+ students have already joined the builders community
+            50+ students have already joined the builder community
           </p>
         </div>
       </div>

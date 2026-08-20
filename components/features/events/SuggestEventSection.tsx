@@ -111,7 +111,7 @@ export function SuggestEventSection() {
               </div>
               <h4 className="text-lg font-semibold text-white">Suggestion Received!</h4>
               <p className="mt-1 text-sm text-text-secondary max-w-md">
-                Thanks for helping shape the AWS Student Builders Group roadmap. We review suggestions weekly.
+                Thanks for helping shape the AWS Student Builder Group roadmap. We review suggestions weekly.
               </p>
               <button
                 type="button"

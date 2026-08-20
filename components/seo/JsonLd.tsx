@@ -4,12 +4,12 @@ export function OrganizationJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": ["Organization", "EducationalOrganization"],
-    name: "AWS Student Builders Group at Tulas University",
+    name: "AWS Student Builder Group at Tulas University",
     alternateName: ["AWS SBG Tulas", "AWS Cloud Club Tulas University"],
     url: "https://awstulas.org",
     logo: "https://awstulas.org/icon.png",
     description:
-      "Official AWS Student Builders Group at Tulas University, Dehradun. A student community focused on AWS cloud computing, technical workshops, and hackathons.",
+      "Official AWS Student Builder Group at Tulas University, Dehradun. A student community focused on AWS cloud computing, technical workshops, and hackathons.",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Dehradun",
@@ -46,7 +46,7 @@ export function WebSiteJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "AWS Student Builders Group at Tulas University",
+    name: "AWS Student Builder Group at Tulas University",
     alternateName: ["AWS SBG Tulas", "AWS Cloud Club Dehradun"],
     url: "https://awstulas.org",
     potentialAction: {

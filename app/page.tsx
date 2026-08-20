@@ -14,9 +14,9 @@ import { JoinCTA } from "@/components/features/home/JoinCTA";
 
 export const metadata: Metadata = {
   title:
-    "AWS Student Builders Group at Tulas University | Official AWS Cloud Community",
+    "AWS Student Builder Group at Tulas University | Official AWS Cloud Community",
   description:
-    "Official website of AWS Student Builders Group at Tulas University, Dehradun. Join workshops, cloud events, hackathons, AWS learning programs, and student innovation initiatives powered by AWS.",
+    "Official website of AWS Student Builder Group at Tulas University, Dehradun. Join workshops, cloud events, hackathons, AWS learning programs, and student innovation initiatives powered by AWS.",
   alternates: {
     canonical: "/",
   },

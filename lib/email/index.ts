@@ -43,7 +43,7 @@ export async function sendApplicationConfirmationEmail(
   data: ApplicationEmailData
 ): Promise<SendEmailResult> {
   const { to, fullName } = data;
-  const subject = `Application Received - AWS Student Builders Group (Cohort 2026)`;
+  const subject = `Application Received - AWS Student Builder Group (Cohort 2026)`;
   const html = generateApplicationEmailHtml(data);
   const text = generateApplicationEmailText(data);
 
@@ -53,7 +53,7 @@ export async function sendApplicationConfirmationEmail(
 
   // ── 1. Gmail SMTP (Serverless Optimized with Port 465 / 587 Failover) ─
   if (gmailUser && gmailPass) {
-    const fromHeader = `AWS Student Builders Group <${gmailUser}>`;
+    const fromHeader = `AWS Student Builder Group <${gmailUser}>`;
 
     // Attempt 1: Port 465 (SSL)
     try {
@@ -120,7 +120,7 @@ export async function sendApplicationConfirmationEmail(
         socketTimeout: 15000,
       });
 
-      const fromAddress = process.env.EMAIL_FROM || `AWS Student Builders Group <${smtpUser}>`;
+      const fromAddress = process.env.EMAIL_FROM || `AWS Student Builder Group <${smtpUser}>`;
 
       const info = await transporter.sendMail({
         from: fromAddress,
@@ -164,7 +164,7 @@ async function sendViaResend(
     const fromAddress =
       process.env.EMAIL_FROM ||
       process.env.RESEND_FROM ||
-      "AWS Student Builders Group <onboarding@resend.dev>";
+      "AWS Student Builder Group <onboarding@resend.dev>";
 
     const resend = new Resend(apiKey);
     const res = await resend.emails.send({

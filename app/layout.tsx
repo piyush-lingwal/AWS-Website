@@ -22,9 +22,9 @@ const poppins = Poppins({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://awstulas.org";
 const siteName =
-  "AWS Student Builders Group at Tulas University | Official AWS Cloud Community";
+  "AWS Student Builder Group at Tulas University | Official AWS Cloud Community";
 const siteDescription =
-  "Official website of AWS Student Builders Group at Tulas University, Dehradun. Join workshops, cloud events, hackathons, AWS learning programs, technical communities, and student innovation initiatives.";
+  "Official website of AWS Student Builder Group at Tulas University, Dehradun. Join workshops, cloud events, hackathons, AWS learning programs, technical communities, and student innovation initiatives.";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -40,21 +40,21 @@ export const metadata: Metadata = {
 
   title: {
     default: siteName,
-    template: "%s | AWS Student Builders Group — Tulas University",
+    template: "%s | AWS Student Builder Group — Tulas University",
   },
 
   description: siteDescription,
 
   keywords: [
-    "AWS Student Builders Group",
+    "AWS Student Builder Group",
     "AWS SBG",
     "AWS SBG Tulas",
     "AWS SBG Dehradun",
-    "AWS Student Builders Group Tulas University",
+    "AWS Student Builder Group Tulas University",
     "AWS Cloud Club",
     "Cloud Computing",
     "AWS Community",
-    "Student Builders Group",
+    "Student Builder Group",
     "Tulas University",
     "Dehradun",
     "AWS Workshops",
@@ -67,9 +67,9 @@ export const metadata: Metadata = {
     "AWS Student Community Dehradun",
   ],
 
-  applicationName: "AWS Student Builders Group",
-  creator: "AWS Student Builders Group at Tulas University",
-  publisher: "AWS Student Builders Group",
+  applicationName: "AWS Student Builder Group",
+  creator: "AWS Student Builder Group at Tulas University",
+  publisher: "AWS Student Builder Group",
   category: "Education",
   referrer: "origin-when-cross-origin",
 
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
     title: siteName,
     description: siteDescription,
     url: siteUrl,
-    siteName: "AWS Student Builders Group",
+    siteName: "AWS Student Builder Group",
     type: "website",
     locale: "en_US",
     images: [
@@ -101,7 +101,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "AWS Student Builders Group at Tulas University",
+        alt: "AWS Student Builder Group at Tulas University",
       },
     ],
   },

@@ -137,7 +137,7 @@ export function OurMission() {
               <PixelHeading mode="uniform" className="text-gradient">Build with Cloud</PixelHeading>
             </h2>
             <p className="mission-header-el mt-5 text-[15px] sm:text-[16px] leading-relaxed text-text-secondary">
-              AWS Student Builders Group at Tulas University is a student-led technical community focused on making cloud computing accessible, practical, and exciting for everyone.
+              AWS Student Builder Group at Tulas University is a student-led technical community focused on making cloud computing accessible, practical, and exciting for everyone.
             </p>
             <p className="mission-header-el mt-3 text-[15px] sm:text-[16px] leading-relaxed text-text-secondary">
               We believe the best way to learn is by building. Through workshops, collaborative projects, technical sessions, and hackathons — we help students gain real-world skills while growing alongside an ambitious community.

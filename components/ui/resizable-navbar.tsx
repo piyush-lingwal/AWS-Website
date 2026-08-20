@@ -351,16 +351,16 @@ export const NavbarLogo = ({ visible }: { visible?: boolean }) => {
           className="flex flex-col"
         >
           {/* Full name on desktop, abbreviated on mobile */}
-          <span className="font-bold tracking-wide text-text-primary text-[12px] leading-tight hidden sm:block">
+          <span className="font-bold tracking-wide text-text-primary text-xs sm:text-sm leading-tight hidden sm:block">
             AWS STUDENT BUILDER GROUP
           </span>
-          <span className="font-bold tracking-wide text-text-primary text-[12px] leading-tight sm:hidden">
-            AWS Student Builders Group
+          <span className="font-bold tracking-wide text-text-primary text-xs leading-tight sm:hidden">
+            AWS Student Builder Group
           </span>
-          <span className="text-text-secondary text-[10px] leading-tight hidden sm:block">
+          <span className="text-text-secondary text-[10px] sm:text-[11px] leading-tight hidden sm:block">
             at Tulas University Dehradun
           </span>
-          <span className="text-text-secondary text-[9px] leading-tight sm:hidden">
+          <span className="text-text-secondary text-[9px] sm:text-[10px] leading-tight sm:hidden">
             Tulas University
           </span>
         </motion.div>

@@ -9,7 +9,7 @@ import { Mail, Instagram, MessageCircle, Calendar } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Join Community | AWS Student Builder Group",
-  description: "Connect with 50+ student builders at Tulas University, attend workshops, hackathons, and build real-world cloud projects.",
+  description: "Connect with 50+ student builder at Tulas University, attend workshops, hackathons, and build real-world cloud projects.",
 };
 
 const COMMUNITY_CHANNELS = [
@@ -83,7 +83,7 @@ export default function CommunityPage() {
 
         {/* Page Title */}
         <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-extrabold text-center tracking-tight max-w-3xl leading-tight">
-          Connect with <span className="text-gradient">Student Builders</span>
+          Connect with <span className="text-gradient">Student Builder</span>
         </h1>
 
         {/* Subtitle */}

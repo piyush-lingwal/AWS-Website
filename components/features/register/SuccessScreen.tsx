@@ -257,7 +257,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <span className="font-display font-bold text-xs sm:text-sm tracking-wider text-white truncate">
-                    AWS STUDENT BUILDERS GROUP
+                    AWS STUDENT BUILDER GROUP
                   </span>
                   <span className="text-[8px] sm:text-[9px] font-mono px-1.5 sm:px-2 py-0.5 rounded bg-primary/20 text-primary-light border border-primary/30 shrink-0">
                     OFFICIAL PASS
@@ -531,7 +531,7 @@ export function SuccessScreen({ result, formData }: SuccessScreenProps) {
         <div className="mt-8 sm:mt-10 flex flex-col items-center justify-center text-center px-4 max-w-md mx-auto">
           <div className="inline-flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] text-muted font-mono leading-relaxed">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>Official AWS Student Builders Group at Tulas University</span>
+            <span>Official AWS Student Builder Group at Tulas University</span>
           </div>
           <p className="text-[10px] text-muted/70 font-mono mt-0.5">
             No spam, ever.

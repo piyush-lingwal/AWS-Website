@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "AWS Student Builders Group at Tulas University";
+export const alt = "AWS Student Builder Group at Tulas University";
 export const size = {
   width: 1200,
   height: 630,
@@ -52,7 +52,7 @@ export default async function Image() {
               letterSpacing: "-0.02em",
             }}
           >
-            AWS Student Builders Group
+            AWS Student Builder Group
           </h1>
           <p
             style={{

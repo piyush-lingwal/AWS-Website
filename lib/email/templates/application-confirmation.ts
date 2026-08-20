@@ -20,7 +20,7 @@ export function generateApplicationEmailHtml(data: ApplicationEmailData): string
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Application Received - AWS Student Builders Group</title>
+  <title>Application Received - AWS Student Builder Group</title>
   <style>
     body {
       margin: 0;
@@ -98,7 +98,7 @@ export function generateApplicationEmailHtml(data: ApplicationEmailData): string
             <tr>
               <td>
                 <span style="font-size: 12px; font-weight: 800; color: #7C3AED; letter-spacing: 1px; text-transform: uppercase; font-family: monospace; display: block; margin-bottom: 2px;">
-                  AWS STUDENT BUILDERS GROUP
+                  AWS STUDENT BUILDER GROUP
                 </span>
                 <span style="font-size: 13px; color: #64748B; font-family: -apple-system, sans-serif;">
                   Tulas University · Dehradun Chapter
@@ -123,7 +123,7 @@ export function generateApplicationEmailHtml(data: ApplicationEmailData): string
             Application Received! 🚀
           </h1>
           <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #334155;">
-            Hi <strong style="color: #0F172A;">${fullName}</strong>, thank you for applying to join the <strong style="color: #7C3AED;">AWS Student Builders Group</strong> for <strong style="color: #0F172A;">Cohort 2026</strong>. Your builder credentials have been securely logged in our database.
+            Hi <strong style="color: #0F172A;">${fullName}</strong>, thank you for applying to join the <strong style="color: #7C3AED;">AWS Student Builder Group</strong> for <strong style="color: #0F172A;">Cohort 2026</strong>. Your builder credentials have been securely logged in our database.
           </p>
 
           <!-- Official Builder Record Box -->
@@ -182,7 +182,7 @@ export function generateApplicationEmailHtml(data: ApplicationEmailData): string
                 1. Join Official Meetup Group <span style="font-size: 10px; color: #E11D48; background-color: #FFE4E6; padding: 2px 6px; border-radius: 4px; font-family: monospace; margin-left: 4px;">REQUIRED</span>
               </div>
               <p style="margin: 0 0 12px 0; font-size: 12px; color: #64748B;">
-                Receive interview invites, RSVP for offline hands-on workshops, and connect with fellow builders.
+                Receive interview invites, RSVP for offline hands-on workshops, and connect with fellow builder.
               </p>
               <a href="https://www.meetup.com/tulas-university-dehradun/" target="_blank" class="btn-meetup" style="background-color: #E11D48; color: #FFFFFF !important; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; font-size: 12px; display: inline-block;">
                 Join Meetup Group &rarr;
@@ -214,7 +214,7 @@ export function generateApplicationEmailHtml(data: ApplicationEmailData): string
       <tr>
         <td style="padding: 20px 32px; background-color: #F8FAFC; border-top: 1px solid #E2E8F0; text-align: center;">
           <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748B; font-family: monospace; font-weight: 600;">
-            AWS STUDENT BUILDERS GROUP · Tulas UNIVERSITY DEHRADUN
+            AWS STUDENT BUILDER GROUP · Tulas UNIVERSITY DEHRADUN
           </p>
           <p style="margin: 0; font-size: 11px; color: #94A3B8;">
             This is an automated confirmation for your application to AWS SBG Cohort 2026.
@@ -235,12 +235,12 @@ export function generateApplicationEmailText(data: ApplicationEmailData): string
   const academicProfile = [year, course, branch && branch !== "N/A" ? `(${branch})` : ""].filter(Boolean).join(" · ");
 
   return `
-AWS STUDENT BUILDERS GROUP - Tulas UNIVERSITY
+AWS STUDENT BUILDER GROUP - Tulas UNIVERSITY
 Application Received & Logged
 
 Hi ${fullName},
 
-Thank you for applying to join the AWS Student Builders Group (Cohort 2026)!
+Thank you for applying to join the AWS Student Builder Group (Cohort 2026)!
 Your builder credentials have been securely logged in our database.
 
 --- YOUR APPLICATION DETAILS ---
@@ -260,7 +260,7 @@ https://www.meetup.com/tulas-university-dehradun/
 https://builder.aws.com/content/3C075iQJeEx03mnzHwmXO9zdgEG/aws-student-builder-groups
 
 Best regards,
-AWS Student Builders Group Team
+AWS Student Builder Group Team
 Tulas University, Dehradun
   `.trim();
 }

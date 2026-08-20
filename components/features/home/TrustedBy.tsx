@@ -20,7 +20,7 @@ const ROW_2 = [...ROW_1].reverse();
 
 /* ─── Stats ──────────────────────────────────────────────────────────────── */
 const STATS = [
-  { value: 50, suffix: "+", label: "Builders" },
+  { value: 50, suffix: "+", label: "Builder" },
   { value: 6,  suffix: "",  label: "Active wings" },
   { value: 10, suffix: "+", label: "AWS services" },
 ];
@@ -179,7 +179,7 @@ export function TrustedBy() {
         <h2 className="ecosystem-header-el mt-3 font-display text-[28px] sm:text-[34px] md:text-[42px] font-semibold leading-[1.1] tracking-tight text-text-primary">
           Powered by Platforms{" "}
           <PixelHeading mode="uniform" className="text-gradient">
-            Built for Builders
+            Built for Builder
           </PixelHeading>
         </h2>
       </div>

@@ -42,7 +42,7 @@ const WHY_JOIN_ITEMS = [
   {
     icon: Users,
     title: "Industry Exposure",
-    desc: "Connect with mentors, industry professionals, and builders across the AWS community.",
+    desc: "Connect with mentors, industry professionals, and builder across the AWS community.",
     gradient: "bg-gradient-to-br from-[#ffaa17] via-[#f59e0b] to-[#d97706]",
     shadow: "shadow-[0_12px_24px_-6px_rgba(245,158,11,0.35)]",
     curveOffset: "md:ml-10 lg:ml-16",
