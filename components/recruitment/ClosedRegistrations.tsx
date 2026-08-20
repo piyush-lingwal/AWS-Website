@@ -2,8 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowRight } from "@/components/animate-ui/icons/arrow-right";
-import { Sparkles } from "@/components/animate-ui/icons/sparkles";
+import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
+import { Sparkles } from "@/components/ui/animate-ui/icons/sparkles";
 
 export function ClosedRegistrations() {
   return (

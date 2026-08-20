@@ -10,6 +10,7 @@ import LightRays from "@/components/ui/light-rays";
 import CursorGrid from "@/components/ui/cursor-grid";
 import { ThemeStyles } from "@/components/features/register/ThemeStyles";
 import { SuccessScreen } from "@/components/features/register/SuccessScreen";
+import { FileUploadCard, UploadedFile } from "@/components/ui/file-upload-card";
 import {
   ArrowRight,
   User,
@@ -746,64 +747,37 @@ function RegisterPageContent() {
             </div>
 
             <div id="field-resume" className="space-y-1.5 pt-1">
-              {!resumeFile ? (
-                <label
-                  htmlFor="resume-upload"
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const file = e.dataTransfer.files?.[0];
-                    handleFileSelect(file);
-                  }}
-                  className="relative flex flex-col items-center justify-center p-5 sm:p-6 rounded-2xl border border-dashed border-white/[0.15] bg-white/[0.02] hover:border-primary/50 hover:bg-white/[0.04] cursor-pointer transition-all duration-200 group text-center"
-                >
-                  <input
-                    id="resume-upload"
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    className="sr-only"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      handleFileSelect(file);
-                    }}
-                  />
-                  <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-                    <UploadCloud className="w-5 h-5 text-primary-light" />
-                  </div>
-                  <p className="text-xs sm:text-sm font-medium text-text-primary">
-                    <span className="text-primary-light underline underline-offset-2">Click to upload</span> or drag & drop your resume
-                  </p>
-                  <p className="text-[10px] font-mono text-muted mt-1">
-                    PDF document only · Maximum file size 10MB
-                  </p>
-                </label>
-              ) : (
-                <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-sm">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
-                      <FileText className="w-5 h-5 text-emerald-300" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-semibold text-text-primary truncate">
-                        {resumeFile.name}
-                      </p>
-                      <p className="text-[10px] font-mono text-emerald-300/80 mt-0.5">
-                        {(resumeFile.size / (1024 * 1024)).toFixed(2)} MB · PDF Attached ✓
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setResumeFile(null)}
-                    className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white/60 hover:text-white transition-colors ml-2 shrink-0"
-                    aria-label="Remove resume"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
+              <FileUploadCard
+                files={
+                  resumeFile
+                    ? [
+                        {
+                          id: "resume-file",
+                          file: resumeFile,
+                          progress: 100,
+                          status: "completed",
+                        },
+                      ]
+                    : []
+                }
+                onFilesChange={(selectedFiles) => {
+                  if (selectedFiles && selectedFiles.length > 0) {
+                    handleFileSelect(selectedFiles[0]);
+                  }
+                }}
+                onFileRemove={() => {
+                  setResumeFile(null);
+                  setErrors((e) => {
+                    const n = { ...e };
+                    delete n.resume;
+                    return n;
+                  });
+                }}
+                accept="application/pdf,.pdf"
+                maxSizeMB={10}
+                showHeader={false}
+                className="bg-transparent border-none shadow-none p-0 overflow-visible"
+              />
               {errors.resume && <p className="text-[11px] font-mono text-red-400 mt-1">✕ {errors.resume}</p>}
             </div>
           </motion.div>

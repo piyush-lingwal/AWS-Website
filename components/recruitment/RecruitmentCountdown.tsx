@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRecruitment } from "@/hooks/useRecruitment";
-import { Sparkles } from "@/components/animate-ui/icons/sparkles";
+import { Sparkles } from "@/components/ui/animate-ui/icons/sparkles";
 
 export interface RecruitmentCountdownProps {
   className?: string;

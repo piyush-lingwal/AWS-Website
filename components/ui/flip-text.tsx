@@ -1,128 +1,91 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface FlipTextProps {
-    /**
-     * Additional CSS classes for the wrapper
-     */
-    className?: string;
+  /**
+   * List of words or phrases to rotate through
+   */
+  words?: string[];
 
-    /**
-     * The text content to animate (will be split by spaces)
-     */
-    children: string;
+  /**
+   * Fallback single text to animate
+   */
+  children?: string;
 
-    /**
-     * Duration of the flip animation in seconds
-     * @default 2.2
-     */
-    duration?: number;
+  /**
+   * Duration in ms before flipping to next text
+   * @default 3200
+   */
+  duration?: number;
 
-    /**
-     * Initial delay before animation starts in seconds
-     * @default 0
-     */
-    delay?: number;
+  /**
+   * Additional CSS classes
+   */
+  className?: string;
 
-    /**
-     * Whether the animation should loop infinitely
-     * @default true
-     */
-    loop?: boolean;
-
-    /**
-     * Custom separator for splitting text (default is space)
-     * @default " "
-     */
-    separator?: string;
-
-    /**
-     * Whether all characters should animate together (no stagger)
-     * @default false
-     */
-    together?: boolean;
+  /**
+   * Inline styles (e.g. background gradients)
+   */
+  style?: React.CSSProperties;
 }
 
 export function FlipText({
-    className,
-    children,
-    duration = 2.2,
-    delay = 0,
-    loop = true,
-    separator = " ",
-    together = false,
+  words,
+  children,
+  duration = 3200,
+  className,
+  style,
 }: FlipTextProps) {
-    const words = useMemo(() => children.split(separator), [children, separator]);
-    const totalChars = children.length;
+  const list =
+    words && words.length > 0
+      ? words
+      : children
+        ? [children]
+        : ["Create the Cloud Future", "Build on AWS", "Architect AI Systems", "Innovate Together"];
 
-    // Calculate character index for each position
-    const getCharIndex = (wordIndex: number, charIndex: number) => {
-        let index = 0;
-        for (let i = 0; i < wordIndex; i++) {
-            index += words[i].length + (separator === " " ? 1 : separator.length);
-        }
-        return index + charIndex;
-    };
+  const [index, setIndex] = useState(0);
 
-    return (
-        <div
-            className={cn(
-                "flip-text-wrapper inline-block leading-none",
-                className
-            )}
-            style={{ perspective: "1000px" }}
+  useEffect(() => {
+    if (list.length <= 1) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % list.length);
+    }, duration);
+    return () => clearInterval(interval);
+  }, [list, duration]);
+
+  const currentText = list[index] || list[0];
+
+  return (
+    <span className="inline-block relative text-left py-1 align-baseline overflow-visible" style={{ perspective: "1000px" }}>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={`${index}-${currentText}`}
+          initial={{ opacity: 0, rotateX: -90, y: 16, filter: "blur(4px)" }}
+          animate={{ opacity: 1, rotateX: 0, y: 0, filter: "blur(0px)" }}
+          exit={{ opacity: 0, rotateX: 90, y: -16, filter: "blur(4px)" }}
+          transition={{
+            duration: 0.6,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+          style={{
+            transformOrigin: "50% 50% -12px",
+            transformStyle: "preserve-3d",
+            ...style,
+          }}
+          className={cn(
+            "inline-block font-extrabold text-transparent bg-clip-text pt-1 pb-3 sm:pb-4 leading-[1.25]",
+            className
+          )}
         >
-            {words.map((word, wordIndex) => {
-                const chars = word.split("");
-
-                return (
-                    <span
-                        key={wordIndex}
-                        className="word inline-block whitespace-nowrap"
-                        style={{ transformStyle: "preserve-3d" }}
-                    >
-                        {chars.map((char, charIndex) => {
-                            const currentGlobalIndex = getCharIndex(wordIndex, charIndex);
-
-                            // Calculate delay - if together, use same delay for all
-                            let calculatedDelay = delay;
-                            if (!together) {
-                                const normalizedIndex = currentGlobalIndex / totalChars;
-                                const sineValue = Math.sin(normalizedIndex * (Math.PI / 2));
-                                calculatedDelay = sineValue * (duration * 0.25) + delay;
-                            }
-
-                            return (
-                                <span
-                                    key={charIndex}
-                                    className="flip-char inline-block relative"
-                                    data-char={char}
-                                    style={
-                                        {
-                                            "--flip-duration": `${duration}s`,
-                                            "--flip-delay": `${calculatedDelay}s`,
-                                            "--flip-iteration": loop ? "infinite" : "1",
-                                            transformStyle: "preserve-3d",
-                                        } as React.CSSProperties
-                                    }
-                                >
-                                    {char}
-                                </span>
-                            );
-                        })}
-                        {separator === " " && wordIndex < words.length - 1 && (
-                            <span className="whitespace inline-block">&nbsp;</span>
-                        )}
-                        {separator !== " " && wordIndex < words.length - 1 && (
-                            <span className="separator inline-block">{separator}</span>
-                        )}
-                    </span>
-                );
-            })}
-        </div>
-    );
+          {currentText}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
 }
 
 export default FlipText;
+

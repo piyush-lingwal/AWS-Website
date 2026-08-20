@@ -15,8 +15,8 @@ import {
   InputGroup,
   InputGroupAddon,
 } from "@/components/ui/input-group"
-import { Search } from "@/components/animate-ui/icons/search"
-import { Check } from "@/components/animate-ui/icons/check"
+import { Search } from "@/components/ui/animate-ui/icons/search"
+import { Check } from "@/components/ui/animate-ui/icons/check"
 
 function Command({
   className,

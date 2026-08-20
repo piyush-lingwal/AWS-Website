@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight } from "@/components/animate-ui/icons/arrow-right";
-import { CirclePlus } from "@/components/animate-ui/icons/circle-plus";
+import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
+import { CirclePlus } from "@/components/ui/animate-ui/icons/circle-plus";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";

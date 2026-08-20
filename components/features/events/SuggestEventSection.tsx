@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { SparklesText } from "@/components/ui/sparkles-text";
 import { submitEventSuggestion } from "@/actions/suggest-event";
-import { Send } from "@/components/animate-ui/icons/send";
-import { LoaderCircle } from "@/components/animate-ui/icons/loader-circle";
-import { Lightbulb } from "@/components/animate-ui/icons/lightbulb";
-import { Check } from "@/components/animate-ui/icons/check";
+import { Send } from "@/components/ui/animate-ui/icons/send";
+import { LoaderCircle } from "@/components/ui/animate-ui/icons/loader-circle";
+import { Lightbulb } from "@/components/ui/animate-ui/icons/lightbulb";
+import { Check } from "@/components/ui/animate-ui/icons/check";
 import { Globe, Users } from "lucide-react";
 import { toast } from "sonner";
 

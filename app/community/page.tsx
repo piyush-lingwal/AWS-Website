@@ -2,9 +2,9 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
-import { ArrowRight } from "@/components/animate-ui/icons/arrow-right";
-import { Users } from "@/components/animate-ui/icons/users";
-import { Sparkles } from "@/components/animate-ui/icons/sparkles";
+import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
+import { Users } from "@/components/ui/animate-ui/icons/users";
+import { Sparkles } from "@/components/ui/animate-ui/icons/sparkles";
 import { Mail, Instagram, MessageCircle, Calendar } from "lucide-react";
 
 export const metadata: Metadata = {

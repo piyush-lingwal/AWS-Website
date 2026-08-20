@@ -74,8 +74,8 @@ export const LEADERSHIP_TEAM: LeadershipMember[] = [
       "Research & innovation guidance"
     ],
     socials: {
-      linkedin: "https://linkedin.com/",
-      email: "faculty@tulas.edu.in"
+      linkedin: "#",
+      email: "#"
     }
   },
   {
@@ -99,7 +99,7 @@ export const LEADERSHIP_TEAM: LeadershipMember[] = [
     ],
     socials: {
       github: "https://github.com/piyush-lingwal/",
-      linkedin: "https://linkedin.com/",
+      linkedin: "https://www.linkedin.com/in/piyush-lingwal-5a8874382/",
       email: "piyush.202304205@tulas.edu.in"
     }
   }
@@ -146,7 +146,7 @@ export const NETWORK_NODES: NetworkNode[] = [
       "✔ Serverless Architectures"
     ],
 
-    socials: { github: "https://github.com/piyush-lingwal", linkedin: "https://linkedin.com" }
+    socials: { github: "https://github.com/piyush-lingwal", linkedin: "https://www.linkedin.com/in/piyush-lingwal-5a8874382/" }
   },
   {
     id: "node-design",
@@ -280,7 +280,7 @@ export const DEPARTMENTS: DepartmentInfo[] = [
         avatar: "/members/piyushlingwal.png",
         handle: "piyush-lingwal",
         specializations: ["AWS Architecture", "Kubernetes", "Terraform", "Serverless"],
-        socials: { github: "https://github.com/piyush-lingwal", linkedin: "https://linkedin.com" }
+        socials: { github: "https://github.com/piyush-lingwal", linkedin: "https://www.linkedin.com/in/piyush-lingwal-5a8874382/" }
       }
     ]
   },

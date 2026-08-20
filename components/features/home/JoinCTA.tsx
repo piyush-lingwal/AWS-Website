@@ -5,7 +5,7 @@ import Link from "next/link";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ArrowRight } from "@/components/animate-ui/icons/arrow-right";
+import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
 import { PixelHeading } from "@/components/ui/pixel-heading-character";
 
 import { useRecruitment } from "@/hooks/useRecruitment";

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check } from "@/components/animate-ui/icons/check";
-import { LoaderCircle } from "@/components/animate-ui/icons/loader-circle";
+import { Check } from "@/components/ui/animate-ui/icons/check";
+import { LoaderCircle } from "@/components/ui/animate-ui/icons/loader-circle";
 
 export type LoadingState = {
   text: string;

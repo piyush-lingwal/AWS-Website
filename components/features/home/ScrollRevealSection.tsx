@@ -1,4 +1,4 @@
-import { ScrollReveal } from "@/components/lightswind/scroll-reveal";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
 export function ScrollRevealSection() {
   return (

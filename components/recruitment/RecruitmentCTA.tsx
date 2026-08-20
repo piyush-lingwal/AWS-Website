@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRecruitment } from "@/hooks/useRecruitment";
-import { ArrowRight } from "@/components/animate-ui/icons/arrow-right";
+import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import { cn } from "@/lib/utils";
 

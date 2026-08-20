@@ -6,11 +6,11 @@ import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { PixelHeading } from "@/components/ui/pixel-heading-character";
 
-import { Terminal } from "@/components/animate-ui/icons/terminal";
-import { Route } from "@/components/animate-ui/icons/route";
-import { PartyPopper } from "@/components/animate-ui/icons/party-popper";
-import { Users } from "@/components/animate-ui/icons/users";
-import { BadgeCheck } from "@/components/animate-ui/icons/badge-check";
+import { Terminal } from "@/components/ui/animate-ui/icons/terminal";
+import { Route } from "@/components/ui/animate-ui/icons/route";
+import { PartyPopper } from "@/components/ui/animate-ui/icons/party-popper";
+import { Users } from "@/components/ui/animate-ui/icons/users";
+import { BadgeCheck } from "@/components/ui/animate-ui/icons/badge-check";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 

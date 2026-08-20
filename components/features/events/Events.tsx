@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { MapPin } from "@/components/animate-ui/icons/map-pin";
-import { SquareArrowOutUpRight } from "@/components/animate-ui/icons/square-arrow-out-up-right";
-import { Clock } from "@/components/animate-ui/icons/clock";
+import { MapPin } from "@/components/ui/animate-ui/icons/map-pin";
+import { SquareArrowOutUpRight } from "@/components/ui/animate-ui/icons/square-arrow-out-up-right";
+import { Clock } from "@/components/ui/animate-ui/icons/clock";
 import { PixelHeading } from "@/components/ui/pixel-heading-character";
 import { Spotlight } from "@/components/ui/spotlight";
 import { SpotlightCard } from "@/components/ui/spotlight-card";

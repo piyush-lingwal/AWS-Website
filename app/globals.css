@@ -308,60 +308,6 @@
   text-transform: uppercase;
 }
 
-/* FlipText Animation Styles from VengenceUI */
-.flip-char {
-  color: inherit;
-  -webkit-text-fill-color: transparent;
-  vertical-align: middle;
-  height: 1.2em;
-  animation: flip var(--flip-duration, 2.2s) var(--flip-delay, 0s) var(--flip-iteration, infinite) ease;
-  line-height: 1.2em;
-}
-
-.flip-char::before,
-.flip-char::after {
-  color: inherit;
-  -webkit-text-fill-color: currentcolor;
-  content: attr(data-char);
-  backface-visibility: hidden;
-  width: 100%;
-  height: 100%;
-  animation: fade var(--flip-duration, 2.2s) var(--flip-delay, 0s) var(--flip-iteration, infinite) ease;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-}
-
-.flip-char::after {
-  transform: translate(-50%, -50%) translateZ(0.6em);
-}
-
-.flip-char::before {
-  opacity: 0;
-  --opacity: 1;
-  transform: translate(-50%, -50%) rotateX(-90deg) translateZ(0.6em);
-}
-
-@keyframes flip {
-  0% {
-    transform: rotateX(0deg);
-  }
-  25%, 100% {
-    transform: rotateX(90deg);
-  }
-}
-
-@keyframes fade {
-  0% {
-    opacity: 1;
-  }
-  30%, 100% {
-    opacity: var(--opacity, 0);
-  }
-}
 
 /* ── Running aurora gradient – hero heading & CTA ── */
 @keyframes aurora-shift {

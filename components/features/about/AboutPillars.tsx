@@ -4,12 +4,12 @@ import * as React from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { CircuitBoard } from "@/components/animate-ui/icons/circuit-board";
-import { CloudUpload } from "@/components/animate-ui/icons/cloud-upload";
-import { Users } from "@/components/animate-ui/icons/users";
-import { PartyPopper } from "@/components/animate-ui/icons/party-popper";
-import { BadgeCheck } from "@/components/animate-ui/icons/badge-check";
-import { Compass } from "@/components/animate-ui/icons/compass";
+import { CircuitBoard } from "@/components/ui/animate-ui/icons/circuit-board";
+import { CloudUpload } from "@/components/ui/animate-ui/icons/cloud-upload";
+import { Users } from "@/components/ui/animate-ui/icons/users";
+import { PartyPopper } from "@/components/ui/animate-ui/icons/party-popper";
+import { BadgeCheck } from "@/components/ui/animate-ui/icons/badge-check";
+import { Compass } from "@/components/ui/animate-ui/icons/compass";
 import { PixelHeading } from "@/components/ui/pixel-heading-character";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);

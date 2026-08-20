@@ -119,39 +119,70 @@ export function TeamLeadership() {
               </div>
 
               {/* Social Action Footer */}
-              <div className="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-border/80">
-                {leader.socials.github && (
-                  <a
-                    href={leader.socials.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted hover:text-text-primary hover:border-primary/40 active:scale-95 transition-all"
-                    aria-label="GitHub"
-                  >
-                    <Github className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </a>
-                )}
-                {leader.socials.linkedin && (
-                  <a
-                    href={leader.socials.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted hover:text-[#0A66C2] hover:border-[#0A66C2]/40 active:scale-95 transition-all"
-                    aria-label="LinkedIn"
-                  >
-                    <Linkedin className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </a>
-                )}
-                {leader.socials.email && (
-                  <a
-                    href={`mailto:${leader.socials.email}`}
-                    className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted hover:text-accent hover:border-accent/40 active:scale-95 transition-all"
-                    aria-label="Email"
-                  >
-                    <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </a>
-                )}
-              </div>
+              {(leader.socials.github || leader.socials.linkedin || leader.socials.email) ? (
+                <div className="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-border/80">
+                  {leader.socials.github && (
+                    leader.socials.github === "#" ? (
+                      <span
+                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted opacity-75 cursor-default"
+                        aria-label="GitHub"
+                      >
+                        <Github className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </span>
+                    ) : (
+                      <a
+                        href={leader.socials.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted hover:text-text-primary hover:border-primary/40 active:scale-95 transition-all"
+                        aria-label="GitHub"
+                      >
+                        <Github className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </a>
+                    )
+                  )}
+
+                  {leader.socials.linkedin && (
+                    leader.socials.linkedin === "#" ? (
+                      <span
+                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted opacity-75 cursor-default"
+                        aria-label="LinkedIn"
+                      >
+                        <Linkedin className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </span>
+                    ) : (
+                      <a
+                        href={leader.socials.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted hover:text-[#0A66C2] hover:border-[#0A66C2]/40 active:scale-95 transition-all"
+                        aria-label="LinkedIn"
+                      >
+                        <Linkedin className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </a>
+                    )
+                  )}
+
+                  {leader.socials.email && (
+                    leader.socials.email === "#" ? (
+                      <span
+                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted opacity-75 cursor-default"
+                        aria-label="Email"
+                      >
+                        <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </span>
+                    ) : (
+                      <a
+                        href={`mailto:${leader.socials.email}`}
+                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted hover:text-accent hover:border-accent/40 active:scale-95 transition-all"
+                        aria-label="Email"
+                      >
+                        <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </a>
+                    )
+                  )}
+                </div>
+              ) : null}
             </div>
           );
         })}

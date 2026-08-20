@@ -11,7 +11,8 @@ import {
   Cloud
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import GlassCoinCarousel from "@/components/lightswind/3d-glass-coin-carousel";
+import GlassCoinCarousel from "@/components/ui/3d-glass-coin-carousel";
+import { FlipText } from "@/components/ui/flip-text";
 
 const HERO_STATS = [
   { value: "2026", label: "Launch Year", icon: Cloud, featuredMobile: true },
@@ -111,36 +112,43 @@ export function Hero() {
             className="flex flex-col items-center w-full"
           >
             {/* Main Dynamic Headline */}
-            <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-extrabold leading-[1.14] sm:leading-[1.12] tracking-tight mb-3 sm:mb-5 max-w-4xl px-2">
+            <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-extrabold leading-[1.18] sm:leading-[1.16] tracking-tight mb-3 sm:mb-5 max-w-4xl px-2">
               {/* Desktop layout */}
               <span className="hidden sm:inline">
                 <span className="text-white drop-shadow-md">Where Student Builders </span>
-                <span
-                  className="inline-block text-transparent bg-clip-text animate-aurora pb-1"
+                <FlipText
+                  words={[
+                    "Create the Cloud Future",
+                    "Build on AWS Cloud",
+                    "Architect AI Systems",
+                    "Innovate Together",
+                  ]}
+                  duration={5000}
+                  className="text-transparent bg-clip-text animate-aurora"
                   style={{
                     backgroundImage: "linear-gradient(90deg, #9333EA, #C084FC, #38BDF8, #A855F7, #9333EA)",
                     backgroundSize: "200% auto",
                   }}
-                >
-                  Create the Cloud Future
-                </span>
+                />
               </span>
 
               {/* Mobile layout */}
               <span className="block sm:hidden">
-                <span className="text-white drop-shadow-md block">Where Student</span>
-                <span
-                  className="inline-block text-transparent bg-clip-text animate-aurora pb-0.5"
+                <span className="text-white drop-shadow-md block">Where Student Builders</span>
+                <FlipText
+                  words={[
+                    "Create the Cloud Future",
+                    "Build on AWS Cloud",
+                    "Architect AI Systems",
+                    "Innovate Together",
+                  ]}
+                  duration={3200}
+                  className="text-transparent bg-clip-text animate-aurora"
                   style={{
                     backgroundImage: "linear-gradient(90deg, #9333EA, #C084FC, #38BDF8, #A855F7, #9333EA)",
                     backgroundSize: "200% auto",
                   }}
-                >
-                  Builders Create
-                </span>
-                <span className="text-white drop-shadow-md block">
-                  the Cloud Future
-                </span>
+                />
               </span>
             </h1>
 

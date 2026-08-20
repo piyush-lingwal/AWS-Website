@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { ExternalLink } from "@/components/animate-ui/icons/external-link";
-import { BadgeCheck } from "@/components/animate-ui/icons/badge-check";
-import { Layers } from "@/components/animate-ui/icons/layers";
-import { Play } from "@/components/animate-ui/icons/play";
-import { Terminal } from "@/components/animate-ui/icons/terminal";
+import { ExternalLink } from "@/components/ui/animate-ui/icons/external-link";
+import { BadgeCheck } from "@/components/ui/animate-ui/icons/badge-check";
+import { Layers } from "@/components/ui/animate-ui/icons/layers";
+import { Play } from "@/components/ui/animate-ui/icons/play";
+import { Terminal } from "@/components/ui/animate-ui/icons/terminal";
 import { PixelHeading } from "@/components/ui/pixel-heading-character";
 import { Spotlight } from "@/components/ui/spotlight";
 

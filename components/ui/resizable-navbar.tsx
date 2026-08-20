@@ -1,7 +1,7 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { Menu } from "@/components/animate-ui/icons/menu";
-import { X } from "@/components/animate-ui/icons/x";
+import { Menu } from "@/components/ui/animate-ui/icons/menu";
+import { X } from "@/components/ui/animate-ui/icons/x";
 import { usePathname } from "next/navigation";
 import {
   motion,
