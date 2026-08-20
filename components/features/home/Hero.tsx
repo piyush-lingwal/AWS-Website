@@ -145,24 +145,25 @@ export function Hero() {
             </h1>
 
             {/* ── High-Impact CTA Buttons (Stacked on Mobile, Side-by-Side on Desktop) ── */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 max-w-xs sm:max-w-none">
+            <div className="relative z-20 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 max-w-xs sm:max-w-none">
               <Link
                 href="/register"
-                className="group relative w-full sm:w-auto px-6 sm:px-10 py-3.5 sm:py-3.5 bg-gradient-to-r from-primary via-purple-600 to-purple-500 text-white font-bold text-sm md:text-base rounded-xl sm:rounded-2xl transition-all duration-300 shadow-[0_0_25px_-5px_rgba(124,58,237,0.6)] hover:shadow-[0_0_45px_rgba(124,58,237,0.9)] hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2 overflow-hidden border border-white/20 whitespace-nowrap"
+                className="group relative z-30 w-full sm:w-auto px-6 sm:px-10 py-3.5 sm:py-3.5 bg-gradient-to-r from-primary via-purple-600 to-purple-500 text-white font-bold text-sm md:text-base rounded-xl sm:rounded-2xl transition-all duration-300 shadow-[0_0_25px_-5px_rgba(124,58,237,0.6)] hover:shadow-[0_0_45px_rgba(124,58,237,0.9)] hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2 overflow-hidden border border-white/20 whitespace-nowrap cursor-pointer"
               >
-                <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span className="relative z-10 flex items-center justify-center gap-2 w-full">
+                <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                <span className="relative z-10 flex items-center justify-center gap-2 w-full pointer-events-none">
                   <Sparkles className="w-4 h-4 text-purple-200 shrink-0" />
-                  Join Group
+                  <span>Join Group</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300 shrink-0" />
                 </span>
               </Link>
 
               <Link
-                href="/about"
-                className="group inline-flex items-center justify-center gap-1.5 py-2 px-4 sm:px-9 sm:py-3.5 text-white/70 hover:text-white font-medium text-xs sm:text-base rounded-xl sm:rounded-2xl sm:bg-white/[0.08] sm:hover:bg-white/[0.14] sm:border sm:border-white/15 backdrop-blur-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                href="/register"
+                className="group relative z-30 inline-flex items-center justify-center gap-2 px-6 sm:px-9 py-3.5 sm:py-3.5 text-white bg-white/[0.08] hover:bg-white/[0.16] border border-white/20 font-bold text-xs sm:text-base rounded-xl sm:rounded-2xl backdrop-blur-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap cursor-pointer"
               >
-                <span>About Us</span>
+                <Users className="w-4 h-4 text-primary-light shrink-0" />
+                <span>Join Community</span>
                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 shrink-0" />
               </Link>
             </div>
