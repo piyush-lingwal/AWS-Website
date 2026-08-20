@@ -388,11 +388,11 @@ export const NavbarButton = ({
   | React.ComponentPropsWithoutRef<"button">
 )) => {
   const baseStyles =
-    "px-5 py-2 rounded-full text-[13px] font-semibold relative cursor-pointer hover:-translate-y-0.5 active:scale-[0.97] transition-transform transition-shadow duration-200 inline-block text-center tracking-wide";
+    "px-5 py-2 rounded-full text-[13px] font-semibold relative cursor-pointer hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-300 inline-block text-center tracking-wide overflow-hidden group";
 
   const variantStyles = {
     primary:
-      "bg-primary text-white shadow-[0_0_20px_rgba(124,58,237,0.25)] hover:shadow-[0_0_30px_rgba(124,58,237,0.5)] hover:bg-primary-hover border border-white/10",
+      "bg-gradient-to-r from-primary via-purple-600 to-purple-500 text-white shadow-[0_2px_12px_rgba(124,58,237,0.3)] hover:shadow-[0_4px_22px_rgba(124,58,237,0.55)] hover:scale-[1.04] border border-white/20 hover:border-white/40",
     secondary: "bg-transparent shadow-none dark:text-white",
     dark: "bg-black text-white shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset]",
     gradient:
@@ -405,7 +405,8 @@ export const NavbarButton = ({
       className={cn(baseStyles, variantStyles[variant], className)}
       {...props}
     >
-      {children}
+      <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <span className="relative z-10">{children}</span>
     </Tag>
   );
 };

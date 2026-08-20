@@ -13,8 +13,7 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const PREVIEW_MEMBERS = [
   { name: "Piyush Lingwal", designation: "Builder Group Leader", quote: "", src: "/members/piyushlingwal.png" },
-  { name: "Piyush Rawat", designation: "Co-Lead", quote: "", src: "/members/piyushrawat.png" },
-  { name: "Gaurav Shukla", designation: "Tech Lead", quote: "", src: "/members/gauravshukla.png" },
+  { name: "Piyush Rawat", designation: "Tech Lead", quote: "", src: "/members/piyushrawat.png" },
 ];
 
 export function MeetTheBuilders() {

@@ -6,8 +6,8 @@ export function OrganizationJsonLd() {
     "@type": ["Organization", "EducationalOrganization"],
     name: "AWS Student Builders Group at Tulas University",
     alternateName: ["AWS SBG Tulas", "AWS Cloud Club Tulas University"],
-    url: "https://aws-sbg-tulas.vercel.app",
-    logo: "https://aws-sbg-tulas.vercel.app/icon.png",
+    url: "https://awstulas.org",
+    logo: "https://awstulas.org/icon.png",
     description:
       "Official AWS Student Builders Group at Tulas University, Dehradun. A student community focused on AWS cloud computing, technical workshops, and hackathons.",
     address: {
@@ -48,12 +48,12 @@ export function WebSiteJsonLd() {
     "@type": "WebSite",
     name: "AWS Student Builders Group at Tulas University",
     alternateName: ["AWS SBG Tulas", "AWS Cloud Club Dehradun"],
-    url: "https://aws-sbg-tulas.vercel.app",
+    url: "https://awstulas.org",
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://aws-sbg-tulas.vercel.app/search?q={search_term_string}",
+        urlTemplate: "https://awstulas.org/search?q={search_term_string}",
       },
       "query-input": "required name=search_term_string",
     },

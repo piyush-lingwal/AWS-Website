@@ -148,7 +148,7 @@ export function Hero() {
             <div className="relative z-20 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 max-w-xs sm:max-w-none">
               <Link
                 href="/register"
-                className="group relative z-30 w-full sm:w-auto px-6 sm:px-10 py-3.5 sm:py-3.5 bg-gradient-to-r from-primary via-purple-600 to-purple-500 text-white font-bold text-sm md:text-base rounded-xl sm:rounded-2xl transition-all duration-300 shadow-[0_0_25px_-5px_rgba(124,58,237,0.6)] hover:shadow-[0_0_45px_rgba(124,58,237,0.9)] hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2 overflow-hidden border border-white/20 whitespace-nowrap cursor-pointer"
+                className="group relative z-30 w-full sm:w-auto px-6 sm:px-10 py-3.5 sm:py-3.5 bg-gradient-to-r from-primary via-purple-600 to-purple-500 text-white font-bold text-sm md:text-base rounded-xl sm:rounded-2xl transition-all duration-300 shadow-[0_4px_14px_rgba(124,58,237,0.3)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.45)] hover:scale-[1.03] active:scale-[0.98] flex items-center justify-center gap-2 overflow-hidden border border-white/20 whitespace-nowrap cursor-pointer"
               >
                 <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                 <span className="relative z-10 flex items-center justify-center gap-2 w-full pointer-events-none">

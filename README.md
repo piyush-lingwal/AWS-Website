@@ -138,7 +138,7 @@ lib/
 └── utils.ts                # cn() class-merge helper
 
 public/
-├── logos/                   # AWS, SBG, Tula's Institute logos
+├── logos/                   # AWS, SBG, Tulas Institute logos
 └── Members/                  # Team member photos
 ```
 
@@ -152,7 +152,7 @@ public/
 
 ## 🤝 Contributing
 
-This project is maintained by the AWS Student Builder Group core team at Tula's University. Issues and pull requests from members are welcome — please keep new sections self-contained (one component per section) and follow the existing token-based styling approach rather than hardcoded values.
+This project is maintained by the AWS Student Builder Group core team at Tulas University. Issues and pull requests from members are welcome — please keep new sections self-contained (one component per section) and follow the existing token-based styling approach rather than hardcoded values.
 
 ## 📄 License
 
@@ -162,7 +162,7 @@ This project currently has no explicit license. Contact the maintainer before re
 
 <div align="center">
 
-Built with ☕ and Next.js by the **AWS Student Builder Group**, Tula's University, Dehradun.
+Built with ☕ and Next.js by the **AWS Student Builder Group**, Tulas University, Dehradun.
 
 [⬆ Back to top](#readme-top)
 
