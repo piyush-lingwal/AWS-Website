@@ -172,7 +172,6 @@ export async function POST(request: Request) {
       branch: branch?.trim() || "N/A",
       year: year.trim(),
       wing: wing.trim(),
-      interest_areas: resumeUrl ? [...interestAreas, `Resume: ${resumeUrl}`] : interestAreas,
       date: dateStr,
       time: timeStr,
     };
