@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface WordPullUpProps {
@@ -18,7 +19,7 @@ export function WordPullUp({
 }: WordPullUpProps) {
   const wordsArray = words.split(" ");
 
-  const container = {
+  const container: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -28,7 +29,7 @@ export function WordPullUp({
     },
   };
 
-  const item = {
+  const item: Variants = {
     hidden: { y: 20, opacity: 0 },
     show: { y: 0, opacity: 1, transition: { type: "spring", damping: 15 } },
   };
