@@ -51,8 +51,8 @@ export async function generateCertificatePdf(
   input: CertificateGenerationInput
 ): Promise<CertificateGenerationResult> {
   try {
-    // 1. Generate unique Certificate ID
-    const certificateId = await generateCertificateId();
+    // 1. Use pre-generated Certificate ID or generate a new one
+    const certificateId = input.certificateId?.trim() || await generateCertificateId();
 
     // 2. Generate QR code pointing to public verification page
     const verificationUrl = getVerificationUrl(certificateId);

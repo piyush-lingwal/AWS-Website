@@ -14,9 +14,20 @@ import { randomUUID } from "node:crypto";
 import { getCertificateEventById } from "@/config/certificate-events";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
 import type {
-  GenerateCertificateRequest,
   ApiResponse,
 } from "@/types/certificate";
+
+// Temporary local type — this entire route will be rewritten in Phase 4/5
+interface GenerateCertificateRequest {
+  participantName: string;
+  participantEmail: string;
+  eventId: string;
+  achievementText?: string;
+  signerName?: string;
+  signerTitle?: string;
+  enrollmentNo?: string;
+  program?: string;
+}
 
 const CERTIFICATE_DEVICE_COOKIE = "aws_sbg_certificate_device";
 const DEVICE_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;

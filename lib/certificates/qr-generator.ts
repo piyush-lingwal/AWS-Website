@@ -27,7 +27,7 @@ export function getVerificationUrl(
   baseUrl?: string
 ): string {
   const base = (baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, "");
-  return `${base}/certificate/verify/${encodeURIComponent(certificateId)}`;
+  return `${base}/verify/${encodeURIComponent(certificateId)}`;
 }
 
 /**
