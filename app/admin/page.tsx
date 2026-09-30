@@ -652,7 +652,7 @@ export default function AdminPage() {
                       <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-2.5 shrink-0">
                         <button
                           onClick={() => handleInspectAttendees(activeEvent.id)}
-                          className={`h-10 px-4 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                          className={`h-10 px-4 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
                             inspectingEventId === activeEvent.id
                               ? "bg-[#6C63FF] text-white shadow-lg shadow-[#6C63FF]/30"
                               : "bg-[#6C63FF]/15 hover:bg-[#6C63FF]/25 border border-[#6C63FF]/30 text-white"
@@ -664,7 +664,7 @@ export default function AdminPage() {
 
                         <button
                           onClick={() => startEdit(activeEvent)}
-                          className="h-10 px-4 rounded-xl text-xs font-medium text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] transition-all flex items-center gap-2 cursor-pointer"
+                          className="h-10 px-4 rounded-xl text-xs font-medium whitespace-nowrap text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] transition-all flex items-center gap-2 cursor-pointer"
                         >
                           <Edit3 className="w-3.5 h-3.5 text-[#A78BFA]" />
                           <span>Edit Details</span>
@@ -673,7 +673,7 @@ export default function AdminPage() {
                         <Link
                           href="/attendance"
                           target="_blank"
-                          className="h-10 px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white bg-transparent hover:bg-white/[0.04] border border-white/[0.06] transition-all flex items-center gap-2"
+                          className="h-10 px-4 rounded-xl text-xs font-medium whitespace-nowrap text-[#A1A1AA] hover:text-white bg-transparent hover:bg-white/[0.04] border border-white/[0.06] transition-all flex items-center gap-2"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                           <span>Preview Portal</span>
@@ -785,7 +785,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {events.map((event) => {
                     const isActive = event.id === portalConfig?.active_event_id;
                     const isViewing = event.id === selectedEventId;
@@ -806,22 +806,48 @@ export default function AdminPage() {
                       >
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-2">
-                            {isActive ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                Active
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-white/5 text-[#71717A] border border-white/5">
-                                Session
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {isActive ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-white/5 text-[#71717A] border border-white/5">
+                                  Session
+                                </span>
+                              )}
 
-                            {isViewing && (
-                              <span className="text-[10px] font-mono text-[#A78BFA] bg-[#6C63FF]/10 px-2 py-0.5 rounded">
-                                Viewing Attendees
-                              </span>
-                            )}
+                              {isViewing && (
+                                <span className="text-[10px] font-mono text-[#A78BFA] bg-[#6C63FF]/10 px-2 py-0.5 rounded whitespace-nowrap">
+                                  Viewing
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Card Utility Actions (Edit & Delete) */}
+                            <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEdit(event);
+                                }}
+                                title="Edit Event Details"
+                                className="h-7 w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteEvent(event);
+                                }}
+                                title="Delete Event"
+                                className="h-7 w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           <div>
@@ -837,16 +863,16 @@ export default function AdminPage() {
 
                           <div className="space-y-1.5 text-xs text-[#A1A1AA] pt-2 border-t border-white/[0.04]">
                             <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 text-[#71717A]" />
-                              <span>{formatDate(event.event_date)}</span>
+                              <Calendar className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                              <span className="truncate">{formatDate(event.event_date)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Clock className="w-3.5 h-3.5 text-[#71717A]" />
-                              <span>{event.event_timing}</span>
+                              <Clock className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                              <span className="truncate">{event.event_timing}</span>
                             </div>
                             {event.speaker_name && (
                               <div className="flex items-center gap-2">
-                                <User className="w-3.5 h-3.5 text-[#71717A]" />
+                                <User className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
                                 <span className="truncate">{event.speaker_name}</span>
                               </div>
                             )}
@@ -854,48 +880,43 @@ export default function AdminPage() {
                         </div>
 
                         {/* Card Actions Footer */}
-                        <div className="flex items-center justify-between gap-2 pt-4 mt-4 border-t border-white/[0.04]">
-                          <div className="flex items-center gap-1.5">
-                            {/* Set Active Button */}
-                            {!isActive && (
+                        <div className="pt-4 mt-4 border-t border-white/[0.04]">
+                          {!isActive ? (
+                            <div className="flex items-center gap-2">
+                              {/* Set Active Button */}
                               <button
                                 onClick={() => handleSetActiveEvent(event)}
-                                className="h-8 px-3 rounded-lg text-[11px] font-medium text-[#6C63FF] hover:bg-[#6C63FF]/10 border border-[#6C63FF]/20 transition-all cursor-pointer"
+                                className="flex-1 h-9 px-3 rounded-xl text-xs font-semibold whitespace-nowrap text-center flex items-center justify-center text-[#6C63FF] hover:bg-[#6C63FF] hover:text-white bg-[#6C63FF]/10 border border-[#6C63FF]/25 hover:border-[#6C63FF] transition-all cursor-pointer shadow-sm active:scale-[0.98]"
                               >
                                 Set Active
                               </button>
-                            )}
 
-                            {/* View Attendees Trigger */}
+                              {/* View Attendees Trigger */}
+                              <button
+                                onClick={() => handleInspectAttendees(event.id)}
+                                className={`flex-1 h-9 px-3 rounded-xl text-xs font-semibold whitespace-nowrap text-center flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
+                                  inspectingEventId === event.id
+                                    ? "bg-[#6C63FF] text-white shadow-md shadow-[#6C63FF]/25"
+                                    : "text-[#D4D4D8] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08]"
+                                }`}
+                              >
+                                <Users className="w-3.5 h-3.5 shrink-0" />
+                                <span>{inspectingEventId === event.id ? "Hide Attendees" : "Inspect Attendees"}</span>
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               onClick={() => handleInspectAttendees(event.id)}
-                              className={`h-8 px-3 rounded-lg text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                              className={`w-full h-9 px-4 rounded-xl text-xs font-semibold whitespace-nowrap text-center flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] ${
                                 inspectingEventId === event.id
-                                  ? "bg-[#6C63FF] text-white font-semibold shadow-md shadow-[#6C63FF]/25"
-                                  : "text-[#A1A1AA] hover:text-white hover:bg-white/5 border border-white/[0.06]"
+                                  ? "bg-[#6C63FF] text-white shadow-md shadow-[#6C63FF]/25"
+                                  : "text-white bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1]"
                               }`}
                             >
-                              <Users className="w-3 h-3" />
+                              <Users className="w-3.5 h-3.5 shrink-0" />
                               <span>{inspectingEventId === event.id ? "Hide Attendees" : "Inspect Attendees"}</span>
                             </button>
-                          </div>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => startEdit(event)}
-                              title="Edit Event Details"
-                              className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteEvent(event)}
-                              title="Delete Event"
-                              className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -959,7 +980,7 @@ export default function AdminPage() {
                     <button
                       onClick={handleExportCSV}
                       disabled={participants.length === 0}
-                      className="h-10 px-3.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
+                      className="h-10 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
                       title="Export Attendees to CSV"
                     >
                       <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
@@ -970,7 +991,7 @@ export default function AdminPage() {
                     <button
                       onClick={handleBulkSendEmails}
                       disabled={participants.length === 0}
-                      className="h-10 px-3.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
+                      className="h-10 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
                       title="Email Certificates to all attendees"
                     >
                       <Send className="w-4 h-4 text-[#A78BFA]" />
@@ -984,7 +1005,7 @@ export default function AdminPage() {
                         setSelectedEventId("");
                       }}
                       title="Hide Attendees List"
-                      className="h-10 px-3.5 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="h-10 px-3.5 rounded-xl text-xs font-medium whitespace-nowrap text-[#A1A1AA] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <X className="w-4 h-4 text-[#71717A]" />
                       <span>Close</span>
