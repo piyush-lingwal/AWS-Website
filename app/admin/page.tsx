@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -95,8 +95,10 @@ export default function AdminPage() {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
-  // Section B — Participant state
+  // Section B — Participant inspection state
   const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const [inspectingEventId, setInspectingEventId] = useState<string | null>(null);
+  const attendeesSectionRef = useRef<HTMLElement | null>(null);
   const [participants, setParticipants] = useState<AdminParticipantRow[]>([]);
   const [totalAttended, setTotalAttended] = useState<number>(0);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
@@ -122,11 +124,6 @@ export default function AdminPage() {
       if (eventsData.success) {
         const loadedEvents: DbEvent[] = eventsData.data || [];
         setEvents(loadedEvents);
-        // Default selected event for Section B
-        if (!selectedEventId && loadedEvents.length > 0) {
-          const activeId = configData.data?.active_event_id;
-          setSelectedEventId(activeId || loadedEvents[0].id);
-        }
       }
       if (configData.success) setPortalConfig(configData.data || null);
 
@@ -137,7 +134,7 @@ export default function AdminPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedEventId]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -301,6 +298,20 @@ export default function AdminPage() {
     } catch (err: any) {
       toast.error(err.message || "Failed to update configuration");
     }
+  };
+
+  // ── Inspect Attendees Handler ─────────────────────────────
+  const handleInspectAttendees = (eventId: string) => {
+    if (inspectingEventId === eventId) {
+      setInspectingEventId(null);
+      setSelectedEventId("");
+      return;
+    }
+    setInspectingEventId(eventId);
+    setSelectedEventId(eventId);
+    setTimeout(() => {
+      attendeesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
   };
 
   // ── Copy to Clipboard Helper ──────────────────────────────
@@ -614,6 +625,18 @@ export default function AdminPage() {
                       {/* Right Action Stack */}
                       <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-2.5 shrink-0">
                         <button
+                          onClick={() => handleInspectAttendees(activeEvent.id)}
+                          className={`h-10 px-4 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                            inspectingEventId === activeEvent.id
+                              ? "bg-[#6C63FF] text-white shadow-lg shadow-[#6C63FF]/30"
+                              : "bg-[#6C63FF]/15 hover:bg-[#6C63FF]/25 border border-[#6C63FF]/30 text-white"
+                          }`}
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          <span>{inspectingEventId === activeEvent.id ? "Hide Attendees" : "Inspect Attendees"}</span>
+                        </button>
+
+                        <button
                           onClick={() => startEdit(activeEvent)}
                           className="h-10 px-4 rounded-xl text-xs font-medium text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] transition-all flex items-center gap-2 cursor-pointer"
                         >
@@ -819,14 +842,15 @@ export default function AdminPage() {
 
                             {/* View Attendees Trigger */}
                             <button
-                              onClick={() => setSelectedEventId(event.id)}
-                              className={`h-8 px-3 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                                isViewing
-                                  ? "bg-white/10 text-white font-semibold"
-                                  : "text-[#A1A1AA] hover:text-white hover:bg-white/5"
+                              onClick={() => handleInspectAttendees(event.id)}
+                              className={`h-8 px-3 rounded-lg text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                                inspectingEventId === event.id
+                                  ? "bg-[#6C63FF] text-white font-semibold shadow-md shadow-[#6C63FF]/25"
+                                  : "text-[#A1A1AA] hover:text-white hover:bg-white/5 border border-white/[0.06]"
                               }`}
                             >
-                              Inspect Attendees
+                              <Users className="w-3 h-3" />
+                              <span>{inspectingEventId === event.id ? "Hide Attendees" : "Inspect Attendees"}</span>
                             </button>
                           </div>
 
@@ -848,65 +872,90 @@ export default function AdminPage() {
             {/* ══════════════════════════════════════════════════ */}
             {/* ── SECTION B: PARTICIPANT DIRECTORY ────────────── */}
             {/* ══════════════════════════════════════════════════ */}
-            <section className="space-y-5 pt-6 border-t border-white/[0.08]">
-              {/* Header with Title & Event Context Selector */}
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono uppercase tracking-wider text-emerald-400 mb-2">
-                    <Users className="w-3 h-3 text-emerald-400" />
-                    <span>Attendance Records &amp; Credentials</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                    Attendee Directory
-                  </h2>
-                  <p className="text-xs text-[#71717A]">
-                    Official student attendance submissions and issued credentials for this session
-                  </p>
-                </div>
-
-                {/* Event Selector & Actions */}
-                <div className="flex flex-wrap items-center gap-2.5">
-                  {/* Event Select Dropdown */}
-                  <div className="relative">
-                    <select
-                      value={selectedEventId}
-                      onChange={(e) => setSelectedEventId(e.target.value)}
-                      className="h-10 pl-3.5 pr-8 rounded-xl text-xs bg-[#111117] border border-white/[0.1] text-white focus:outline-none focus:border-[#6C63FF] transition-colors cursor-pointer appearance-none"
-                    >
-                      {events.map((ev) => (
-                        <option key={ev.id} value={ev.id}>
-                          {ev.name} ({formatDate(ev.event_date)})
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A]">
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
+            {inspectingEventId && currentViewEvent && (
+              <section
+                ref={attendeesSectionRef}
+                className="space-y-5 pt-8 border-t border-white/[0.08] scroll-mt-24"
+              >
+                {/* Header with Title & Event Context Selector */}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono uppercase tracking-wider text-emerald-400 mb-2">
+                      <Users className="w-3 h-3 text-emerald-400" />
+                      <span>Attendance Records &amp; Credentials</span>
                     </div>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                        Attendee Directory
+                      </h2>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-[#6C63FF]/20 border border-[#6C63FF]/40 text-[#A78BFA]">
+                        {currentViewEvent.name}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#71717A] mt-1">
+                      Official student attendance submissions and issued credentials for this session
+                    </p>
                   </div>
 
-                  {/* Export CSV Button */}
-                  <button
-                    onClick={handleExportCSV}
-                    disabled={participants.length === 0}
-                    className="h-10 px-3.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
-                    title="Export Attendees to CSV"
-                  >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                    <span className="hidden sm:inline">Export CSV</span>
-                  </button>
+                  {/* Event Selector & Actions */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Event Select Dropdown */}
+                    <div className="relative">
+                      <select
+                        value={selectedEventId}
+                        onChange={(e) => {
+                          setSelectedEventId(e.target.value);
+                          setInspectingEventId(e.target.value);
+                        }}
+                        className="h-10 pl-3.5 pr-8 rounded-xl text-xs bg-[#111117] border border-white/[0.1] text-white focus:outline-none focus:border-[#6C63FF] transition-colors cursor-pointer appearance-none"
+                      >
+                        {events.map((ev) => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.name} ({formatDate(ev.event_date)})
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A]">
+                        <SlidersHorizontal className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
 
-                  {/* Bulk Email Certificates Button */}
-                  <button
-                    onClick={handleBulkSendEmails}
-                    disabled={participants.length === 0}
-                    className="h-10 px-3.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
-                    title="Email Certificates to all attendees"
-                  >
-                    <Send className="w-4 h-4 text-[#A78BFA]" />
-                    <span className="hidden sm:inline">Email Certificates</span>
-                  </button>
+                    {/* Export CSV Button */}
+                    <button
+                      onClick={handleExportCSV}
+                      disabled={participants.length === 0}
+                      className="h-10 px-3.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
+                      title="Export Attendees to CSV"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                      <span className="hidden sm:inline">Export CSV</span>
+                    </button>
+
+                    {/* Bulk Email Certificates Button */}
+                    <button
+                      onClick={handleBulkSendEmails}
+                      disabled={participants.length === 0}
+                      className="h-10 px-3.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
+                      title="Email Certificates to all attendees"
+                    >
+                      <Send className="w-4 h-4 text-[#A78BFA]" />
+                      <span className="hidden sm:inline">Email Certificates</span>
+                    </button>
+
+                    {/* Close Inspector Button */}
+                    <button
+                      onClick={() => {
+                        setInspectingEventId(null);
+                        setSelectedEventId("");
+                      }}
+                      title="Hide Attendees List"
+                      className="h-10 px-3.5 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <X className="w-4 h-4 text-[#71717A]" />
+                      <span>Close</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
               {/* Event Context Pill Bar */}
               {currentViewEvent && (
@@ -1130,6 +1179,7 @@ export default function AdminPage() {
                 </div>
               </div>
             </section>
+          )}
           </>
         )}
       </main>
