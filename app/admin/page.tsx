@@ -31,6 +31,7 @@ import {
   FileSpreadsheet,
   X,
   SlidersHorizontal,
+  Trash2,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -312,6 +313,39 @@ export default function AdminPage() {
     setTimeout(() => {
       attendeesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
+  };
+
+  // ── Delete Event ──────────────────────────────────────────
+  const handleDeleteEvent = async (event: DbEvent) => {
+    const isConfirmed = window.confirm(
+      `Are you sure you want to permanently delete "${event.name}"?\n\nWarning: This action will permanently remove the event, its attendance records, and any issued certificates.`
+    );
+    if (!isConfirmed) return;
+
+    toast.loading(`Deleting "${event.name}"…`, { id: "delete-event" });
+
+    try {
+      const res = await fetch(`/api/admin/events/${event.id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+
+      if (json.success) {
+        toast.success(`Event "${event.name}" has been deleted.`, { id: "delete-event" });
+        if (inspectingEventId === event.id) {
+          setInspectingEventId(null);
+          setSelectedEventId("");
+        }
+        if (editingEvent?.id === event.id) {
+          resetForm();
+        }
+        await fetchData();
+      } else {
+        toast.error(json.error || "Failed to delete event", { id: "delete-event" });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete event", { id: "delete-event" });
+    }
   };
 
   // ── Copy to Clipboard Helper ──────────────────────────────
@@ -854,13 +888,22 @@ export default function AdminPage() {
                             </button>
                           </div>
 
-                          <button
-                            onClick={() => startEdit(event)}
-                            title="Edit Event Details"
-                            className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => startEdit(event)}
+                              title="Edit Event Details"
+                              className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEvent(event)}
+                              title="Delete Event"
+                              className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1341,25 +1384,40 @@ export default function AdminPage() {
                 </div>
 
                 {/* Modal Footer */}
-                <div className="px-6 py-4 border-t border-white/[0.06] bg-white/[0.01] flex items-center justify-end gap-2.5">
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="h-10 px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={formSubmitting}
-                    className="h-10 px-5 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer disabled:opacity-50 shadow-lg shadow-[#6C63FF]/20"
-                  >
-                    {formSubmitting
-                      ? "Saving Session…"
-                      : editingEvent
-                      ? "Save Changes"
-                      : "Create Event"}
-                  </button>
+                <div className="px-6 py-4 border-t border-white/[0.06] bg-white/[0.01] flex items-center justify-between gap-2.5">
+                  {editingEvent ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteEvent(editingEvent)}
+                      className="h-10 px-3.5 rounded-xl text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Event</span>
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="h-10 px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={formSubmitting}
+                      className="h-10 px-5 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer disabled:opacity-50 shadow-lg shadow-[#6C63FF]/20"
+                    >
+                      {formSubmitting
+                        ? "Saving Session…"
+                        : editingEvent
+                        ? "Save Changes"
+                        : "Create Event"}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
