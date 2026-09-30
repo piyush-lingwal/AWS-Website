@@ -459,67 +459,15 @@ export default function AdminPage() {
     >
       {/* ── Main Operations Container ───────────────────────── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 sm:pt-36 space-y-10">
-        {/* ── Executive Page Header & Controls ──────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/[0.08]">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6C63FF]/20 to-[#FF9900]/20 border border-white/10 flex items-center justify-center shadow-lg shadow-[#6C63FF]/10 shrink-0">
-              <Award className="w-6 h-6 text-[#6C63FF]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  Admin Cockpit
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-white/5 border border-white/10 text-[#A78BFA]">
-                  Live Operations
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-[#71717A] mt-0.5">
-                AWS Student Builder Group · Tula&apos;s University · Event &amp; Credential Dispatch
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-            {/* Create Event Trigger */}
-            <button
-              onClick={startCreate}
-              disabled={loading}
-              className="h-10 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-[#6C63FF]/20 disabled:opacity-50"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Event</span>
-            </button>
-
-            {/* Quick Link to Student Attendance Portal */}
-            <Link
-              href="/attendance"
-              target="_blank"
-              className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-all"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Student Portal</span>
-            </Link>
-
-            {/* Refresh Button */}
-            <button
-              onClick={() => fetchData(true)}
-              disabled={refreshing || loading}
-              title="Refresh Dashboard Data"
-              className="h-10 w-10 rounded-xl flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.08] transition-all cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-[#6C63FF]" : ""}`} />
-            </button>
-
-            {/* Sign Out */}
-            <button
-              onClick={handleLogout}
-              className="h-10 px-3.5 rounded-xl text-xs font-medium text-[#71717A] hover:text-red-400 hover:bg-red-500/10 border border-white/[0.06] hover:border-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
-            </button>
-          </div>
+        {/* ── Top Bar (Sign Out Only) ───────────────────────── */}
+        <div className="flex items-center justify-end">
+          <button
+            onClick={handleLogout}
+            className="h-9 px-3.5 rounded-xl text-xs font-medium text-[#71717A] hover:text-red-400 hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/20 transition-all flex items-center gap-2 cursor-pointer bg-white/[0.02]"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
+          </button>
         </div>
         {error && (
           <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs sm:text-sm text-red-400 flex items-center gap-3">
@@ -765,7 +713,7 @@ export default function AdminPage() {
             {/* ══════════════════════════════════════════════════ */}
             {events.length > 0 && (
               <section className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-bold text-white tracking-tight">
                       All Events Catalog
@@ -774,9 +722,18 @@ export default function AdminPage() {
                       Select an event to inspect attendee records or switch the active session
                     </p>
                   </div>
-                  <span className="text-xs font-mono text-[#A78BFA] px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                    {events.length} Total Sessions
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-mono text-[#A78BFA] px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                      {events.length} Total Sessions
+                    </span>
+                    <button
+                      onClick={startCreate}
+                      className="h-9 px-3.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-[#6C63FF]/20"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Create Event</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
