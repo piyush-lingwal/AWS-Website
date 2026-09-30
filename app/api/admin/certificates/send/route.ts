@@ -24,7 +24,6 @@ export const dynamic = "force-dynamic";
 interface SendCertificateBody {
   certificateId?: string;
   eventId?: string;
-  overrideRecipientEmail?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -130,7 +129,6 @@ export async function POST(request: NextRequest) {
         certificateId: cert.certificate_id,
         verificationUrl: cert.verification_url,
         pdfBuffer: pdfResult.pdfBuffer,
-        overrideRecipientEmail: body.overrideRecipientEmail,
       });
 
       if (!emailResult.success) {
@@ -143,17 +141,15 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const deliveredTo = body.overrideRecipientEmail || recipientEmail;
       return NextResponse.json(
         {
           success: true,
-          message: `Certificate ${cert.certificate_id} sent to ${deliveredTo} via ${emailResult.provider}.`,
+          message: `Certificate ${cert.certificate_id} sent to ${recipientEmail} via ${emailResult.provider}.`,
           data: {
             certificateId: cert.certificate_id,
-            email: deliveredTo,
+            email: recipientEmail,
             provider: emailResult.provider,
             messageId: emailResult.messageId,
-            details: emailResult.details,
           },
         } satisfies ApiResponse,
         { status: 200 }

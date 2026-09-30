@@ -32,8 +32,6 @@ import {
   X,
   SlidersHorizontal,
   Trash2,
-  Mail,
-  Loader2,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -108,9 +106,6 @@ export default function AdminPage() {
   const [participantSearch, setParticipantSearch] = useState("");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("ALL");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [sendingCertId, setSendingCertId] = useState<string | null>(null);
-  const [isBulkSending, setIsBulkSending] = useState(false);
-  const [isTestingEmail, setIsTestingEmail] = useState(false);
 
   // ── Data Fetching ─────────────────────────────────────────
   const fetchData = useCallback(async (isRefresh = false) => {
@@ -401,8 +396,6 @@ export default function AdminPage() {
 
   // ── Single Certificate Email Send ─────────────────────────
   const handleSendSingleEmail = async (certificateId: string, email: string) => {
-    if (sendingCertId) return;
-    setSendingCertId(certificateId);
     toast.loading(`Dispatching credential to ${email}…`, { id: "email-send" });
     try {
       const res = await fetch("/api/admin/certificates/send", {
@@ -412,20 +405,18 @@ export default function AdminPage() {
       });
       const json = await res.json();
       if (json.success) {
-        toast.success(`Certificate emailed to ${email}`, { id: "email-send", duration: 4000 });
+        toast.success(`Certificate emailed to ${email}`, { id: "email-send" });
       } else {
-        toast.error(json.error || "Failed to dispatch email", { id: "email-send", duration: 7000 });
+        toast.error(json.error || "Failed to dispatch email", { id: "email-send" });
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to dispatch email", { id: "email-send", duration: 7000 });
-    } finally {
-      setSendingCertId(null);
+      toast.error(err.message || "Failed to dispatch email", { id: "email-send" });
     }
   };
 
   // ── Bulk Event Email Dispatch ─────────────────────────────
   const handleBulkSendEmails = async () => {
-    if (isBulkSending || !selectedEventId || participants.length === 0) {
+    if (!selectedEventId || participants.length === 0) {
       toast.error("No attendees with credentials to send");
       return;
     }
@@ -439,7 +430,6 @@ export default function AdminPage() {
       return;
     }
 
-    setIsBulkSending(true);
     toast.loading(`Dispatching emails to ${totalAttended} attendees in the background…`, {
       id: "bulk-send",
     });
@@ -454,48 +444,13 @@ export default function AdminPage() {
       if (json.success) {
         toast.success(
           `Bulk dispatch complete! Sent: ${json.data?.sentCount || 0}, Failed: ${json.data?.failedCount || 0}`,
-          { id: "bulk-send", duration: 6000 }
+          { id: "bulk-send", duration: 5000 }
         );
       } else {
-        toast.error(json.error || "Bulk email dispatch failed", { id: "bulk-send", duration: 8000 });
+        toast.error(json.error || "Bulk email dispatch failed", { id: "bulk-send" });
       }
     } catch (err: any) {
-      toast.error(err.message || "Bulk email dispatch failed", { id: "bulk-send", duration: 8000 });
-    } finally {
-      setIsBulkSending(false);
-    }
-  };
-
-  // ── Test Email Connection ─────────────────────────────────
-  const handleTestEmail = async () => {
-    if (isTestingEmail) return;
-    setIsTestingEmail(true);
-    toast.loading("Testing email system dispatch…", { id: "test-email" });
-    try {
-      const res = await fetch("/api/admin/email/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      const json = await res.json();
-      if (json.success) {
-        toast.success(json.message || "Test email sent successfully!", {
-          id: "test-email",
-          duration: 5000,
-        });
-      } else {
-        toast.error(json.error || "Email test failed. Please check credentials.", {
-          id: "test-email",
-          duration: 8000,
-        });
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to test email connection", {
-        id: "test-email",
-        duration: 8000,
-      });
-    } finally {
-      setIsTestingEmail(false);
+      toast.error(err.message || "Bulk email dispatch failed", { id: "bulk-send" });
     }
   };
 
@@ -549,25 +504,11 @@ export default function AdminPage() {
     >
       {/* ── Main Operations Container ───────────────────────── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 sm:pt-36 space-y-10">
-        {/* ── Top Bar (Actions) ───────────────────────── */}
-        <div className="flex items-center justify-end gap-2.5">
-          <button
-            onClick={handleTestEmail}
-            disabled={isTestingEmail}
-            title="Dispatch a live test email to verify credentials"
-            className="h-9 px-3.5 rounded-xl text-xs font-medium whitespace-nowrap text-[#A1A1AA] hover:text-[#A78BFA] hover:bg-[#6C63FF]/10 border border-white/[0.08] hover:border-[#6C63FF]/30 transition-all flex items-center gap-2 cursor-pointer bg-white/[0.02] disabled:opacity-50"
-          >
-            {isTestingEmail ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#A78BFA]" />
-            ) : (
-              <Mail className="w-3.5 h-3.5 text-[#A78BFA]" />
-            )}
-            <span>{isTestingEmail ? "Testing Dispatch…" : "Test Email System"}</span>
-          </button>
-
+        {/* ── Top Bar (Sign Out Only) ───────────────────────── */}
+        <div className="flex items-center justify-end">
           <button
             onClick={handleLogout}
-            className="h-9 px-3.5 rounded-xl text-xs font-medium whitespace-nowrap text-[#71717A] hover:text-red-400 hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/20 transition-all flex items-center gap-2 cursor-pointer bg-white/[0.02]"
+            className="h-9 px-3.5 rounded-xl text-xs font-medium text-[#71717A] hover:text-red-400 hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/20 transition-all flex items-center gap-2 cursor-pointer bg-white/[0.02]"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
@@ -1049,18 +990,12 @@ export default function AdminPage() {
                     {/* Bulk Email Certificates Button */}
                     <button
                       onClick={handleBulkSendEmails}
-                      disabled={isBulkSending || participants.length === 0}
+                      disabled={participants.length === 0}
                       className="h-10 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
                       title="Email Certificates to all attendees"
                     >
-                      {isBulkSending ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-[#A78BFA]" />
-                      ) : (
-                        <Send className="w-4 h-4 text-[#A78BFA]" />
-                      )}
-                      <span className="hidden sm:inline">
-                        {isBulkSending ? "Sending Certificates…" : "Email Certificates"}
-                      </span>
+                      <Send className="w-4 h-4 text-[#A78BFA]" />
+                      <span className="hidden sm:inline">Email Certificates</span>
                     </button>
 
                     {/* Close Inspector Button */}
@@ -1281,15 +1216,10 @@ export default function AdminPage() {
                                     {/* Send email button */}
                                     <button
                                       onClick={() => handleSendSingleEmail(p.certificateId!, p.email)}
-                                      disabled={sendingCertId === p.certificateId}
-                                      className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-[#6C63FF]/20 text-[#A1A1AA] hover:text-[#6C63FF] border border-white/[0.06] hover:border-[#6C63FF]/30 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
+                                      className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-[#6C63FF]/20 text-[#A1A1AA] hover:text-[#6C63FF] border border-white/[0.06] hover:border-[#6C63FF]/30 flex items-center justify-center transition-colors cursor-pointer"
                                       title="Email Certificate with PDF Attachment"
                                     >
-                                      {sendingCertId === p.certificateId ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6C63FF]" />
-                                      ) : (
-                                        <Send className="w-3.5 h-3.5" />
-                                      )}
+                                      <Send className="w-3.5 h-3.5" />
                                     </button>
                                   </div>
                                 ) : (
