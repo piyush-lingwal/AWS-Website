@@ -601,14 +601,6 @@ export default function AdminPage() {
                     The session currently served to students accessing the Attendance Portal
                   </p>
                 </div>
-
-                <button
-                  onClick={startCreate}
-                  className="h-11 px-5 rounded-2xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-[#6C63FF]/20 active:scale-[0.98]"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Create New Event</span>
-                </button>
               </div>
 
               {activeEvent ? (
@@ -785,10 +777,10 @@ export default function AdminPage() {
                     </span>
                     <button
                       onClick={startCreate}
-                      className="h-9 px-3.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-[#6C63FF]/20"
+                      className="h-10 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-2 shadow-md shadow-[#6C63FF]/20 active:scale-[0.98]"
                     >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Create Event</span>
+                      <Plus className="w-4 h-4" />
+                      <span>Create New Event</span>
                     </button>
                   </div>
                 </div>
