@@ -17,7 +17,6 @@ import {
   GraduationCap,
   Hash,
   Download,
-  Eye,
   AlertCircle,
   Sparkles,
 } from "lucide-react";
@@ -237,7 +236,7 @@ export default function AttendancePortalPage() {
   if (configError || !portalConfig?.event || !portalConfig.attendanceEnabled) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center text-[#F4F4F6] px-4 py-16"
+        className="min-h-screen flex items-center justify-center text-[#F4F4F6] px-4 pt-32 sm:pt-36 pb-24"
         style={{
           background: `
             radial-gradient(650px 320px at 50% 10%, rgba(108,99,255,0.15), transparent 70%),
@@ -317,104 +316,95 @@ export default function AttendancePortalPage() {
   if (submittedData) {
     return (
       <div
-        className="min-h-screen flex justify-center text-[#F4F4F6] px-4 py-16"
+        className="min-h-screen flex justify-center text-[#F4F4F6] px-4 pt-32 sm:pt-36 pb-24"
         style={{
           background: `
-            radial-gradient(700px 350px at 50% 10%, rgba(108,99,255,0.2), transparent 70%),
-            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px) 0 0/48px 48px,
-            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px) 0 0/48px 48px,
+            radial-gradient(750px 380px at 50% 12%, rgba(108,99,255,0.18), transparent 70%),
+            radial-gradient(400px 300px at 85% 25%, rgba(52,211,153,0.06), transparent 70%),
+            linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/48px 48px,
+            linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/48px 48px,
             #08080B
           `,
         }}
       >
-        <div className="att-page-wrap max-w-xl">
+        <div className="att-page-wrap max-w-xl w-full">
           {/* Header */}
           <header className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[rgba(52,211,153,0.12)] border border-[rgba(52,211,153,0.3)] text-xs text-[#34D399] font-medium mb-4">
-              <Check className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[rgba(52,211,153,0.12)] border border-[rgba(52,211,153,0.3)] text-xs text-[#34D399] font-medium mb-4 shadow-sm">
+              <Check className="w-3.5 h-3.5 text-[#34D399]" />
               <span>Attendance Verified &amp; Confirmed</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2.5">
               Attendance Confirmed
             </h1>
-            <p className="text-sm text-[#8B8B96] max-w-md mx-auto">
+            <p className="text-xs sm:text-sm text-[#8B8B96] max-w-md mx-auto leading-relaxed">
               Thank you, <strong className="text-white">{submittedData.participantName}</strong>! Your participation in{" "}
               <strong className="text-white">{submittedData.eventName}</strong> has been recorded and your official certificate has been generated.
             </p>
           </header>
 
           {/* Success Card with Double-Bezel */}
-          <div className="p-1 rounded-[2rem] bg-white/[0.04] border border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] mb-8">
-            <div className="p-7 sm:p-9 rounded-[calc(2rem-4px)] bg-[#0F0F13] text-center">
-              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center bg-[rgba(52,211,153,0.12)] border border-[rgba(52,211,153,0.35)] text-[#34D399]">
+          <div className="p-1 sm:p-1.5 rounded-[2.25rem] bg-white/[0.04] border border-white/10 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.8)]">
+            <div className="p-7 sm:p-9 rounded-[calc(2.25rem-6px)] bg-[#0C0C11] border border-white/[0.04] text-center">
+              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center bg-[rgba(52,211,153,0.12)] border border-[rgba(52,211,153,0.35)] text-[#34D399] shadow-lg shadow-emerald-500/10">
                 <Award className="w-8 h-8" />
               </div>
 
               <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
                 Official Credential Issued
               </h2>
-              <p className="text-[#8B8B96] text-xs sm:text-sm leading-relaxed mb-6 max-w-sm mx-auto">
+              <p className="text-[#8B8B96] text-xs sm:text-sm leading-relaxed mb-6 max-w-md mx-auto">
                 Your credential has been permanently signed and registered with AWS Student Builder Group at Tula&apos;s University.
               </p>
 
               {/* Certificate ID Card */}
-              <div className="p-4 rounded-xl bg-[#17171C] border border-[#26262D] max-w-md mx-auto mb-6 text-left">
-                <div className="flex items-center justify-between mb-1.5">
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#14141A] border border-white/[0.08] max-w-md mx-auto mb-6 text-left">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] uppercase tracking-wider text-[#8B8B96] font-mono">
                     Official Certificate ID
                   </span>
-                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[#34D399]/10 text-[#34D399] border border-[#34D399]/20">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     Verified
                   </span>
                 </div>
-                <div className="font-mono text-lg sm:text-xl font-bold text-[#6C63FF] tracking-wide break-all">
+                <div className="font-mono text-lg sm:text-xl font-bold text-[#A78BFA] tracking-wide break-all">
                   {submittedData.certificateId}
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              {/* Action Buttons: Download Certificate & Verify Online */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto">
                 {/* Download Certificate */}
                 <a
                   href={submittedData.pdfDownloadUrl || `/api/certificates/${submittedData.certificateId}`}
                   download={`${submittedData.certificateId}.pdf`}
-                  className="w-full sm:w-auto h-11 px-5 rounded-xl text-xs font-semibold bg-[#6C63FF] hover:brightness-110 text-white flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#6C63FF]/20"
+                  className="h-12 px-5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#6C63FF]/25 active:scale-[0.98]"
                 >
                   <Download className="w-4 h-4" />
-                  Download Certificate
-                </a>
-
-                {/* View Certificate */}
-                <a
-                  href={`/api/certificates/${submittedData.certificateId}?inline=true`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto h-11 px-4 rounded-xl text-xs font-semibold bg-[#17171C] hover:bg-[#1f1f26] text-[#F4F4F6] border border-[#26262D] flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <Eye className="w-4 h-4" />
-                  View Certificate
+                  <span>Download Certificate</span>
                 </a>
 
                 {/* Verify Online */}
                 <Link
                   href={`/verify/${submittedData.certificateId}`}
                   target="_blank"
-                  className="w-full sm:w-auto h-11 px-4 rounded-xl text-xs font-semibold bg-[#17171C] hover:bg-[#1f1f26] text-[#F4F4F6] border border-[#26262D] flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className="h-12 px-5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/[0.1] hover:border-white/20 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
                 >
-                  <ExternalLink className="w-4 h-4" />
-                  Verify Online
+                  <ExternalLink className="w-4 h-4 text-[#A78BFA]" />
+                  <span>Verify Online</span>
                 </Link>
               </div>
 
-              {/* Secondary Utility Actions */}
-              <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+              {/* Secondary Utility Actions (Copy ID & Copy Link) */}
+              <div className="flex flex-wrap items-center justify-center gap-2.5 mt-4 pt-4 border-t border-white/[0.06] max-w-md mx-auto">
                 <button
                   type="button"
                   onClick={() => copyToClipboard(submittedData.certificateId, "id")}
-                  className="h-8 px-3 rounded-lg text-[11px] font-medium bg-transparent hover:bg-white/5 text-[#8B8B96] hover:text-white border border-[#26262D] flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="h-8 px-3 rounded-lg text-xs font-medium bg-white/[0.03] hover:bg-white/[0.07] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   {copiedId ? <Check className="w-3.5 h-3.5 text-[#34D399]" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedId ? "ID Copied" : "Copy ID"}
+                  <span>{copiedId ? "ID Copied" : "Copy ID"}</span>
                 </button>
 
                 <button
@@ -423,22 +413,10 @@ export default function AttendancePortalPage() {
                     const url = `${window.location.origin}/verify/${submittedData.certificateId}`;
                     copyToClipboard(url, "link");
                   }}
-                  className="h-8 px-3 rounded-lg text-[11px] font-medium bg-transparent hover:bg-white/5 text-[#8B8B96] hover:text-white border border-[#26262D] flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="h-8 px-3 rounded-lg text-xs font-medium bg-white/[0.03] hover:bg-white/[0.07] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   {copiedLink ? <Check className="w-3.5 h-3.5 text-[#34D399]" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedLink ? "Link Copied" : "Copy Verification Link"}
-                </button>
-              </div>
-
-              {/* Reset / Submit Another */}
-              <div className="mt-8 pt-6 border-t border-[#26262D] flex justify-center">
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="inline-flex items-center gap-2 text-xs text-[#8B8B96] hover:text-[#F4F4F6] transition-colors cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Submit another participant response
+                  <span>{copiedLink ? "Link Copied" : "Copy Verification Link"}</span>
                 </button>
               </div>
             </div>
@@ -451,7 +429,7 @@ export default function AttendancePortalPage() {
   // ── 4. ATTENDANCE ENTRY FORM SCREEN ─────────────────────────
   return (
     <div
-      className="min-h-screen flex justify-center text-[#F4F4F6] px-4 py-16 sm:py-24"
+      className="min-h-screen flex justify-center text-[#F4F4F6] px-4 pt-32 sm:pt-36 pb-24"
       style={{
         background: `
           radial-gradient(750px 350px at 50% 5%, rgba(108,99,255,0.18), transparent 70%),
