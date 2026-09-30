@@ -3,66 +3,48 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { toast } from "sonner";
 import {
   ShieldCheck,
   Search,
   Award,
-  CheckCircle,
   ArrowRight,
   Clipboard,
-  Check,
-  Sparkles,
-  Lock,
-  Building,
-  ExternalLink,
-  FileText,
-  HelpCircle,
-  Fingerprint,
+  X,
   Database,
-  Calendar,
+  Lock,
+  FileCheck,
+  CheckCircle2,
+  ExternalLink,
+  ChevronDown,
 } from "lucide-react";
 import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
 
-// Known verified demo IDs for rapid evaluation
-const DEMO_CERTIFICATES = [
-  {
-    id: "AWS-SBG-2026-UK95ZP",
-    name: "Piyush Rawat",
-    role: "B.Tech CSE",
-    event: "Cloud Kickstart 2026",
-  },
-  {
-    id: "AWS-SBG-2026-FUW35U",
-    name: "Ananya Sharma",
-    role: "B.Tech AI/ML",
-    event: "Cloud Kickstart 2026",
-  },
-  {
-    id: "AWS-SBG-2026-PTD76X",
-    name: "Arjun Saxena",
-    role: "B.Tech CSE",
-    event: "Cloud Kickstart 2026",
-  },
-];
+// Helper to clean & auto-extract Certificate ID from text or full URL
+function cleanAndExtractCertId(input: string): string {
+  const trimmed = input.trim();
+  // Check if user pasted a full URL or text containing the pattern
+  const match = trimmed.match(/AWS-SBG-\d{4}-[A-Za-z0-9]{6}/i);
+  if (match) {
+    return match[0].toUpperCase();
+  }
+  return trimmed.toUpperCase();
+}
 
 export default function CertificateSearchPage() {
   const router = useRouter();
   const [certId, setCertId] = useState("");
   const [error, setError] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [hasCopiedDemo, setHasCopiedDemo] = useState<string | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // Live input validation status
-  const cleanId = certId.trim().toUpperCase();
-  const isValidFormat = isValidCertificateIdFormat(cleanId);
-  const isPartiallyFilled = cleanId.length > 0 && !isValidFormat;
+  const cleanId = cleanAndExtractCertId(certId);
+  const isFormatValid = cleanId.length > 0 && isValidCertificateIdFormat(cleanId);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!cleanId) {
-      setError("Please enter a Certificate ID to verify.");
+      setError("Please enter a Certificate ID.");
       return;
     }
 
@@ -75,277 +57,343 @@ export default function CertificateSearchPage() {
     router.push(`/verify/${cleanId}`);
   };
 
-  const handlePasteFromClipboard = async () => {
+  const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      const trimmed = text.trim().toUpperCase();
-      if (trimmed) {
-        setCertId(trimmed);
+      if (text) {
+        const extracted = cleanAndExtractCertId(text);
+        setCertId(extracted);
         setError("");
-        toast.success("Pasted from clipboard");
       }
     } catch {
-      toast.error("Clipboard access was blocked by browser permissions.");
+      // Clipboard API unavailable or permission denied
     }
   };
 
-  const handleSelectDemo = (id: string) => {
-    setCertId(id);
+  const handleSampleClick = (sampleId: string) => {
+    setCertId(sampleId);
     setError("");
-    setHasCopiedDemo(id);
-    setTimeout(() => setHasCopiedDemo(null), 2000);
+  };
+
+  const toggleFaq = (index: number) => {
+    setOpenFaq(openFaq === index ? null : index);
   };
 
   return (
     <div
-      className="min-h-screen text-[#F4F4F6] selection:bg-[#6C63FF]/30 pt-28 sm:pt-36 pb-24 px-4 sm:px-6"
+      className="min-h-screen text-[#F4F4F6] selection:bg-[#6C63FF]/30 pt-32 sm:pt-36 pb-24 px-4 sm:px-6 relative overflow-hidden"
       style={{
         background: `
-          radial-gradient(1100px 520px at 50% 8%, rgba(108,99,255,0.15), transparent 70%),
-          radial-gradient(700px 380px at 85% 18%, rgba(255,153,0,0.06), transparent 70%),
+          radial-gradient(900px 480px at 50% 12%, rgba(108,99,255,0.14), transparent 70%),
+          radial-gradient(600px 320px at 85% 25%, rgba(255,153,0,0.05), transparent 70%),
           linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px) 0 0/48px 48px,
           linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px) 0 0/48px 48px,
           #08080B
         `,
       }}
     >
-      <div className="max-w-4xl mx-auto w-full space-y-12">
-        {/* ── Header Section ────────────────────────────────────────── */}
-        <header className="text-center max-w-2xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#6C63FF]/10 border border-[#6C63FF]/25 text-xs text-[#A78BFA] font-medium tracking-wide">
+      <main className="max-w-3xl mx-auto w-full space-y-12 relative z-10">
+        {/* ── Page Header ───────────────────────────────────────── */}
+        <header className="text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#6C63FF]/15 to-[#FF9900]/10 border border-[#6C63FF]/30 text-xs font-mono text-[#A78BFA] shadow-sm">
             <ShieldCheck className="w-3.5 h-3.5 text-[#6C63FF]" />
-            <span>AWS Student Builder Group • Official Credential Registry</span>
+            <span>Institutional Registry • Official Verification</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
             Verify Certificate Authenticity
           </h1>
 
-          <p className="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed max-w-xl mx-auto">
-            Cross-reference workshop and session credentials against official
-            Tula&apos;s University attendance snapshot records. All certificates
-            are cryptographically sealed and tamper-evident.
+          <p className="text-xs sm:text-sm md:text-base text-[#8B8B96] max-w-xl mx-auto leading-relaxed">
+            Authenticate official credentials issued by the AWS Student Builder Group at
+            Tula&apos;s University. All records are cryptographically indexed against verified
+            attendance rosters.
           </p>
         </header>
 
-        {/* ── Primary Search Card (Doppelrand Architecture) ─────────── */}
-        <div className="p-1 rounded-[2.5rem] bg-white/[0.04] border border-white/10 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.85)]">
-          <div className="p-7 sm:p-11 rounded-[calc(2.5rem-4px)] bg-[#0C0C12] space-y-7">
-            <form onSubmit={handleSearch} noValidate className="space-y-5">
-              {/* Field Label & Live Validation Badge */}
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="certId"
-                  className="font-mono text-xs uppercase tracking-wider text-[#A1A1AA] font-semibold flex items-center gap-1.5"
-                >
-                  <Fingerprint className="w-3.5 h-3.5 text-[#6C63FF]" />
-                  <span>Credential Identifier</span>
-                  <span className="text-[#6C63FF]">*</span>
-                </label>
+        {/* ── Doppelrand Verification Input Cockpit ─────────────── */}
+        <div className="p-1 sm:p-1.5 rounded-[2.25rem] bg-white/[0.04] border border-white/10 shadow-[0_24px_70px_-15px_rgba(0,0,0,0.8)]">
+          <div className="p-6 sm:p-10 rounded-[calc(2.25rem-6px)] bg-[#0C0C11] border border-white/[0.04] space-y-6">
+            <form onSubmit={handleSearch} noValidate className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label
+                    htmlFor="certId"
+                    className="block font-mono text-[11px] uppercase tracking-wider text-[#A1A1AA] font-semibold"
+                  >
+                    Certificate Identifier <span className="text-[#6C63FF]">*</span>
+                  </label>
 
-                {/* Real-time Status Indicator */}
-                {isValidFormat ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                    <Check className="w-3 h-3" />
-                    <span>Valid Registry Format</span>
-                  </span>
-                ) : isPartiallyFilled ? (
-                  <span className="text-[11px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/25">
-                    Needs AWS-SBG-YYYY-XXXXXX
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-mono text-[#71717A]">
-                    Format: AWS-SBG-YYYY-XXXXXX
-                  </span>
-                )}
-              </div>
-
-              {/* Input Enclosure */}
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#71717A] pointer-events-none">
-                  <Search className="w-4 h-4" />
+                  {/* Real-time Format Pill */}
+                  {certId && (
+                    <span
+                      className={`inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                        isFormatValid
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isFormatValid ? "bg-emerald-400" : "bg-amber-400"
+                        }`}
+                      />
+                      {isFormatValid ? "Valid Format" : "Invalid Format"}
+                    </span>
+                  )}
                 </div>
 
-                <input
-                  id="certId"
-                  type="text"
-                  required
-                  autoFocus
-                  autoCapitalize="characters"
-                  value={certId}
-                  onChange={(e) => {
-                    setCertId(e.target.value.toUpperCase());
-                    setError("");
-                  }}
-                  placeholder="e.g. AWS-SBG-2026-UK95ZP"
-                  className="w-full h-14 pl-12 pr-28 rounded-2xl text-base font-mono tracking-wider bg-[#14141A] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF]/40 transition-all"
-                />
+                {/* Input Container */}
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#71717A] pointer-events-none">
+                    <Search className="w-4 h-4 text-[#A78BFA]" />
+                  </div>
 
-                {/* Paste from Clipboard Button */}
-                <button
-                  type="button"
-                  onClick={handlePasteFromClipboard}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 h-8 px-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-[#A1A1AA] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Paste from clipboard"
-                >
-                  <Clipboard className="w-3 h-3" />
-                  <span>Paste</span>
-                </button>
+                  <input
+                    id="certId"
+                    type="text"
+                    required
+                    autoFocus
+                    autoCapitalize="characters"
+                    value={certId}
+                    onChange={(e) => {
+                      setCertId(cleanAndExtractCertId(e.target.value));
+                      setError("");
+                    }}
+                    placeholder="e.g. AWS-SBG-2026-UK95ZP"
+                    className="w-full h-14 pl-12 pr-28 rounded-2xl text-base sm:text-lg font-mono font-medium tracking-wider bg-[#14141A] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF] transition-all"
+                  />
+
+                  {/* Input Utilities (Paste & Clear) */}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    {certId ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCertId("");
+                          setError("");
+                        }}
+                        className="h-8 w-8 rounded-xl flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                        title="Clear input"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handlePaste}
+                        className="h-8 px-2.5 rounded-xl text-[11px] font-mono text-[#A1A1AA] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-all flex items-center gap-1.5 cursor-pointer"
+                        title="Paste from clipboard"
+                      >
+                        <Clipboard className="w-3 h-3" />
+                        <span>Paste</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-[#71717A] font-mono mt-2">
+                  Expected pattern: <span className="text-[#A1A1AA]">AWS-SBG-YYYY-XXXXXX</span>
+                </p>
               </div>
 
-              {/* Error Callout */}
+              {/* Error Alert Box */}
               {error && (
                 <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/25 text-xs text-red-400 flex items-center gap-2">
-                  <span>⚠️</span>
+                  <X className="w-4 h-4 shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
 
-              {/* Submit CTA (Button-in-Button Pattern) */}
+              {/* Submit CTA Button with Button-in-Button */}
               <button
                 type="submit"
                 disabled={isSearching}
-                className="w-full h-13 rounded-2xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white flex items-center justify-between px-6 transition-all cursor-pointer shadow-lg shadow-[#6C63FF]/25 active:scale-[0.99] disabled:opacity-50"
+                className="group relative w-full h-13 rounded-2xl bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 active:scale-[0.99] text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-3 transition-all cursor-pointer shadow-lg shadow-[#6C63FF]/25 disabled:opacity-50"
               >
                 {isSearching ? (
-                  <div className="flex items-center justify-center gap-3 w-full py-1">
+                  <>
                     <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    <span>Validating Against Institutional Registry…</span>
-                  </div>
+                    <span>Querying Institutional Registry…</span>
+                  </>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2.5">
-                      <ShieldCheck className="w-4 h-4 text-white" />
-                      <span>Inspect Credential Authenticity</span>
-                    </div>
-                    <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
-                      <ArrowRight className="w-3.5 h-3.5 text-white" />
-                    </div>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Verify Credential Record</span>
+                    <span className="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-1">
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
                   </>
                 )}
               </button>
             </form>
 
-            {/* ── Demo Quick-Test Pills ─────────────────────────── */}
-            <div className="pt-5 border-t border-white/[0.06] space-y-2.5">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717A] block">
-                Quick Test with Officially Registered Credentials:
+            {/* Quick Sample Verified IDs */}
+            <div className="pt-4 border-t border-white/[0.06] flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-[#71717A] text-[11px] font-mono">
+                Sample Verified ID:
               </span>
-              <div className="flex flex-wrap gap-2">
-                {DEMO_CERTIFICATES.map((demo) => (
-                  <button
-                    key={demo.id}
-                    type="button"
-                    onClick={() => handleSelectDemo(demo.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-2 cursor-pointer border ${
-                      certId === demo.id
-                        ? "bg-[#6C63FF]/20 border-[#6C63FF]/50 text-white"
-                        : "bg-white/[0.03] hover:bg-white/[0.07] border-white/[0.06] text-[#A1A1AA] hover:text-white"
-                    }`}
-                  >
-                    <span className="text-white font-medium">{demo.id}</span>
-                    <span className="text-[10px] text-[#71717A]">• {demo.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Micro Trust Highlights ────────────────────────── */}
-            <div className="pt-4 border-t border-white/[0.06] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-[#A1A1AA]">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Instant Database Verification</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Tamper-Evident Snapshots</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Official PDF &amp; QR Signatures</span>
-              </div>
+              <button
+                type="button"
+                onClick={() => handleSampleClick("AWS-SBG-2026-UK95ZP")}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-mono text-[#A78BFA] hover:text-white bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] transition-all cursor-pointer"
+              >
+                AWS-SBG-2026-UK95ZP
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSampleClick("AWS-SBG-2026-FUW35U")}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-mono text-[#A78BFA] hover:text-white bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] transition-all cursor-pointer"
+              >
+                AWS-SBG-2026-FUW35U
+              </button>
             </div>
           </div>
         </div>
 
-        {/* ── 3-Column Trust Pillars (Bento Grid) ────────────────────── */}
-        <section className="space-y-4">
-          <div className="text-center">
-            <span className="text-[10px] uppercase font-mono tracking-widest text-[#71717A] block">
-              Security Architecture
-            </span>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mt-1">
-              How Credential Verification Works
-            </h2>
+        {/* ── Trust & Architecture Bento (3 Pillars) ───────────── */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Pillar 1 */}
+          <div className="p-1 rounded-[1.75rem] bg-white/[0.03] border border-white/[0.08]">
+            <div className="p-5 sm:p-6 rounded-[calc(1.75rem-4px)] bg-[#0C0C11] h-full flex flex-col justify-between space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <Database className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white tracking-tight">
+                  Database Verified
+                </h2>
+                <p className="text-xs text-[#71717A] mt-1 leading-relaxed">
+                  Real-time lookup against live session check-ins, rendering counterfeit certificates impossible.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Pillar 1 */}
-            <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/[0.08]">
-              <div className="p-6 rounded-[calc(2rem-4px)] bg-[#0C0C12] h-full space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-[#6C63FF]/15 border border-[#6C63FF]/30 text-[#A78BFA] flex items-center justify-center">
-                  <Database className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-white tracking-tight">
-                  1. Immutable Snapshot
-                </h3>
-                <p className="text-xs text-[#71717A] leading-relaxed">
-                  Recipient name, university roll number, course, and event date
-                  are snapshotted at attendance submission time, preventing retroactive alterations.
+          {/* Pillar 2 */}
+          <div className="p-1 rounded-[1.75rem] bg-white/[0.03] border border-white/[0.08]">
+            <div className="p-5 sm:p-6 rounded-[calc(1.75rem-4px)] bg-[#0C0C11] h-full flex flex-col justify-between space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-[#6C63FF]/10 border border-[#6C63FF]/20 text-[#A78BFA] flex items-center justify-center shrink-0">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white tracking-tight">
+                  Immutable Snapshot
+                </h2>
+                <p className="text-xs text-[#71717A] mt-1 leading-relaxed">
+                  Recipient name, roll number, and workshop schedule are permanently sealed upon credential creation.
                 </p>
               </div>
             </div>
+          </div>
 
-            {/* Pillar 2 */}
-            <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/[0.08]">
-              <div className="p-6 rounded-[calc(2rem-4px)] bg-[#0C0C12] h-full space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                  <Building className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-white tracking-tight">
-                  2. Institutional Registry
-                </h3>
-                <p className="text-xs text-[#71717A] leading-relaxed">
-                  Directly cross-referenced with Tula&apos;s University
-                  Department of Computer Science and official AWS Student
-                  Builder Group session logs.
-                </p>
+          {/* Pillar 3 */}
+          <div className="p-1 rounded-[1.75rem] bg-white/[0.03] border border-white/[0.08]">
+            <div className="p-5 sm:p-6 rounded-[calc(1.75rem-4px)] bg-[#0C0C11] h-full flex flex-col justify-between space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-[#FF9900]/10 border border-[#FF9900]/20 text-[#FF9900] flex items-center justify-center shrink-0">
+                <FileCheck className="w-4 h-4" />
               </div>
-            </div>
-
-            {/* Pillar 3 */}
-            <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/[0.08]">
-              <div className="p-6 rounded-[calc(2rem-4px)] bg-[#0C0C12] h-full space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-[#FF9900]/15 border border-[#FF9900]/30 text-[#FF9900] flex items-center justify-center">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-white tracking-tight">
-                  3. Vector PDF &amp; QR Code
-                </h3>
-                <p className="text-xs text-[#71717A] leading-relaxed">
-                  Every certificate PDF carries a scannable high-resolution QR
-                  code resolving directly to its live public verification record.
+              <div>
+                <h2 className="text-sm font-bold text-white tracking-tight">
+                  Global Portability
+                </h2>
+                <p className="text-xs text-[#71717A] mt-1 leading-relaxed">
+                  Download high-resolution vector PDFs or share persistent verification URLs on LinkedIn and resumes.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── Footer Navigation ─────────────────────────────────────── */}
-        <div className="text-center pt-6 border-t border-white/[0.06] text-xs text-[#71717A] flex flex-wrap items-center justify-center gap-6">
-          <Link href="/" className="hover:text-white transition-colors">
-            ← AWS SBG Homepage
-          </Link>
-          <span>•</span>
-          <Link href="/events" className="hover:text-white transition-colors">
-            Upcoming Workshops &amp; Events
-          </Link>
-          <span>•</span>
-          <Link href="/attendance" className="hover:text-white transition-colors">
-            Student Attendance Gateway
-          </Link>
-        </div>
-      </div>
+        {/* ── Verification FAQ / Guidance ──────────────────────── */}
+        <section className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/[0.08]">
+          <div className="p-6 sm:p-8 rounded-[calc(2rem-4px)] bg-[#0C0C11] space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Award className="w-4 h-4 text-[#A78BFA]" />
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+                Verification Guidelines
+              </h2>
+            </div>
+
+            <div className="space-y-2.5">
+              {/* FAQ Item 1 */}
+              <div className="rounded-xl bg-[#14141A] border border-white/[0.06] overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(1)}
+                  className="w-full p-4 text-left flex items-center justify-between text-xs sm:text-sm font-medium text-white hover:text-[#A78BFA] transition-colors cursor-pointer"
+                >
+                  <span>Where do I find my unique Certificate ID?</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#71717A] transition-transform duration-200 ${
+                      openFaq === 1 ? "rotate-180 text-white" : ""
+                    }`}
+                  />
+                </button>
+                {openFaq === 1 && (
+                  <div className="px-4 pb-4 text-xs text-[#8B8B96] leading-relaxed border-t border-white/[0.04] pt-2">
+                    Your Certificate ID is printed on the bottom-right corner of your official PDF credential and was also sent to your registered email address upon attendance submission.
+                  </div>
+                )}
+              </div>
+
+              {/* FAQ Item 2 */}
+              <div className="rounded-xl bg-[#14141A] border border-white/[0.06] overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(2)}
+                  className="w-full p-4 text-left flex items-center justify-between text-xs sm:text-sm font-medium text-white hover:text-[#A78BFA] transition-colors cursor-pointer"
+                >
+                  <span>Is this verification link permanent for resumes and LinkedIn?</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#71717A] transition-transform duration-200 ${
+                      openFaq === 2 ? "rotate-180 text-white" : ""
+                    }`}
+                  />
+                </button>
+                {openFaq === 2 && (
+                  <div className="px-4 pb-4 text-xs text-[#8B8B96] leading-relaxed border-t border-white/[0.04] pt-2">
+                    Yes. The direct verification URL (<span className="text-white font-mono">awstulas.org/verify/[ID]</span>) is immutable and can be added as a credential verification link on LinkedIn, GitHub portfolios, and professional resumes.
+                  </div>
+                )}
+              </div>
+
+              {/* FAQ Item 3 */}
+              <div className="rounded-xl bg-[#14141A] border border-white/[0.06] overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(3)}
+                  className="w-full p-4 text-left flex items-center justify-between text-xs sm:text-sm font-medium text-white hover:text-[#A78BFA] transition-colors cursor-pointer"
+                >
+                  <span>What should I do if my certificate cannot be found?</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#71717A] transition-transform duration-200 ${
+                      openFaq === 3 ? "rotate-180 text-white" : ""
+                    }`}
+                  />
+                </button>
+                {openFaq === 3 && (
+                  <div className="px-4 pb-4 text-xs text-[#8B8B96] leading-relaxed border-t border-white/[0.04] pt-2">
+                    Verify that the ID has no typos. If you recently attended a session, please confirm your attendance was submitted before the portal closed. For unresolved records, contact the AWS Student Builder Group organizing team at Tula&apos;s University.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Footer Navigation ─────────────────────────────────── */}
+        <footer className="text-center text-xs text-[#71717A] space-y-2 pt-4">
+          <p>
+            <Link
+              href="/"
+              className="text-[#A1A1AA] hover:text-white transition-colors inline-flex items-center gap-1.5"
+            >
+              ← Return to AWS SBG Homepage
+            </Link>
+          </p>
+        </footer>
+      </main>
     </div>
   );
 }
