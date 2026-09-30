@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import Papa from "papaparse";
 import { createClient } from "@/lib/supabase/client";
 import type { DbEvent, DbPortalConfig, AdminParticipantRow } from "@/types/certificate";
+import EventDateTimePicker from "@/components/admin/EventDateTimePicker";
 import {
   Award,
   Calendar,
@@ -1249,7 +1250,7 @@ export default function AdminPage() {
             className="absolute inset-0 bg-black/75 backdrop-blur-md transition-opacity"
             onClick={resetForm}
           />
-          <div className="relative w-full max-w-lg p-1 rounded-[2rem] bg-white/[0.05] border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-xl p-1 rounded-[2rem] bg-white/[0.05] border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden">
               {/* Modal Header */}
               <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between">
@@ -1273,7 +1274,7 @@ export default function AdminPage() {
 
               {/* Modal Form */}
               <form onSubmit={handleFormSubmit}>
-                <div className="p-6 space-y-4.5 max-h-[65vh] overflow-y-auto">
+                <div className="p-6 space-y-4.5 max-h-[75vh] overflow-y-auto">
                   {/* Event Name */}
                   <div>
                     <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
@@ -1303,34 +1304,13 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  {/* Date & Timing Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
-                        Event Date <span className="text-[#6C63FF]">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formData.eventDate}
-                        onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white focus:outline-none focus:border-[#6C63FF] transition-colors [color-scheme:dark]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
-                        Timing <span className="text-[#6C63FF]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.eventTiming}
-                        onChange={(e) => setFormData({ ...formData, eventTiming: e.target.value })}
-                        placeholder="e.g. 11:00 AM - 12:30 PM"
-                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
-                      />
-                    </div>
-                  </div>
+                  {/* Enhanced Date & Timing Selector System */}
+                  <EventDateTimePicker
+                    eventDate={formData.eventDate}
+                    eventTiming={formData.eventTiming}
+                    onDateChange={(date) => setFormData((prev) => ({ ...prev, eventDate: date }))}
+                    onTimingChange={(timing) => setFormData((prev) => ({ ...prev, eventTiming: timing }))}
+                  />
 
                   {/* Speaker Name */}
                   <div>
