@@ -106,7 +106,7 @@ export default function CertificateSearchPage() {
 
           <p className="text-xs sm:text-sm md:text-base text-[#8B8B96] max-w-xl mx-auto leading-relaxed">
             Authenticate official credentials issued by the AWS Student Builder Group at
-            Tula&apos;s University. All records are cryptographically indexed against verified
+            Tulas University. All records are cryptographically indexed against verified
             attendance rosters.
           </p>
         </header>
@@ -374,7 +374,7 @@ export default function CertificateSearchPage() {
                 </button>
                 {openFaq === 3 && (
                   <div className="px-4 pb-4 text-xs text-[#8B8B96] leading-relaxed border-t border-white/[0.04] pt-2">
-                    Verify that the ID has no typos. If you recently attended a session, please confirm your attendance was submitted before the portal closed. For unresolved records, contact the AWS Student Builder Group organizing team at Tula&apos;s University.
+                    Verify that the ID has no typos. If you recently attended a session, please confirm your attendance was submitted before the portal closed. For unresolved records, contact the AWS Student Builder Group organizing team at Tulas University.
                   </div>
                 )}
               </div>

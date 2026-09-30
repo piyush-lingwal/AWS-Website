@@ -7,15 +7,9 @@ import {
   ShieldCheck,
   Award,
   Calendar,
-  User,
-  GraduationCap,
-  Hash,
   Download,
-  Eye,
-  ExternalLink,
   Search,
   AlertTriangle,
-  Building,
 } from "lucide-react";
 
 interface PageProps {
@@ -28,7 +22,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `Verify ${cleanId} — AWS Student Builder Group`,
-    description: `Official verification record for certificate ${cleanId} issued by AWS Student Builder Group at Tula's University.`,
+    description: `Official verification record for certificate ${cleanId} issued by AWS Student Builder Group at Tulas University.`,
     robots: { index: false, follow: true },
   };
 }
@@ -87,7 +81,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           eventName: data.event_name_snapshot,
           eventDate: data.event_date_snapshot,
           issueDate: data.issue_date,
-          issuedBy: "AWS Student Builder Group • Tula's University",
+          issuedBy: "AWS Student Builder Group • Tulas University",
           pdfUrl: data.pdf_url || `/api/certificates/${data.certificate_id}`,
           verificationUrl: data.verification_url,
         };
@@ -109,107 +103,32 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
       }}
     >
       <main className="max-w-4xl mx-auto w-full">
-        {/* Navigation Breadcrumb */}
-        <div className="mb-6 flex items-center justify-between text-xs text-[#8B8B96]">
-          <Link
-            href="/verify"
-            className="hover:text-white transition-colors inline-flex items-center gap-1.5"
-          >
-            ← Verify another certificate
-          </Link>
-          <span className="font-mono text-[11px] text-[#A78BFA]">
-            Official Registry Lookup
-          </span>
-        </div>
-
         {/* ───────────────────────────────────────────────────────────── */}
         {/* CASE 1: VALID CERTIFICATE                                     */}
         {/* ───────────────────────────────────────────────────────────── */}
         {cert ? (
           <div className="space-y-8">
-            {/* Status Hero Card */}
-            <div className="p-1 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/30 shadow-[0_20px_60px_-15px_rgba(16,185,129,0.25)]">
-              <div className="p-6 sm:p-8 rounded-[calc(2rem-4px)] bg-[#0C1412] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 text-emerald-400">
-                    <ShieldCheck className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-semibold tracking-wider uppercase font-mono mb-1">
-                      VERIFIED
-                    </div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                      Official AWS SBG Certificate
-                    </h1>
-                    <p className="text-xs text-[#A1A1AA] mt-0.5">
-                      This certificate is authentic, verified against university records, and officially registered.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex items-center gap-3">
-                  <a
-                    href={`/api/certificates/${cert.certificateId}`}
-                    download={`${cert.certificateId}.pdf`}
-                    className="h-10 px-4 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-black flex items-center gap-2 transition-all cursor-pointer font-medium"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download PDF
-                  </a>
-                  <a
-                    href={`/api/certificates/${cert.certificateId}?inline=true`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-10 px-4 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center gap-2 transition-all cursor-pointer"
-                  >
-                    <Eye className="w-4 h-4" />
-                    View PDF
-                  </a>
-                </div>
-              </div>
-            </div>
-
             {/* Certificate Details Breakdown */}
             <div className="p-1 rounded-[2rem] bg-white/[0.04] border border-white/10 shadow-2xl">
               <div className="p-6 sm:p-8 rounded-[calc(2rem-4px)] bg-[#0F0F13] space-y-6">
-                {/* Recipient */}
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider text-[#F59E0B] font-mono font-medium">
-                    Recipient
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mt-1 tracking-tight">
-                    {cert.recipientName}
-                  </h2>
+                {/* Recipient Header with Verified Badge */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <span className="text-[11px] uppercase tracking-wider text-[#F59E0B] font-mono font-medium">
+                      Recipient
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1 tracking-tight">
+                      {cert.recipientName}
+                    </h1>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold self-start sm:self-center">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>VERIFIED CREDENTIAL</span>
+                  </div>
                 </div>
 
                 {/* Details Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-[#26262D]">
-                  {/* Course */}
-                  <div className="p-4 rounded-xl bg-[#17171C] border border-[#26262D] flex items-center gap-3">
-                    <GraduationCap className="w-5 h-5 text-[#22D3EE] shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-[10px] uppercase tracking-wider text-[#8B8B96] font-mono">
-                        Course / Program
-                      </div>
-                      <div className="text-sm font-semibold text-white truncate">
-                        {cert.course}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Roll Number */}
-                  <div className="p-4 rounded-xl bg-[#17171C] border border-[#26262D] flex items-center gap-3">
-                    <Hash className="w-5 h-5 text-[#A78BFA] shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-[10px] uppercase tracking-wider text-[#8B8B96] font-mono">
-                        University Roll Number
-                      </div>
-                      <div className="text-sm font-semibold text-white font-mono truncate">
-                        {cert.rollNo}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Event Name */}
                   <div className="p-4 rounded-xl bg-[#17171C] border border-[#26262D] flex items-center gap-3">
                     <Award className="w-5 h-5 text-[#F59E0B] shrink-0" />
@@ -273,12 +192,17 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
             <div className="p-1 rounded-[2rem] bg-white/[0.04] border border-white/10 shadow-2xl overflow-hidden">
               <div className="p-6 sm:p-8 rounded-[calc(2rem-4px)] bg-[#0F0F13]">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
+                  <h2 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
                     Official Certificate Preview
-                  </h3>
-                  <span className="text-[11px] text-[#8B8B96] font-mono">
-                    High Resolution (Vector)
-                  </span>
+                  </h2>
+                  <a
+                    href={`/api/certificates/${cert.certificateId}`}
+                    download={`${cert.certificateId}.pdf`}
+                    className="h-9 px-4 rounded-xl text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-[#6C63FF]/20 active:scale-[0.98]"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Certificate</span>
+                  </a>
                 </div>
 
                 <div className="rounded-xl overflow-hidden border border-[#26262D] bg-[#17171C]">

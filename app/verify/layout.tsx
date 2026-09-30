@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Verify Certificate — AWS Student Builder Group",
   description:
-    "Official credential verification portal for AWS Student Builder Group at Tula's University. Verify authenticity of session participation and workshop certificates.",
+    "Official credential verification portal for AWS Student Builder Group at Tulas University. Verify authenticity of session participation and workshop certificates.",
   keywords: [
     "AWS SBG",
     "Certificate Verification",
-    "Tula's University",
+    "Tulas University",
     "Credentials",
     "AWS",
   ],

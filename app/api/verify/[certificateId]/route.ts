@@ -117,7 +117,7 @@ export async function GET(
           eventName: cert.event_name_snapshot,
           eventDate: cert.event_date_snapshot,
           issueDate: cert.issue_date,
-          issuedBy: "AWS Student Builder Group • Tula's University",
+          issuedBy: "AWS Student Builder Group • Tulas University",
         },
         verifiedAt: new Date().toISOString(),
       } satisfies CertificateVerificationResponse,

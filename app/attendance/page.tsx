@@ -249,7 +249,7 @@ export default function AttendancePortalPage() {
         <div className="att-page-wrap text-center max-w-lg">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[rgba(108,99,255,0.1)] border border-[rgba(108,99,255,0.25)] text-xs text-[#A78BFA] font-medium mb-6">
             <Award className="w-3.5 h-3.5 text-[#6C63FF]" />
-            <span>AWS Student Builder Group • Tula&apos;s University</span>
+            <span>AWS Student Builder Group • Tulas University</span>
           </div>
 
           <div className="w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center bg-[#17171C] border border-[#26262D] text-[#8B8B96]">
@@ -354,7 +354,7 @@ export default function AttendancePortalPage() {
                 Official Credential Issued
               </h2>
               <p className="text-[#8B8B96] text-xs sm:text-sm leading-relaxed mb-6 max-w-md mx-auto">
-                Your credential has been permanently signed and registered with AWS Student Builder Group at Tula&apos;s University.
+                Your credential has been permanently signed and registered with AWS Student Builder Group at Tulas University.
               </p>
 
               {/* Certificate ID Card */}
@@ -445,7 +445,7 @@ export default function AttendancePortalPage() {
         <header className="text-center mb-8 sm:mb-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[rgba(108,99,255,0.1)] border border-[rgba(108,99,255,0.25)] text-xs text-[#A78BFA] font-medium mb-4">
             <Award className="w-3.5 h-3.5 text-[#6C63FF]" />
-            <span>AWS Student Builder Group • Tula&apos;s University</span>
+            <span>AWS Student Builder Group • Tulas University</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2.5">
@@ -634,7 +634,7 @@ export default function AttendancePortalPage() {
                     Course / Branch
                   </h2>
                   <p className="text-[11px] text-[#8B8B96]">
-                    Your enrolled program at Tula&apos;s University
+                    Your enrolled program at Tulas University
                   </p>
                 </div>
               </div>

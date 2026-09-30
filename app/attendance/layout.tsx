@@ -3,12 +3,12 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Attendance Portal — AWS Student Builder Group",
   description:
-    "Official attendance verification and instant certificate generation portal for AWS Student Builder Group sessions and workshops at Tula's University.",
+    "Official attendance verification and instant certificate generation portal for AWS Student Builder Group sessions and workshops at Tulas University.",
   keywords: [
     "AWS SBG",
     "Attendance",
     "Certificate",
-    "Tula's University",
+    "Tulas University",
     "Student Builder Group",
   ],
   openGraph: {
