@@ -540,10 +540,10 @@ export default function AdminPage() {
             {/* ══════════════════════════════════════════════════ */}
             {/* ── EXECUTIVE METRIC STRIP ──────────────────────── */}
             {/* ══════════════════════════════════════════════════ */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Card 1: Active Event */}
               <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
-                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4">
+                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4 h-full">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#6C63FF]/10 border border-[#6C63FF]/20 text-[#6C63FF] shrink-0">
                     <Radio className="w-5 h-5 animate-pulse" />
                   </div>
@@ -551,10 +551,10 @@ export default function AdminPage() {
                     <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A] block">
                       Active Portal Event
                     </span>
-                    <p className="text-sm font-bold text-white truncate mt-0.5">
+                    <p className="text-base font-bold text-white truncate mt-0.5">
                       {activeEvent?.name || "None Configured"}
                     </p>
-                    <span className="text-[11px] text-[#A1A1AA] flex items-center gap-1.5 mt-0.5">
+                    <span className="text-xs text-[#A1A1AA] flex items-center gap-1.5 mt-0.5">
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
                           portalConfig?.attendance_enabled && activeEvent?.attendance_open
@@ -570,49 +570,9 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Card 2: Total Attendees in View */}
+              {/* Card 2: Total Events Managed */}
               <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
-                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A] block">
-                      Attendees in Session
-                    </span>
-                    <p className="text-2xl font-mono font-bold text-white tracking-tight mt-0.5">
-                      {totalAttended}
-                    </p>
-                    <span className="text-[11px] text-[#A1A1AA]">
-                      Official attendance submissions
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 3: Certificates Issued */}
-              <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
-                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#FF9900]/10 border border-[#FF9900]/20 text-[#FF9900] shrink-0">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A] block">
-                      Credentials Issued
-                    </span>
-                    <p className="text-2xl font-mono font-bold text-white tracking-tight mt-0.5">
-                      {totalVerifiedCerts}
-                    </p>
-                    <span className="text-[11px] text-[#A1A1AA]">
-                      Signed &amp; tamper-evident
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 4: Total Events Managed */}
-              <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
-                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4">
+                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4 h-full">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shrink-0">
                     <Calendar className="w-5 h-5" />
                   </div>
@@ -623,7 +583,7 @@ export default function AdminPage() {
                     <p className="text-2xl font-mono font-bold text-white tracking-tight mt-0.5">
                       {events.length}
                     </p>
-                    <span className="text-[11px] text-[#A1A1AA]">
+                    <span className="text-xs text-[#A1A1AA]">
                       Workshops &amp; webinars
                     </span>
                   </div>
