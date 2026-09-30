@@ -1,31 +1,61 @@
 // ============================================================
-// Certificate System — Core Types
+// Certificate System — Core Types (V2)
+// ============================================================
+//
+// Matches supabase_schema_v2.sql exactly.
+// No enums. No unnecessary timestamps.
+//
 // ============================================================
 
-/**
- * Public-facing certificate statuses shown on verification pages.
- */
-export type CertificatePublicStatus = "VALID" | "REVOKED" | "NOT_FOUND";
+// ============================================================
+// Database Models
+// ============================================================
 
-/**
- * Internal certificate statuses used throughout the system.
- */
-export type CertificateStatus =
-  | "DRAFT"
-  | "GENERATING"
-  | "GENERATED"
-  | "FAILED"
-  | "REVOKED";
+export interface DbParticipant {
+  id: string;
+  full_name: string;
+  email: string;
+  course: string;
+  roll_no: string;
+}
 
-/**
- * Admin roles for role-based access control.
- */
-export type AdminRole = "SUPER_ADMIN" | "TECH_ADMIN" | "EVENT_MANAGER";
+export interface DbEvent {
+  id: string;
+  name: string;
+  description: string | null;
+  event_date: string;       // ISO date string (YYYY-MM-DD)
+  event_timing: string;     // Display-oriented, e.g. "11:00 AM - 12:30 PM"
+  speaker_name: string | null;
+  attendance_open: boolean;
+}
 
-/**
- * Event statuses.
- */
-export type EventStatus = "DRAFT" | "PUBLISHED" | "COMPLETED" | "CANCELLED";
+export interface DbAttendance {
+  id: string;
+  event_id: string;
+  participant_id: string;
+  submitted_at: string;     // ISO timestamp
+}
+
+export interface DbCertificate {
+  id: string;
+  certificate_id: string;
+  event_id: string;
+  participant_id: string;
+  attendance_id: string;
+  recipient_name_snapshot: string;
+  event_name_snapshot: string;
+  event_date_snapshot: string;   // ISO date string
+  pdf_url: string | null;
+  verification_url: string;
+  pdf_hash: string | null;
+  issue_date: string;            // ISO date string
+}
+
+export interface DbPortalConfig {
+  id: string;
+  active_event_id: string | null;
+  attendance_enabled: boolean;
+}
 
 // ============================================================
 // Certificate Generation
@@ -37,10 +67,11 @@ export type EventStatus = "DRAFT" | "PUBLISHED" | "COMPLETED" | "CANCELLED";
 export interface CertificateGenerationInput {
   participantName: string;
   eventTitle: string;
-  eventDate: string; // ISO date string or formatted date
-  achievementText?: string; // Custom achievement text; falls back to default
-  signerName?: string; // Custom signer name; falls back to default
-  signerTitle?: string; // Custom signer title; falls back to default
+  eventDate: string;           // ISO date string or formatted date
+  certificateId?: string;      // Optional pre-generated certificate ID
+  achievementText?: string;    // Custom achievement text; falls back to default
+  signerName?: string;         // Custom signer name; falls back to default
+  signerTitle?: string;        // Custom signer title; falls back to default
 }
 
 /**
@@ -51,106 +82,6 @@ export interface CertificateGenerationResult {
   certificateId?: string;
   pdfBuffer?: Buffer;
   error?: string;
-}
-
-/**
- * Result of a bulk certificate generation.
- */
-export interface BulkGenerationResult {
-  total: number;
-  successful: number;
-  failed: number;
-  skipped: number;
-  results: BulkGenerationItemResult[];
-}
-
-export interface BulkGenerationItemResult {
-  participantName: string;
-  participantEmail: string;
-  certificateId?: string;
-  status: "SUCCESS" | "FAILED" | "SKIPPED";
-  reason?: string;
-}
-
-// ============================================================
-// Database Models (mirrors Supabase schema)
-// ============================================================
-
-export interface DbCertificateAttendance {
-  id: string;
-  full_name: string;
-  college_email: string;
-  enrollment_no: string;
-  program: string;
-  event_title: string;
-  event_date: string;
-  certificate_id: string | null;
-  created_at: string;
-}
-
-export interface DbCertificate {
-  id: string;
-  certificate_id: string;
-  participant_id: string | null;
-  event_id: string | null;
-  participant_name: string;
-  event_title: string;
-  event_date: string;
-  achievement_text: string;
-  signer_name: string;
-  signer_title: string;
-  status: CertificateStatus;
-  storage_key: string | null;
-  verification_url: string | null;
-  issue_date: string;
-  revoked_at: string | null;
-  revoked_by: string | null;
-  revocation_reason: string | null;
-  metadata: Record<string, unknown> | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DbEvent {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  event_date: string;
-  location: string | null;
-  status: EventStatus;
-  certificate_description: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DbParticipant {
-  id: string;
-  full_name: string;
-  email: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DbUser {
-  id: string;
-  email: string;
-  full_name: string;
-  role: AdminRole;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DbAuditLog {
-  id: string;
-  user_id: string | null;
-  action: string;
-  resource_type: string;
-  resource_id: string | null;
-  result: "SUCCESS" | "FAILURE";
-  metadata: Record<string, unknown> | null;
-  created_at: string;
 }
 
 // ============================================================
@@ -164,26 +95,87 @@ export interface ApiResponse<T = unknown> {
   message?: string;
 }
 
+/**
+ * Public-facing verification result.
+ */
+export type CertificatePublicStatus = "VALID" | "NOT_FOUND";
+
 export interface CertificateVerificationResponse {
+  valid: boolean;
   status: CertificatePublicStatus;
+  certificateId: string;
   certificate?: {
     certificateId: string;
-    participantName: string;
-    eventTitle: string;
+    recipientName: string;
+    course: string;
+    rollNo: string;
+    eventName: string;
     eventDate: string;
     issueDate: string;
     issuedBy: string;
   };
-  revokedAt?: string;
+  error?: string;
+  verifiedAt: string;
 }
 
-export interface GenerateCertificateRequest {
+/**
+ * Attendance submission request body (from student form).
+ */
+export interface AttendanceSubmitRequest {
+  fullName: string;
+  email: string;
+  course: string;
+  rollNo: string;
+}
+
+/**
+ * Successful attendance submission response.
+ */
+export interface AttendanceSubmitResponse {
+  certificateId: string;
   participantName: string;
-  participantEmail: string;
-  eventId: string;
-  achievementText?: string;
-  signerName?: string;
-  signerTitle?: string;
-  enrollmentNo?: string;
-  program?: string;
+  eventName: string;
+  eventDate: string;
+  verificationUrl: string;
+  pdfDownloadUrl?: string;
+}
+
+/**
+ * Portal config response (public).
+ */
+export interface PortalConfigResponse {
+  attendanceEnabled: boolean;
+  event: {
+    id: string;
+    name: string;
+    description: string | null;
+    eventDate: string;
+    eventTiming: string;
+    speakerName: string | null;
+  } | null;
+}
+
+/**
+ * Admin: Create/Update event request.
+ */
+export interface AdminEventRequest {
+  name: string;
+  description?: string;
+  eventDate: string;
+  eventTiming: string;
+  speakerName?: string;
+  attendanceOpen?: boolean;
+  setAsActive?: boolean;       // If true, sets this event as the active portal event
+}
+
+/**
+ * Admin: Participant view row (joined from attendance + participant + certificate).
+ */
+export interface AdminParticipantRow {
+  name: string;
+  email: string;
+  course: string;
+  rollNo: string;
+  submittedAt: string;
+  certificateId: string | null;
 }
