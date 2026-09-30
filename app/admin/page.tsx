@@ -457,45 +457,56 @@ export default function AdminPage() {
         `,
       }}
     >
-      {/* ── Top Executive Navbar ───────────────────────────── */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#08080B]/85 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6C63FF]/20 to-[#FF9900]/20 border border-white/10 flex items-center justify-center shadow-lg shadow-[#6C63FF]/10">
-              <Award className="w-5 h-5 text-[#6C63FF]" />
+      {/* ── Main Operations Container ───────────────────────── */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 sm:pt-36 space-y-10">
+        {/* ── Executive Page Header & Controls ──────────────── */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/[0.08]">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6C63FF]/20 to-[#FF9900]/20 border border-white/10 flex items-center justify-center shadow-lg shadow-[#6C63FF]/10 shrink-0">
+              <Award className="w-6 h-6 text-[#6C63FF]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                  AWS Student Builder Group
-                </h1>
-                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-white/5 border border-white/10 text-[#A78BFA]">
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                   Admin Cockpit
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-white/5 border border-white/10 text-[#A78BFA]">
+                  Live Operations
                 </span>
               </div>
-              <p className="text-[11px] text-[#71717A] font-mono">
-                Tula&apos;s University • Event &amp; Certificate Operations
+              <p className="text-xs sm:text-sm text-[#71717A] mt-0.5">
+                AWS Student Builder Group · Tula&apos;s University · Event &amp; Credential Dispatch
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            {/* Create Event Trigger */}
+            <button
+              onClick={startCreate}
+              disabled={loading}
+              className="h-10 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-[#6C63FF]/20 disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Event</span>
+            </button>
+
             {/* Quick Link to Student Attendance Portal */}
             <Link
               href="/attendance"
               target="_blank"
-              className="hidden md:inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] transition-all"
+              className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-all"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              Student Portal
+              <span className="hidden sm:inline">Student Portal</span>
             </Link>
 
-            {/* Quick Refresh Button */}
+            {/* Refresh Button */}
             <button
               onClick={() => fetchData(true)}
-              disabled={refreshing}
+              disabled={refreshing || loading}
               title="Refresh Dashboard Data"
-              className="h-9 w-9 rounded-xl flex items-center justify-center bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.08] transition-all cursor-pointer disabled:opacity-50"
+              className="h-10 w-10 rounded-xl flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.08] transition-all cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-[#6C63FF]" : ""}`} />
             </button>
@@ -503,17 +514,13 @@ export default function AdminPage() {
             {/* Sign Out */}
             <button
               onClick={handleLogout}
-              className="h-9 px-3.5 rounded-xl text-xs font-medium text-[#71717A] hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="h-10 px-3.5 rounded-xl text-xs font-medium text-[#71717A] hover:text-red-400 hover:bg-red-500/10 border border-white/[0.06] hover:border-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sign Out</span>
+              <span>Sign Out</span>
             </button>
           </div>
         </div>
-      </header>
-
-      {/* ── Main Operations Container ───────────────────────── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 space-y-10">
         {error && (
           <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs sm:text-sm text-red-400 flex items-center gap-3">
             <XCircle className="w-4 h-4 shrink-0" />
