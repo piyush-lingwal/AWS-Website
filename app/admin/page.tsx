@@ -1,16 +1,44 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { toast } from "sonner";
+import Papa from "papaparse";
 import { createClient } from "@/lib/supabase/client";
 import type { DbEvent, DbPortalConfig, AdminParticipantRow } from "@/types/certificate";
+import {
+  Award,
+  Calendar,
+  Clock,
+  User,
+  Users,
+  CheckCircle2,
+  XCircle,
+  Plus,
+  Edit3,
+  ExternalLink,
+  Search,
+  Download,
+  Send,
+  Copy,
+  Check,
+  RefreshCw,
+  LogOut,
+  Sparkles,
+  ShieldCheck,
+  Radio,
+  FileSpreadsheet,
+  X,
+  SlidersHorizontal,
+} from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
 function formatDate(iso: string): string {
   try {
     return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", {
       day: "numeric",
-      month: "long",
+      month: "short",
       year: "numeric",
     });
   } catch {
@@ -24,7 +52,6 @@ function formatDateTime(iso: string): string {
     return d.toLocaleString("en-IN", {
       day: "numeric",
       month: "short",
-      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
@@ -34,15 +61,26 @@ function formatDateTime(iso: string): string {
   }
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "ST";
+}
+
 // ── Main Admin Page ───────────────────────────────────────────
 export default function AdminPage() {
   const router = useRouter();
   const [events, setEvents] = useState<DbEvent[]>([]);
   const [portalConfig, setPortalConfig] = useState<DbPortalConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  // Form state
+  // Modal / Form state
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DbEvent | null>(null);
   const [formData, setFormData] = useState({
@@ -51,7 +89,7 @@ export default function AdminPage() {
     eventDate: "",
     eventTiming: "",
     speakerName: "",
-    attendanceOpen: false,
+    attendanceOpen: true,
     setAsActive: false,
   });
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -63,15 +101,19 @@ export default function AdminPage() {
   const [totalAttended, setTotalAttended] = useState<number>(0);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [participantSearch, setParticipantSearch] = useState("");
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState("ALL");
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // ── Data Fetching ─────────────────────────────────────────
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError("");
+
     try {
       const [eventsRes, configRes] = await Promise.all([
-        fetch("/api/admin/events"),
-        fetch("/api/admin/portal-config"),
+        fetch("/api/admin/events", { cache: "no-store" }),
+        fetch("/api/admin/portal-config", { cache: "no-store" }),
       ]);
 
       const eventsData = await eventsRes.json();
@@ -87,10 +129,13 @@ export default function AdminPage() {
         }
       }
       if (configData.success) setPortalConfig(configData.data || null);
+
+      if (isRefresh) toast.success("Dashboard data refreshed");
     } catch (e: any) {
-      setError("Failed to load data: " + (e.message || "Unknown error"));
+      setError("Failed to load dashboard data: " + (e.message || "Unknown error"));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [selectedEventId]);
 
@@ -103,7 +148,9 @@ export default function AdminPage() {
     if (!eventId) return;
     setLoadingParticipants(true);
     try {
-      const res = await fetch(`/api/admin/events/${eventId}/participants`);
+      const res = await fetch(`/api/admin/events/${eventId}/participants`, {
+        cache: "no-store",
+      });
       const json = await res.json();
       if (json.success && json.data) {
         setParticipants(json.data.participants || []);
@@ -131,6 +178,7 @@ export default function AdminPage() {
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    toast.success("Signed out successfully");
     router.push("/login");
     router.refresh();
   };
@@ -143,7 +191,7 @@ export default function AdminPage() {
       eventDate: "",
       eventTiming: "",
       speakerName: "",
-      attendanceOpen: false,
+      attendanceOpen: true,
       setAsActive: false,
     });
     setEditingEvent(null);
@@ -153,7 +201,13 @@ export default function AdminPage() {
 
   const startCreate = () => {
     resetForm();
-    setFormData((prev) => ({ ...prev, setAsActive: true }));
+    setFormData((prev) => ({
+      ...prev,
+      eventDate: new Date().toISOString().split("T")[0],
+      eventTiming: "11:00 AM - 12:30 PM",
+      setAsActive: events.length === 0,
+      attendanceOpen: true,
+    }));
     setShowForm(true);
   };
 
@@ -196,6 +250,7 @@ export default function AdminPage() {
         return;
       }
 
+      toast.success(editingEvent ? "Event updated successfully" : "Event created successfully");
       resetForm();
       await fetchData();
     } catch (e: any) {
@@ -205,196 +260,532 @@ export default function AdminPage() {
     }
   };
 
-  // ── Toggle Attendance ─────────────────────────────────────
+  // ── Toggle Attendance Master Switch ───────────────────────
   const toggleAttendance = async (enabled: boolean) => {
     try {
-      await fetch("/api/admin/portal-config", {
+      const res = await fetch("/api/admin/portal-config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ attendanceEnabled: enabled }),
       });
-      await fetchData();
+      const json = await res.json();
+      if (json.success) {
+        toast.success(enabled ? "Attendance collection enabled" : "Attendance collection disabled");
+        await fetchData();
+      } else {
+        toast.error(json.error || "Failed to toggle attendance");
+      }
     } catch (e: any) {
       setError("Failed to toggle attendance: " + e.message);
+    }
+  };
+
+  // ── Set Active Event ──────────────────────────────────────
+  const handleSetActiveEvent = async (event: DbEvent) => {
+    try {
+      const res = await fetch("/api/admin/portal-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          activeEventId: event.id,
+          attendanceEnabled: event.attendance_open,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(`"${event.name}" is now the active portal event`);
+        await fetchData();
+      } else {
+        toast.error(json.error || "Failed to set active event");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update configuration");
+    }
+  };
+
+  // ── Copy to Clipboard Helper ──────────────────────────────
+  const handleCopy = (text: string, key: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+    toast.success(`${label} copied to clipboard`);
+  };
+
+  // ── Export Participants to CSV ────────────────────────────
+  const handleExportCSV = () => {
+    if (participants.length === 0) {
+      toast.error("No attendee records available to export");
+      return;
+    }
+
+    const currentEvent = events.find((e) => e.id === selectedEventId);
+    const eventTitle = currentEvent?.name || "AWS_SBG_Event";
+
+    const csvData = participants.map((p) => ({
+      "Full Name": p.name,
+      "Email Address": p.email,
+      "Course / Branch": p.course,
+      "Roll Number": p.rollNo,
+      "Submitted At": p.submittedAt,
+      "Certificate ID": p.certificateId || "N/A",
+      "Verification Link": p.certificateId
+        ? `${typeof window !== "undefined" ? window.location.origin : ""}/verify/${p.certificateId}`
+        : "N/A",
+    }));
+
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `${eventTitle.replace(/[^a-zA-Z0-9_-]/g, "_")}_Attendees_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Attendee list exported to CSV");
+  };
+
+  // ── Single Certificate Email Send ─────────────────────────
+  const handleSendSingleEmail = async (certificateId: string, email: string) => {
+    toast.loading(`Dispatching credential to ${email}…`, { id: "email-send" });
+    try {
+      const res = await fetch("/api/admin/certificates/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ certificateId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(`Certificate emailed to ${email}`, { id: "email-send" });
+      } else {
+        toast.error(json.error || "Failed to dispatch email", { id: "email-send" });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to dispatch email", { id: "email-send" });
+    }
+  };
+
+  // ── Bulk Event Email Dispatch ─────────────────────────────
+  const handleBulkSendEmails = async () => {
+    if (!selectedEventId || participants.length === 0) {
+      toast.error("No attendees with credentials to send");
+      return;
+    }
+
+    const currentEvent = events.find((e) => e.id === selectedEventId);
+    if (
+      !confirm(
+        `Are you sure you want to email certificates with PDF attachments to all ${totalAttended} attendees of "${currentEvent?.name}"?`
+      )
+    ) {
+      return;
+    }
+
+    toast.loading(`Dispatching emails to ${totalAttended} attendees in the background…`, {
+      id: "bulk-send",
+    });
+
+    try {
+      const res = await fetch("/api/admin/certificates/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: selectedEventId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(
+          `Bulk dispatch complete! Sent: ${json.data?.sentCount || 0}, Failed: ${json.data?.failedCount || 0}`,
+          { id: "bulk-send", duration: 5000 }
+        );
+      } else {
+        toast.error(json.error || "Bulk email dispatch failed", { id: "bulk-send" });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Bulk email dispatch failed", { id: "bulk-send" });
     }
   };
 
   const activeEvent = events.find((e) => e.id === portalConfig?.active_event_id);
   const currentViewEvent = events.find((e) => e.id === selectedEventId);
 
-  // Filter participants by search query
-  const filteredParticipants = participants.filter((p) => {
-    if (!participantSearch.trim()) return true;
-    const q = participantSearch.toLowerCase();
-    return (
-      p.name.toLowerCase().includes(q) ||
-      p.email.toLowerCase().includes(q) ||
-      p.rollNo.toLowerCase().includes(q) ||
-      p.course.toLowerCase().includes(q) ||
-      (p.certificateId && p.certificateId.toLowerCase().includes(q))
-    );
-  });
+  // Available course filters
+  const courseOptions = useMemo(() => {
+    const courses = new Set<string>();
+    participants.forEach((p) => {
+      if (p.course) courses.add(p.course);
+    });
+    return ["ALL", ...Array.from(courses)];
+  }, [participants]);
+
+  // Filter participants
+  const filteredParticipants = useMemo(() => {
+    return participants.filter((p) => {
+      const matchesSearch =
+        !participantSearch.trim() ||
+        p.name.toLowerCase().includes(participantSearch.toLowerCase()) ||
+        p.email.toLowerCase().includes(participantSearch.toLowerCase()) ||
+        p.rollNo.toLowerCase().includes(participantSearch.toLowerCase()) ||
+        p.course.toLowerCase().includes(participantSearch.toLowerCase()) ||
+        (p.certificateId && p.certificateId.toLowerCase().includes(participantSearch.toLowerCase()));
+
+      const matchesCourse =
+        selectedCourseFilter === "ALL" || p.course === selectedCourseFilter;
+
+      return matchesSearch && matchesCourse;
+    });
+  }, [participants, participantSearch, selectedCourseFilter]);
+
+  // Stats calculation
+  const totalVerifiedCerts = useMemo(() => {
+    return participants.filter((p) => Boolean(p.certificateId)).length;
+  }, [participants]);
 
   return (
     <div
-      className="min-h-screen text-[#F4F4F6]"
+      className="min-h-screen text-[#F4F4F6] selection:bg-[#6C63FF]/30 pb-24"
       style={{
         background: `
-          radial-gradient(800px 400px at 20% 0%, rgba(124,58,237,0.12), transparent 70%),
-          radial-gradient(600px 300px at 80% 100%, rgba(139,92,246,0.08), transparent 70%),
-          #09090B
+          radial-gradient(1000px 500px at 15% 0%, rgba(108,99,255,0.14), transparent 70%),
+          radial-gradient(800px 400px at 85% 10%, rgba(255,153,0,0.06), transparent 70%),
+          linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px) 0 0/48px 48px,
+          linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px) 0 0/48px 48px,
+          #08080B
         `,
       }}
     >
-      {/* ── Top Bar ──────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#09090B]/80 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-primary">
-                <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6l-8-4z" />
-              </svg>
+      {/* ── Top Executive Navbar ───────────────────────────── */}
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#08080B]/85 backdrop-blur-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6C63FF]/20 to-[#FF9900]/20 border border-white/10 flex items-center justify-center shadow-lg shadow-[#6C63FF]/10">
+              <Award className="w-5 h-5 text-[#6C63FF]" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-white">AWS SBG Admin</h1>
-              <p className="text-[11px] text-[#71717A]">Event & Certificate Management</p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                  AWS Student Builder Group
+                </h1>
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-white/5 border border-white/10 text-[#A78BFA]">
+                  Admin Cockpit
+                </span>
+              </div>
+              <p className="text-[11px] text-[#71717A] font-mono">
+                Tula&apos;s University • Event &amp; Certificate Operations
+              </p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-xs text-[#71717A] hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
-          >
-            Sign Out
-          </button>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Quick Link to Student Attendance Portal */}
+            <Link
+              href="/attendance"
+              target="_blank"
+              className="hidden md:inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] transition-all"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Student Portal
+            </Link>
+
+            {/* Quick Refresh Button */}
+            <button
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              title="Refresh Dashboard Data"
+              className="h-9 w-9 rounded-xl flex items-center justify-center bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.08] transition-all cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-[#6C63FF]" : ""}`} />
+            </button>
+
+            {/* Sign Out */}
+            <button
+              onClick={handleLogout}
+              className="h-9 px-3.5 rounded-xl text-xs font-medium text-[#71717A] hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      {/* ── Main Operations Container ───────────────────────── */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 space-y-10">
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
-            {error}
+          <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs sm:text-sm text-red-400 flex items-center gap-3">
+            <XCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+          <div className="flex flex-col items-center justify-center py-32 space-y-4">
+            <div className="w-8 h-8 rounded-full border-2 border-[#6C63FF]/30 border-t-[#6C63FF] animate-spin" />
+            <p className="text-xs font-mono text-[#71717A] tracking-wider uppercase">
+              Loading Operations Cockpit…
+            </p>
           </div>
         ) : (
-          <div className="space-y-10">
+          <>
             {/* ══════════════════════════════════════════════════ */}
-            {/* ── SECTION A: CURRENT / UPCOMING EVENT ─────────── */}
+            {/* ── EXECUTIVE METRIC STRIP ──────────────────────── */}
             {/* ══════════════════════════════════════════════════ */}
-            <section>
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h2 className="text-lg font-semibold text-white">Current Event</h2>
-                  <p className="text-xs text-[#71717A] mt-0.5">The event currently served by the Attendance Portal</p>
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Card 1: Active Event */}
+              <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
+                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#6C63FF]/10 border border-[#6C63FF]/20 text-[#6C63FF] shrink-0">
+                    <Radio className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A] block">
+                      Active Portal Event
+                    </span>
+                    <p className="text-sm font-bold text-white truncate mt-0.5">
+                      {activeEvent?.name || "None Configured"}
+                    </p>
+                    <span className="text-[11px] text-[#A1A1AA] flex items-center gap-1.5 mt-0.5">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          portalConfig?.attendance_enabled && activeEvent?.attendance_open
+                            ? "bg-emerald-400 animate-ping"
+                            : "bg-amber-400"
+                        }`}
+                      />
+                      {portalConfig?.attendance_enabled && activeEvent?.attendance_open
+                        ? "Accepting Submissions"
+                        : "Submissions Paused"}
+                    </span>
+                  </div>
                 </div>
+              </div>
+
+              {/* Card 2: Total Attendees in View */}
+              <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
+                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A] block">
+                      Attendees in Session
+                    </span>
+                    <p className="text-2xl font-mono font-bold text-white tracking-tight mt-0.5">
+                      {totalAttended}
+                    </p>
+                    <span className="text-[11px] text-[#A1A1AA]">
+                      Official attendance submissions
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Certificates Issued */}
+              <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
+                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#FF9900]/10 border border-[#FF9900]/20 text-[#FF9900] shrink-0">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A] block">
+                      Credentials Issued
+                    </span>
+                    <p className="text-2xl font-mono font-bold text-white tracking-tight mt-0.5">
+                      {totalVerifiedCerts}
+                    </p>
+                    <span className="text-[11px] text-[#A1A1AA]">
+                      Signed &amp; tamper-evident
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Total Events Managed */}
+              <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
+                <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shrink-0">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A] block">
+                      Events Catalog
+                    </span>
+                    <p className="text-2xl font-mono font-bold text-white tracking-tight mt-0.5">
+                      {events.length}
+                    </p>
+                    <span className="text-[11px] text-[#A1A1AA]">
+                      Workshops &amp; webinars
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ══════════════════════════════════════════════════ */}
+            {/* ── SECTION A: CURRENT ACTIVE EVENT COCKPIT ─────── */}
+            {/* ══════════════════════════════════════════════════ */}
+            <section className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#6C63FF]/10 border border-[#6C63FF]/20 text-[10px] font-mono uppercase tracking-wider text-[#A78BFA] mb-2">
+                    <Sparkles className="w-3 h-3 text-[#6C63FF]" />
+                    <span>Real-Time Event Control</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    Active Session Controls
+                  </h2>
+                  <p className="text-xs text-[#71717A]">
+                    The session currently served to students accessing the Attendance Portal
+                  </p>
+                </div>
+
                 <button
                   onClick={startCreate}
-                  className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-white flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-primary/20"
+                  className="h-11 px-5 rounded-2xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-[#6C63FF]/20 active:scale-[0.98]"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  Create Event
+                  <Plus className="w-4 h-4" />
+                  <span>Create New Event</span>
                 </button>
               </div>
 
               {activeEvent ? (
-                <div className="rounded-2xl border border-white/[0.06] bg-[#111113] overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                      <div className="space-y-3">
+                /* Double-Bezel Hardware Card */
+                <div className="p-1 rounded-[2rem] bg-white/[0.04] border border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]">
+                  <div className="p-6 sm:p-8 rounded-[calc(2rem-4px)] bg-[#0E0E13] space-y-6">
+                    {/* Header Row */}
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                      <div className="space-y-3 max-w-2xl">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-medium font-mono">
-                            Active Portal Event
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">
+                            Live Active Portal Event
                           </span>
                         </div>
-                        <h3 className="text-xl font-bold text-white tracking-tight">{activeEvent.name}</h3>
+
+                        <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                          {activeEvent.name}
+                        </h3>
+
                         {activeEvent.description && (
-                          <p className="text-sm text-[#A1A1AA] max-w-lg leading-relaxed">{activeEvent.description}</p>
+                          <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                            {activeEvent.description}
+                          </p>
                         )}
-                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#A1A1AA]">
-                          <span className="flex items-center gap-1.5">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5 text-[#71717A]">
-                              <rect x="3" y="4" width="18" height="18" rx="2" />
-                              <path d="M16 2v4M8 2v4M3 10h18" />
-                            </svg>
-                            {formatDate(activeEvent.event_date)}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5 text-[#71717A]">
-                              <circle cx="12" cy="12" r="10" />
-                              <path d="M12 6v6l4 2" />
-                            </svg>
-                            {activeEvent.event_timing}
-                          </span>
+
+                        {/* Metadata Pills */}
+                        <div className="flex flex-wrap gap-2.5 pt-2">
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
+                            <Calendar className="w-3.5 h-3.5 text-[#6C63FF]" />
+                            <span>{formatDate(activeEvent.event_date)}</span>
+                          </div>
+
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
+                            <Clock className="w-3.5 h-3.5 text-[#FF9900]" />
+                            <span>{activeEvent.event_timing}</span>
+                          </div>
+
                           {activeEvent.speaker_name && (
-                            <span className="flex items-center gap-1.5">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5 text-[#71717A]">
-                                <circle cx="12" cy="8" r="4" />
-                                <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" />
-                              </svg>
-                              {activeEvent.speaker_name}
-                            </span>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
+                              <User className="w-3.5 h-3.5 text-[#34D399]" />
+                              <span>{activeEvent.speaker_name}</span>
+                            </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Edit button */}
+                      {/* Right Action Stack */}
+                      <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-2.5 shrink-0">
+                        <button
+                          onClick={() => startEdit(activeEvent)}
+                          className="h-10 px-4 rounded-xl text-xs font-medium text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-[#A78BFA]" />
+                          <span>Edit Details</span>
+                        </button>
+
+                        <Link
+                          href="/attendance"
+                          target="_blank"
+                          className="h-10 px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white bg-transparent hover:bg-white/[0.04] border border-white/[0.06] transition-all flex items-center gap-2"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Preview Portal</span>
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Master Switch Bar (Nested Island) */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-[#14141A] border border-white/[0.06] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                            portalConfig?.attendance_enabled
+                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                              : "bg-zinc-800/50 border-zinc-700 text-zinc-400"
+                          }`}
+                        >
+                          <Radio className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-white">
+                              Live Attendance Collection
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold tracking-wider ${
+                                portalConfig?.attendance_enabled
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                  : "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                              }`}
+                            >
+                              {portalConfig?.attendance_enabled ? "OPEN & ACCEPTING" : "CLOSED / PAUSED"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#71717A] mt-0.5">
+                            {portalConfig?.attendance_enabled
+                              ? "Students scanning the session QR code can submit attendance and receive their certificate."
+                              : "The attendance portal is closed. Form submissions are currently blocked."}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Machined Toggle Switch */}
                       <button
-                        onClick={() => startEdit(activeEvent)}
-                        className="h-9 px-4 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] transition-all cursor-pointer shrink-0"
+                        type="button"
+                        onClick={() => toggleAttendance(!portalConfig?.attendance_enabled)}
+                        className={`
+                          relative w-14 h-8 rounded-full transition-all duration-300 cursor-pointer shrink-0 p-1
+                          ${portalConfig?.attendance_enabled ? "bg-emerald-500 shadow-lg shadow-emerald-500/25" : "bg-[#27272A]"}
+                        `}
                       >
-                        Edit Event
+                        <span
+                          className={`
+                            block w-6 h-6 rounded-full bg-white transition-transform duration-300 shadow-md
+                            ${portalConfig?.attendance_enabled ? "translate-x-6" : "translate-x-0"}
+                          `}
+                        />
                       </button>
                     </div>
                   </div>
-
-                  {/* Attendance Toggle Bar */}
-                  <div className="px-6 py-4 border-t border-white/[0.06] bg-white/[0.01] flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium text-white">Attendance Collection</span>
-                      <p className="text-xs text-[#71717A]">
-                        {portalConfig?.attendance_enabled
-                          ? "Attendance Portal is accepting submissions"
-                          : "Attendance Portal is closed to new submissions"}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => toggleAttendance(!portalConfig?.attendance_enabled)}
-                      className={`
-                        relative w-11 h-6 rounded-full transition-colors cursor-pointer
-                        ${portalConfig?.attendance_enabled
-                          ? "bg-emerald-500"
-                          : "bg-[#27272A]"
-                        }
-                      `}
-                    >
-                      <span
-                        className={`
-                          absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-sm
-                          ${portalConfig?.attendance_enabled ? "translate-x-5" : "translate-x-0"}
-                        `}
-                      />
-                    </button>
-                  </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-white/10 bg-[#111113] p-12 text-center">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="w-5 h-5 text-[#71717A]">
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <path d="M16 2v4M8 2v4M3 10h18" />
-                    </svg>
+                /* Empty Active Event State */
+                <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-dashed border-white/10 p-12 text-center">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#71717A]">
+                    <Calendar className="w-6 h-6" />
                   </div>
-                  <p className="text-sm text-[#71717A] mb-4">No active event configured</p>
+                  <h3 className="text-base font-semibold text-white mb-1">
+                    No active portal event configured
+                  </h3>
+                  <p className="text-xs text-[#71717A] max-w-sm mx-auto mb-5">
+                    Select an event from the catalog below or create a new session to activate the Attendance Portal.
+                  </p>
                   <button
                     onClick={startCreate}
-                    className="h-9 px-5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-white transition-all cursor-pointer"
+                    className="h-10 px-5 rounded-xl text-xs font-semibold bg-[#6C63FF] hover:brightness-110 text-white transition-all cursor-pointer shadow-lg shadow-[#6C63FF]/20"
                   >
                     Create Your First Event
                   </button>
@@ -402,75 +793,125 @@ export default function AdminPage() {
               )}
             </section>
 
-            {/* ── All Events List ───────────────────────── */}
+            {/* ══════════════════════════════════════════════════ */}
+            {/* ── ALL EVENTS DECK / BENTO GRID ─────────────────── */}
+            {/* ══════════════════════════════════════════════════ */}
             {events.length > 0 && (
-              <section>
-                <h2 className="text-lg font-semibold text-white mb-4">All Events</h2>
-                <div className="space-y-3">
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-white tracking-tight">
+                      All Events Catalog
+                    </h3>
+                    <p className="text-xs text-[#71717A]">
+                      Select an event to inspect attendee records or switch the active session
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono text-[#A78BFA] px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                    {events.length} Total Sessions
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                   {events.map((event) => {
                     const isActive = event.id === portalConfig?.active_event_id;
                     const isViewing = event.id === selectedEventId;
+
                     return (
                       <div
                         key={event.id}
                         className={`
-                          rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors
-                          ${isActive
-                            ? "border-primary/30 bg-primary/[0.04]"
-                            : "border-white/[0.06] bg-[#111113] hover:border-white/10"
+                          group relative p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between
+                          ${
+                            isActive
+                              ? "bg-[#6C63FF]/[0.06] border-[#6C63FF]/30 shadow-lg shadow-[#6C63FF]/5"
+                              : isViewing
+                              ? "bg-white/[0.05] border-white/20"
+                              : "bg-[#0E0E13] border-white/[0.06] hover:border-white/15"
                           }
                         `}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {isActive ? (
-                            <span className="shrink-0 w-2 h-2 rounded-full bg-emerald-500" title="Active Portal Event" />
-                          ) : (
-                            <span className="shrink-0 w-2 h-2 rounded-full bg-white/20" />
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-white truncate">{event.name}</p>
-                            <p className="text-xs text-[#71717A] mt-0.5">
-                              {formatDate(event.event_date)} · {event.event_timing}
-                              {event.speaker_name && ` · ${event.speaker_name}`}
-                            </p>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            {isActive ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-white/5 text-[#71717A] border border-white/5">
+                                Session
+                              </span>
+                            )}
+
+                            {isViewing && (
+                              <span className="text-[10px] font-mono text-[#A78BFA] bg-[#6C63FF]/10 px-2 py-0.5 rounded">
+                                Viewing Attendees
+                              </span>
+                            )}
+                          </div>
+
+                          <div>
+                            <h4 className="text-base font-bold text-white group-hover:text-[#A78BFA] transition-colors line-clamp-1">
+                              {event.name}
+                            </h4>
+                            {event.description && (
+                              <p className="text-xs text-[#71717A] line-clamp-2 mt-1 leading-relaxed">
+                                {event.description}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5 text-xs text-[#A1A1AA] pt-2 border-t border-white/[0.04]">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3.5 h-3.5 text-[#71717A]" />
+                              <span>{formatDate(event.event_date)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-3.5 h-3.5 text-[#71717A]" />
+                              <span>{event.event_timing}</span>
+                            </div>
+                            {event.speaker_name && (
+                              <div className="flex items-center gap-2">
+                                <User className="w-3.5 h-3.5 text-[#71717A]" />
+                                <span className="truncate">{event.speaker_name}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {/* Set Active via event management */}
-                          {!isActive && (
+
+                        {/* Card Actions Footer */}
+                        <div className="flex items-center justify-between gap-2 pt-4 mt-4 border-t border-white/[0.04]">
+                          <div className="flex items-center gap-1.5">
+                            {/* Set Active Button */}
+                            {!isActive && (
+                              <button
+                                onClick={() => handleSetActiveEvent(event)}
+                                className="h-8 px-3 rounded-lg text-[11px] font-medium text-[#6C63FF] hover:bg-[#6C63FF]/10 border border-[#6C63FF]/20 transition-all cursor-pointer"
+                              >
+                                Set Active
+                              </button>
+                            )}
+
+                            {/* View Attendees Trigger */}
                             <button
-                              onClick={async () => {
-                                await fetch("/api/admin/portal-config", {
-                                  method: "PUT",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({
-                                    activeEventId: event.id,
-                                    attendanceEnabled: event.attendance_open,
-                                  }),
-                                });
-                                await fetchData();
-                              }}
-                              className="h-8 px-3 rounded-lg text-[11px] font-medium text-primary hover:bg-primary/10 border border-primary/20 transition-all cursor-pointer"
+                              onClick={() => setSelectedEventId(event.id)}
+                              className={`h-8 px-3 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                                isViewing
+                                  ? "bg-white/10 text-white font-semibold"
+                                  : "text-[#A1A1AA] hover:text-white hover:bg-white/5"
+                              }`}
                             >
-                              Set Active
+                              Inspect Attendees
                             </button>
-                          )}
-                          {/* View Participants in Section B */}
-                          <button
-                            onClick={() => setSelectedEventId(event.id)}
-                            className={`h-8 px-3 rounded-lg text-[11px] font-medium transition-all cursor-pointer border ${
-                              isViewing
-                                ? "bg-white/10 text-white border-white/20"
-                                : "text-[#71717A] hover:text-white border-transparent hover:bg-white/5"
-                            }`}
-                          >
-                            View Attendees
-                          </button>
+                          </div>
+
                           <button
                             onClick={() => startEdit(event)}
-                            className="h-8 px-3 rounded-lg text-[11px] font-medium text-[#A1A1AA] hover:text-white hover:bg-white/5 border border-white/[0.06] transition-all cursor-pointer"
+                            title="Edit Event Details"
+                            className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                           >
-                            Edit
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -481,28 +922,32 @@ export default function AdminPage() {
             )}
 
             {/* ══════════════════════════════════════════════════ */}
-            {/* ── SECTION B: PARTICIPANT DETAILS ──────────────── */}
+            {/* ── SECTION B: PARTICIPANT DIRECTORY ────────────── */}
             {/* ══════════════════════════════════════════════════ */}
-            <section className="pt-4 border-t border-white/[0.06]">
-              {/* Section Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <section className="space-y-5 pt-6 border-t border-white/[0.08]">
+              {/* Header with Title & Event Context Selector */}
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">
-                    Participant Details
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono uppercase tracking-wider text-emerald-400 mb-2">
+                    <Users className="w-3 h-3 text-emerald-400" />
+                    <span>Attendance Records &amp; Credentials</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    Attendee Directory
                   </h2>
-                  <p className="text-xs text-[#71717A] mt-0.5">
-                    Official attendance records and certificate credentials by event
+                  <p className="text-xs text-[#71717A]">
+                    Official student attendance submissions and issued credentials for this session
                   </p>
                 </div>
 
-                {/* Event Context Selector & Count Badge */}
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* Event Filter Selector */}
+                {/* Event Selector & Actions */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Event Select Dropdown */}
                   <div className="relative">
                     <select
                       value={selectedEventId}
                       onChange={(e) => setSelectedEventId(e.target.value)}
-                      className="h-10 pl-3 pr-8 rounded-xl text-xs bg-[#111113] border border-white/[0.08] text-white focus:outline-none focus:border-primary/50 transition-colors cursor-pointer appearance-none"
+                      className="h-10 pl-3.5 pr-8 rounded-xl text-xs bg-[#111117] border border-white/[0.1] text-white focus:outline-none focus:border-[#6C63FF] transition-colors cursor-pointer appearance-none"
                     >
                       {events.map((ev) => (
                         <option key={ev.id} value={ev.id}>
@@ -511,318 +956,439 @@ export default function AdminPage() {
                       ))}
                     </select>
                     <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A]">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5">
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
+                      <SlidersHorizontal className="w-3.5 h-3.5" />
                     </div>
                   </div>
 
-                  {/* Calculated Stat Badge: Total Participants Attended */}
-                  <div className="h-10 px-4 rounded-xl bg-primary/[0.08] border border-primary/25 flex items-center gap-2">
-                    <span className="text-[11px] text-[#A1A1AA] uppercase tracking-wider font-mono">
-                      Total Attended:
-                    </span>
-                    <span className="text-sm font-bold text-primary font-mono">
-                      {totalAttended}
-                    </span>
-                  </div>
+                  {/* Export CSV Button */}
+                  <button
+                    onClick={handleExportCSV}
+                    disabled={participants.length === 0}
+                    className="h-10 px-3.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
+                    title="Export Attendees to CSV"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                    <span className="hidden sm:inline">Export CSV</span>
+                  </button>
+
+                  {/* Bulk Email Certificates Button */}
+                  <button
+                    onClick={handleBulkSendEmails}
+                    disabled={participants.length === 0}
+                    className="h-10 px-3.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
+                    title="Email Certificates to all attendees"
+                  >
+                    <Send className="w-4 h-4 text-[#A78BFA]" />
+                    <span className="hidden sm:inline">Email Certificates</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Event Context Banner */}
+              {/* Event Context Pill Bar */}
               {currentViewEvent && (
-                <div className="mb-5 px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between text-xs text-[#A1A1AA]">
-                  <span className="truncate">
-                    Showing attendance records for: <strong className="text-white">{currentViewEvent.name}</strong>
-                  </span>
-                  {selectedEventId === portalConfig?.active_event_id && (
-                    <span className="shrink-0 ml-2 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px]">
-                      Active Portal Event
+                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#71717A]">Session Context:</span>
+                    <strong className="text-white">{currentViewEvent.name}</strong>
+                    <span className="text-[#71717A]">• {formatDate(currentViewEvent.event_date)}</span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-[#A1A1AA] font-mono text-[11px]">
+                      Attended: <strong className="text-white text-sm">{totalAttended}</strong>
                     </span>
+                    <span className="text-[#A1A1AA] font-mono text-[11px]">
+                      Certificates: <strong className="text-white text-sm">{totalVerifiedCerts}</strong>
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Search & Course Filter Controls */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                {/* Search Bar */}
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-[#52525B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={participantSearch}
+                    onChange={(e) => setParticipantSearch(e.target.value)}
+                    placeholder="Search by student name, roll number, email, or certificate ID…"
+                    className="w-full h-10 pl-10 pr-9 rounded-xl text-xs bg-[#111117] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
+                  />
+                  {participantSearch && (
+                    <button
+                      onClick={() => setParticipantSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   )}
                 </div>
-              )}
 
-              {/* Search Filter */}
-              {participants.length > 0 && (
-                <div className="mb-4">
-                  <div className="relative max-w-sm">
-                    <input
-                      type="text"
-                      value={participantSearch}
-                      onChange={(e) => setParticipantSearch(e.target.value)}
-                      placeholder="Search by name, email, roll number, or certificate ID…"
-                      className="w-full h-9 pl-9 pr-3 rounded-xl text-xs bg-[#111113] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-primary/50 transition-colors"
-                    />
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#52525B] pointer-events-none">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5">
-                        <circle cx="11" cy="11" r="8" />
-                        <path d="m21 21-4.3-4.3" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Table Container */}
-              <div className="rounded-2xl border border-white/[0.06] bg-[#111113] overflow-hidden">
-                {loadingParticipants ? (
-                  <div className="py-16 text-center">
-                    <div className="w-6 h-6 mx-auto mb-3 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-                    <p className="text-xs text-[#71717A]">Loading participants…</p>
-                  </div>
-                ) : filteredParticipants.length === 0 ? (
-                  <div className="py-16 text-center px-4">
-                    <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#71717A]">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="w-6 h-6">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                      </svg>
-                    </div>
-                    <p className="text-sm font-medium text-white mb-1">
-                      {participantSearch ? "No matching participants found" : "No participants attended yet"}
-                    </p>
-                    <p className="text-xs text-[#71717A] max-w-sm mx-auto">
-                      {participantSearch
-                        ? "Try adjusting your search query."
-                        : "When students mark attendance in the Attendance Portal, their details and generated certificate ID will appear here."}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-white/[0.06] bg-white/[0.02] text-[#71717A] uppercase font-mono text-[10px] tracking-wider">
-                          <th className="py-3 px-4">Name</th>
-                          <th className="py-3 px-4">Email</th>
-                          <th className="py-3 px-4">Course</th>
-                          <th className="py-3 px-4">Roll Number</th>
-                          <th className="py-3 px-4">Submitted At</th>
-                          <th className="py-3 px-4">Certificate ID</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/[0.04]">
-                        {filteredParticipants.map((p, idx) => (
-                          <tr
-                            key={`${p.email}-${idx}`}
-                            className="hover:bg-white/[0.02] transition-colors"
-                          >
-                            {/* Name */}
-                            <td className="py-3.5 px-4 font-medium text-white">
-                              {p.name}
-                            </td>
-
-                            {/* Email */}
-                            <td className="py-3.5 px-4 text-[#A1A1AA] font-mono">
-                              {p.email}
-                            </td>
-
-                            {/* Course */}
-                            <td className="py-3.5 px-4 text-[#A1A1AA]">
-                              {p.course}
-                            </td>
-
-                            {/* Roll Number */}
-                            <td className="py-3.5 px-4 text-[#A1A1AA] font-mono">
-                              {p.rollNo}
-                            </td>
-
-                            {/* Attendance Submitted At */}
-                            <td className="py-3.5 px-4 text-[#71717A] font-mono whitespace-nowrap">
-                              {formatDateTime(p.submittedAt)}
-                            </td>
-
-                            {/* Certificate ID */}
-                            <td className="py-3.5 px-4 font-mono text-[#A78BFA] whitespace-nowrap">
-                              {p.certificateId ? (
-                                <a
-                                  href={`/verify/${p.certificateId}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="hover:underline flex items-center gap-1.5"
-                                  title="Verify Certificate"
-                                >
-                                  <span>{p.certificateId}</span>
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3 h-3 text-[#71717A]">
-                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                                    <polyline points="15 3 21 3 21 9" />
-                                    <line x1="10" y1="14" x2="21" y2="3" />
-                                  </svg>
-                                </a>
-                              ) : (
-                                <span className="text-[#52525B]">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {/* Course Filter Pills */}
+                {courseOptions.length > 2 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                    {courseOptions.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setSelectedCourseFilter(c)}
+                        className={`h-8 px-3 rounded-lg text-[11px] font-mono uppercase whitespace-nowrap transition-all cursor-pointer ${
+                          selectedCourseFilter === c
+                            ? "bg-[#6C63FF] text-white font-bold"
+                            : "bg-white/[0.03] text-[#71717A] hover:text-white hover:bg-white/[0.06] border border-white/[0.06]"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
+
+              {/* ── PARTICIPANTS TABLE CONTAINER ────────────── */}
+              <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/10 shadow-2xl overflow-hidden">
+                <div className="rounded-[calc(2rem-4px)] bg-[#0C0C10] overflow-hidden">
+                  {loadingParticipants ? (
+                    <div className="py-24 text-center space-y-3">
+                      <div className="w-7 h-7 mx-auto rounded-full border-2 border-[#6C63FF]/30 border-t-[#6C63FF] animate-spin" />
+                      <p className="text-xs text-[#71717A] font-mono">
+                        Querying attendance database…
+                      </p>
+                    </div>
+                  ) : filteredParticipants.length === 0 ? (
+                    <div className="py-24 text-center px-4 max-w-md mx-auto space-y-3">
+                      <div className="w-14 h-14 mx-auto rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#71717A]">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-base font-bold text-white">
+                        {participantSearch || selectedCourseFilter !== "ALL"
+                          ? "No matching attendees found"
+                          : "No participants attended yet"}
+                      </h4>
+                      <p className="text-xs text-[#71717A] leading-relaxed">
+                        {participantSearch || selectedCourseFilter !== "ALL"
+                          ? "Try clearing your search query or selecting a different course filter."
+                          : "When students mark their attendance using the session QR code, their verified records will appear in this directory."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-white/[0.06] bg-white/[0.02] text-[#71717A] font-mono text-[10.5px] uppercase tracking-wider">
+                            <th className="py-3.5 px-5">Participant</th>
+                            <th className="py-3.5 px-4">Contact</th>
+                            <th className="py-3.5 px-4">Academic Details</th>
+                            <th className="py-3.5 px-4">Submitted At</th>
+                            <th className="py-3.5 px-4">Certificate ID</th>
+                            <th className="py-3.5 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/[0.04]">
+                          {filteredParticipants.map((p, idx) => (
+                            <tr
+                              key={`${p.email}-${idx}`}
+                              className="hover:bg-white/[0.025] transition-colors group"
+                            >
+                              {/* Name with Avatar Initials */}
+                              <td className="py-4 px-5">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#6C63FF]/20 to-[#A78BFA]/20 border border-[#6C63FF]/30 flex items-center justify-center text-[10px] font-bold text-[#A78BFA] shrink-0 font-mono">
+                                    {getInitials(p.name)}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="font-semibold text-white block truncate">
+                                      {p.name}
+                                    </span>
+                                    <span className="text-[10px] text-[#71717A] font-mono">
+                                      Roll: {p.rollNo}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Email */}
+                              <td className="py-4 px-4 text-[#A1A1AA] font-mono text-[11.5px]">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="truncate max-w-[190px]">{p.email}</span>
+                                  <button
+                                    onClick={() => handleCopy(p.email, `email-${idx}`, "Email")}
+                                    className="opacity-0 group-hover:opacity-100 text-[#71717A] hover:text-white transition-opacity cursor-pointer"
+                                    title="Copy Email"
+                                  >
+                                    {copiedKey === `email-${idx}` ? (
+                                      <Check className="w-3 h-3 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+
+                              {/* Course */}
+                              <td className="py-4 px-4">
+                                <span className="inline-block px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[#D4D4D8] font-medium text-[11px]">
+                                  {p.course}
+                                </span>
+                              </td>
+
+                              {/* Submitted At */}
+                              <td className="py-4 px-4 text-[#71717A] font-mono text-[11px] whitespace-nowrap">
+                                {formatDateTime(p.submittedAt)}
+                              </td>
+
+                              {/* Certificate ID */}
+                              <td className="py-4 px-4 whitespace-nowrap">
+                                {p.certificateId ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <Link
+                                      href={`/verify/${p.certificateId}`}
+                                      target="_blank"
+                                      className="font-mono text-xs font-bold text-[#A78BFA] hover:underline flex items-center gap-1"
+                                      title="Open Verification Page"
+                                    >
+                                      <span>{p.certificateId}</span>
+                                      <ExternalLink className="w-3 h-3 text-[#71717A]" />
+                                    </Link>
+                                    <button
+                                      onClick={() =>
+                                        handleCopy(p.certificateId!, `cert-${idx}`, "Certificate ID")
+                                      }
+                                      className="opacity-0 group-hover:opacity-100 text-[#71717A] hover:text-white transition-opacity cursor-pointer"
+                                      title="Copy ID"
+                                    >
+                                      {copiedKey === `cert-${idx}` ? (
+                                        <Check className="w-3 h-3 text-emerald-400" />
+                                      ) : (
+                                        <Copy className="w-3 h-3" />
+                                      )}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-[#52525B] font-mono text-xs">—</span>
+                                )}
+                              </td>
+
+                              {/* Action Buttons */}
+                              <td className="py-4 px-4 text-right whitespace-nowrap">
+                                {p.certificateId ? (
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {/* Download PDF button */}
+                                    <a
+                                      href={`/api/certificates/${p.certificateId}`}
+                                      download={`${p.certificateId}.pdf`}
+                                      className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center justify-center transition-colors cursor-pointer"
+                                      title="Download PDF Certificate"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                    </a>
+
+                                    {/* Send email button */}
+                                    <button
+                                      onClick={() => handleSendSingleEmail(p.certificateId!, p.email)}
+                                      className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-[#6C63FF]/20 text-[#A1A1AA] hover:text-[#6C63FF] border border-white/[0.06] hover:border-[#6C63FF]/30 flex items-center justify-center transition-colors cursor-pointer"
+                                      title="Email Certificate with PDF Attachment"
+                                    >
+                                      <Send className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-[10px] text-[#52525B]">No Cert</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
             </section>
-          </div>
+          </>
         )}
       </main>
 
-      {/* ── Create/Edit Event Modal ──────────────────────── */}
+      {/* ══════════════════════════════════════════════════ */}
+      {/* ── CREATE / EDIT EVENT MODAL (FROSTED GLASS) ───── */}
+      {/* ══════════════════════════════════════════════════ */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/75 backdrop-blur-md transition-opacity"
             onClick={resetForm}
           />
-          <div className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#111113] shadow-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-white/[0.06]">
-              <h3 className="text-lg font-semibold text-white">
-                {editingEvent ? "Edit Event" : "Create Event"}
-              </h3>
-              <p className="text-xs text-[#71717A] mt-0.5">
-                {editingEvent
-                  ? "Update event details"
-                  : "Create a new event and optionally set it as the active attendance event"}
-              </p>
-            </div>
-
-            {/* Modal Body */}
-            <form onSubmit={handleFormSubmit}>
-              <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
-                {/* Event Name */}
+          <div className="relative w-full max-w-lg p-1 rounded-[2rem] bg-white/[0.05] border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden">
+              {/* Modal Header */}
+              <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between">
                 <div>
-                  <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                    Event Name <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Cloud Kickstart 2026"
-                    className="w-full h-10 px-3 rounded-xl text-sm bg-[#0C0C0E] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-primary/50 transition-colors"
-                  />
+                  <h3 className="text-lg font-bold text-white tracking-tight">
+                    {editingEvent ? "Edit Event Session" : "Create New Event Session"}
+                  </h3>
+                  <p className="text-xs text-[#71717A] mt-0.5">
+                    {editingEvent
+                      ? "Update session schedule, timing, and keynote details"
+                      : "Define a new workshop or webinar for the AWS Student Builder Group"}
+                  </p>
                 </div>
+                <button
+                  onClick={resetForm}
+                  className="h-8 w-8 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-[#71717A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-                {/* Description */}
-                <div>
-                  <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                    Description
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Getting Started with AWS"
-                    rows={2}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm bg-[#0C0C0E] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-primary/50 transition-colors resize-none"
-                  />
-                </div>
-
-                {/* Date & Timing */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Modal Form */}
+              <form onSubmit={handleFormSubmit}>
+                <div className="p-6 space-y-4.5 max-h-[65vh] overflow-y-auto">
+                  {/* Event Name */}
                   <div>
-                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                      Event Date <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.eventDate}
-                      onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-                      className="w-full h-10 px-3 rounded-xl text-sm bg-[#0C0C0E] border border-white/[0.08] text-white focus:outline-none focus:border-primary/50 transition-colors [color-scheme:dark]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                      Timing <span className="text-red-400">*</span>
+                    <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
+                      Event Title <span className="text-[#6C63FF]">*</span>
                     </label>
                     <input
                       type="text"
                       required
-                      value={formData.eventTiming}
-                      onChange={(e) => setFormData({ ...formData, eventTiming: e.target.value })}
-                      placeholder="e.g. 11:00 AM - 12:30 PM"
-                      className="w-full h-10 px-3 rounded-xl text-sm bg-[#0C0C0E] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-primary/50 transition-colors"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="e.g. Cloud Kickstart 2026: AWS Architecture"
+                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
                     />
                   </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
+                      Description
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Brief overview of topics covered, cloud services explored, and student takeaways."
+                      rows={2}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors resize-none leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Date & Timing Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
+                        Event Date <span className="text-[#6C63FF]">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={formData.eventDate}
+                        onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
+                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white focus:outline-none focus:border-[#6C63FF] transition-colors [color-scheme:dark]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
+                        Timing <span className="text-[#6C63FF]">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.eventTiming}
+                        onChange={(e) => setFormData({ ...formData, eventTiming: e.target.value })}
+                        placeholder="e.g. 11:00 AM - 12:30 PM"
+                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Speaker Name */}
+                  <div>
+                    <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
+                      Speaker / Lead Presenter
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.speakerName}
+                      onChange={(e) => setFormData({ ...formData, speakerName: e.target.value })}
+                      placeholder="e.g. Mr. Aashu Dev"
+                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
+                    />
+                  </div>
+
+                  {/* Toggles */}
+                  <div className="pt-2 space-y-3">
+                    {/* Attendance Open Toggle */}
+                    <label className="p-3.5 rounded-xl bg-[#15151C] border border-white/[0.06] flex items-center justify-between cursor-pointer">
+                      <div>
+                        <span className="text-xs font-semibold text-white block">
+                          Attendance Open
+                        </span>
+                        <span className="text-[11px] text-[#71717A]">
+                          Allow attendees to mark presence and receive certificates
+                        </span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={formData.attendanceOpen}
+                        onChange={(e) =>
+                          setFormData({ ...formData, attendanceOpen: e.target.checked })
+                        }
+                        className="w-4 h-4 rounded border-white/20 bg-black/40 text-[#6C63FF] focus:ring-[#6C63FF]"
+                      />
+                    </label>
+
+                    {/* Set As Active Toggle */}
+                    <label className="p-3.5 rounded-xl bg-[#15151C] border border-white/[0.06] flex items-center justify-between cursor-pointer">
+                      <div>
+                        <span className="text-xs font-semibold text-white block">
+                          Set as Active Portal Event
+                        </span>
+                        <span className="text-[11px] text-[#71717A]">
+                          Immediately display this event on the student Attendance Portal
+                        </span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={formData.setAsActive}
+                        onChange={(e) =>
+                          setFormData({ ...formData, setAsActive: e.target.checked })
+                        }
+                        className="w-4 h-4 rounded border-white/20 bg-black/40 text-[#6C63FF] focus:ring-[#6C63FF]"
+                      />
+                    </label>
+                  </div>
+
+                  {formError && (
+                    <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400">
+                      {formError}
+                    </div>
+                  )}
                 </div>
 
-                {/* Speaker Name */}
-                <div>
-                  <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
-                    Speaker Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.speakerName}
-                    onChange={(e) => setFormData({ ...formData, speakerName: e.target.value })}
-                    placeholder="e.g. Mr. Aashu Dev"
-                    className="w-full h-10 px-3 rounded-xl text-sm bg-[#0C0C0E] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-primary/50 transition-colors"
-                  />
+                {/* Modal Footer */}
+                <div className="px-6 py-4 border-t border-white/[0.06] bg-white/[0.01] flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="h-10 px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={formSubmitting}
+                    className="h-10 px-5 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer disabled:opacity-50 shadow-lg shadow-[#6C63FF]/20"
+                  >
+                    {formSubmitting
+                      ? "Saving Session…"
+                      : editingEvent
+                      ? "Save Changes"
+                      : "Create Event"}
+                  </button>
                 </div>
-
-                {/* Attendance Open */}
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.attendanceOpen}
-                    onChange={(e) => setFormData({ ...formData, attendanceOpen: e.target.checked })}
-                    className="w-4 h-4 rounded border-white/20 bg-[#0C0C0E] text-primary focus:ring-primary/50"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-white">Attendance Open</span>
-                    <p className="text-xs text-[#71717A]">
-                      Allow students to submit attendance for this event
-                    </p>
-                  </div>
-                </label>
-
-                {/* Set as Active */}
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.setAsActive}
-                    onChange={(e) => setFormData({ ...formData, setAsActive: e.target.checked })}
-                    className="w-4 h-4 rounded border-white/20 bg-[#0C0C0E] text-primary focus:ring-primary/50"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-white">Set as Active Portal Event</span>
-                    <p className="text-xs text-[#71717A]">
-                      Make this the active event shown on the Attendance Portal
-                    </p>
-                  </div>
-                </label>
-
-                {formError && (
-                  <p className="text-xs text-red-400 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
-                    {formError}
-                  </p>
-                )}
-              </div>
-
-              {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-white/[0.06] bg-white/[0.01] flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="h-9 px-4 rounded-xl text-xs font-semibold text-[#A1A1AA] hover:text-white hover:bg-white/5 transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={formSubmitting}
-                  className="h-9 px-5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-white transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {formSubmitting
-                    ? "Saving…"
-                    : editingEvent
-                    ? "Save Changes"
-                    : "Create Event"}
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
