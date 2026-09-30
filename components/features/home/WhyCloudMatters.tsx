@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { motion, useInView } from "framer-motion";
+import type { Variants } from "framer-motion";
 
 const CLOUD_SERVICES = [
   { label: "AI" },
@@ -14,12 +15,12 @@ const CLOUD_SERVICES = [
   { label: "Security" },
 ];
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.1 } },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
 };

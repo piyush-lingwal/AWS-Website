@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { ExternalLink } from "@/components/ui/animate-ui/icons/external-link";
 import { BadgeCheck } from "@/components/ui/animate-ui/icons/badge-check";
 import { Layers } from "@/components/ui/animate-ui/icons/layers";
@@ -76,12 +77,12 @@ const RESOURCES: Resource[] = [
   },
 ];
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 18 },
   show: {
     opacity: 1,

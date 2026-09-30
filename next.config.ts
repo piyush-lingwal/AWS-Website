@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  agentRules: false,
 
   images: {
     qualities: [100, 75],

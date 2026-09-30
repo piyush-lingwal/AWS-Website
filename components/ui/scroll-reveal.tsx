@@ -2,6 +2,7 @@
 
 import React, { useRef, useMemo } from "react"; // Added useMemo
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { cn } from "@/lib/utils"; // Assuming cn utility is available
 
 export interface ScrollRevealProps {
@@ -102,7 +103,7 @@ export function ScrollReveal({
     }).filter(item => item.value.length > 0); // Filter out any empty strings that might result from split
   }, [children]);
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -113,7 +114,7 @@ export function ScrollReveal({
     },
   };
 
-  const wordVariants = {
+  const wordVariants: Variants = {
     hidden: {
       opacity: baseOpacity,
       filter: enableBlur ? `blur(${blurStrength}px)` : "blur(0px)",
