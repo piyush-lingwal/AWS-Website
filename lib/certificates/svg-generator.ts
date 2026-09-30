@@ -278,10 +278,9 @@ export async function generateCertificateSvg(
   const certIdSize = getFittingFontSize(boldFont, certIdText, 26, 700);
   const certIdPath = textToSvgPathLeft(boldFont, certIdText, 220, 2285, certIdSize, "#161D26");
 
-  const verifyLabelPath = textToSvgPathLeft(boldFont, "Verify Certificate", 220, 2330, 28, "#161D26");
-  // const verifyUrlText = `awstulas.org/verify/${certificateId}`;
-  // const verifyUrlSize = getFittingFontSize(regFont, verifyUrlText, 22, 700);
-  // const verifyUrlPath = textToSvgPathLeft(regFont, verifyUrlText, 220, 2370, verifyUrlSize, "#666666");
+  const verifyUrlText = `Verify Certificate: https://awstulas.org/verify/${certificateId}`;
+  const verifyUrlSize = getFittingFontSize(boldFont, verifyUrlText, 24, 1400);
+  const verifyLabelPath = textToSvgPathLeft(boldFont, verifyUrlText, 220, 2330, verifyUrlSize, "#161D26");
 
   const qrAndMetaXml = `
     <g id="dynamic-verification-meta">

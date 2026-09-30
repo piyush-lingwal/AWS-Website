@@ -113,7 +113,7 @@ export function CertificatePreview({
           ? `<image href="${qrDataUrl}" x="220" y="2010" width="230" height="230" preserveAspectRatio="xMidYMid meet"/>`
           : `<rect x="220" y="2010" width="230" height="230" fill="#F4F4F6" stroke="#DEDEE3" stroke-width="2" rx="8"/><text x="335" y="2135" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="24" fill="#888888">[QR CODE]</text>`}
         <text x="220" y="2285" font-family="'IBM Plex Mono', monospace" font-size="26" font-weight="700" fill="#161D26">Certificate ID: ${escapeXml(certId)}</text>
-        <text x="220" y="2330" font-family="'IBM Plex Mono', monospace" font-size="28" font-weight="700" fill="#161D26">Verify Certificate</text>
+        <text x="220" y="2330" font-family="'IBM Plex Mono', monospace" font-size="24" font-weight="700" fill="#161D26">Verify Certificate: https://awstulas.org/verify/${escapeXml(certId)}</text>
       </g>
     `;
 
