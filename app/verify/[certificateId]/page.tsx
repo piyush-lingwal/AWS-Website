@@ -97,7 +97,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
 
   return (
     <div
-      className="min-h-screen text-[#F4F4F6] selection:bg-[#6C63FF]/30 px-4 py-20 sm:py-28"
+      className="min-h-screen text-[#F4F4F6] selection:bg-[#6C63FF]/30 pt-32 sm:pt-36 pb-24 px-4 sm:px-6"
       style={{
         background: `
           radial-gradient(850px 420px at 50% 10%, rgba(108,99,255,0.16), transparent 70%),

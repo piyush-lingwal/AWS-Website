@@ -131,3 +131,73 @@ export async function PUT(
     { success: true, data: updatedEvent, message: "Event updated successfully." } satisfies ApiResponse<DbEvent | null>,
   );
 }
+
+/**
+ * DELETE: Deletes an event by ID.
+ * Automatically cascades to attendance and certificates in database.
+ * If this was the active event, resets portal_config.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const supabase = getAdminClient();
+  if (!supabase) {
+    return NextResponse.json(
+      { success: false, error: "Database not configured." } satisfies ApiResponse,
+      { status: 500 }
+    );
+  }
+
+  const { id } = await context.params;
+
+  // 1. Check if event exists
+  const { data: existingEvent, error: fetchError } = await supabase
+    .from("events")
+    .select("id, name")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !existingEvent) {
+    return NextResponse.json(
+      { success: false, error: "Event not found." } satisfies ApiResponse,
+      { status: 404 }
+    );
+  }
+
+  // 2. If it is the active portal event, reset portal_config
+  const { data: config } = await supabase
+    .from("portal_config")
+    .select("id, active_event_id")
+    .single();
+
+  if (config?.active_event_id === id) {
+    await supabase
+      .from("portal_config")
+      .update({
+        active_event_id: null,
+        attendance_enabled: false,
+      })
+      .eq("id", config.id);
+  }
+
+  // 3. Delete the event (cascades to attendance and certificates)
+  const { error: deleteError } = await supabase
+    .from("events")
+    .delete()
+    .eq("id", id);
+
+  if (deleteError) {
+    console.error("[API/admin/events/[id]] Delete error:", deleteError);
+    return NextResponse.json(
+      { success: false, error: "Failed to delete event: " + deleteError.message } satisfies ApiResponse,
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: `Event "${existingEvent.name}" deleted successfully.`,
+  } satisfies ApiResponse);
+}
+
