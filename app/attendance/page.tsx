@@ -44,11 +44,9 @@ const DEFAULT_FORM: FormData = {
 };
 
 const COURSE_OPTIONS = [
-  "B.Tech CSE",
-  "B.Tech AI/ML",
+  "B.Tech",
   "BCA",
   "MCA",
-  "B.Sc CS/IT",
   "BBA",
   "MBA",
   "Other",
@@ -120,7 +118,8 @@ export default function AttendancePortalPage() {
       return "Please enter a valid email address.";
 
     const rollNo = form.rollNo.trim();
-    if (!rollNo) return "Roll number is required.";
+    if (!rollNo) return "College ID is required.";
+    if (!/^\d+$/.test(rollNo)) return "College ID must contain only numbers.";
 
     const selectedCourse =
       form.course === "Other" ? form.customCourse.trim() : form.course;
@@ -302,7 +301,6 @@ export default function AttendancePortalPage() {
   const formattedDate = (() => {
     try {
       return new Date(event.eventDate + "T00:00:00").toLocaleDateString("en-IN", {
-        weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -443,16 +441,11 @@ export default function AttendancePortalPage() {
       <div className="att-page-wrap max-w-xl w-full">
         {/* Header */}
         <header className="text-center mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[rgba(108,99,255,0.1)] border border-[rgba(108,99,255,0.25)] text-xs text-[#A78BFA] font-medium mb-4">
-            <Award className="w-3.5 h-3.5 text-[#6C63FF]" />
-            <span>AWS Student Builder Group • Tulas University</span>
-          </div>
-
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2.5">
             Mark Your Attendance
           </h1>
           <p className="text-[#8B8B96] text-xs sm:text-sm leading-relaxed max-w-md mx-auto">
-            Fill in your details below right after your session. Your attendance will be recorded and your official certificate generated instantly.
+            Fill in your details below. Your attendance will be recorded and you can receive your official certificate.
           </p>
         </header>
 
@@ -468,9 +461,6 @@ export default function AttendancePortalPage() {
                   <h2 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
                     Current Active Session
                   </h2>
-                  <p className="text-[11px] text-[#8B8B96]">
-                    Configured in real-time by the SBG team
-                  </p>
                 </div>
               </div>
 
@@ -579,7 +569,7 @@ export default function AttendancePortalPage() {
               {/* Field 2: Email */}
               <div className="mb-5">
                 <label className="att-lbl" htmlFor="email">
-                  Student / College Email <span className="req">*</span>
+                  Email <span className="req">*</span>
                 </label>
                 <div className="att-input-wrap">
                   <Mail className="w-4 h-4" />
@@ -595,15 +585,12 @@ export default function AttendancePortalPage() {
                     className="att-input"
                   />
                 </div>
-                <p className="text-[11px] text-[#8B8B96] mt-1.5">
-                  Used for verification and receiving your digital certificate PDF.
-                </p>
               </div>
 
-              {/* Field 3: Roll Number */}
+              {/* Field 3: College ID */}
               <div className="mb-1">
                 <label className="att-lbl" htmlFor="rollNo">
-                  University Roll Number <span className="req">*</span>
+                  College ID <span className="req">*</span>
                 </label>
                 <div className="att-input-wrap">
                   <Hash className="w-4 h-4" />
@@ -611,9 +598,10 @@ export default function AttendancePortalPage() {
                     id="rollNo"
                     type="text"
                     required
-                    autoCapitalize="characters"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={form.rollNo}
-                    onChange={(e) => updateField("rollNo", e.target.value)}
+                    onChange={(e) => updateField("rollNo", e.target.value.replace(/\D/g, ""))}
                     placeholder="e.g. 202609018"
                     className="att-input font-mono"
                   />
@@ -631,11 +619,8 @@ export default function AttendancePortalPage() {
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
-                    Course / Branch
+                    Course
                   </h2>
-                  <p className="text-[11px] text-[#8B8B96]">
-                    Your enrolled program at Tulas University
-                  </p>
                 </div>
               </div>
 
