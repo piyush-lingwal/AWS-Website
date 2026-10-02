@@ -23,8 +23,8 @@ export interface DbEvent {
   id: string;
   name: string;
   description: string | null;
-  event_date: string;       // ISO date string (YYYY-MM-DD)
-  event_timing: string;     // Display-oriented, e.g. "11:00 AM - 12:30 PM"
+  event_date: string | null;       // ISO date string (YYYY-MM-DD) or null if TBA
+  event_timing: string | null;     // Display-oriented, e.g. "11:00 AM - 12:30 PM" or null if TBA
   speaker_name: string | null;
   attendance_open: boolean;
 }
@@ -149,8 +149,8 @@ export interface PortalConfigResponse {
     id: string;
     name: string;
     description: string | null;
-    eventDate: string;
-    eventTiming: string;
+    eventDate: string | null;
+    eventTiming: string | null;
     speakerName: string | null;
   } | null;
 }
@@ -161,8 +161,9 @@ export interface PortalConfigResponse {
 export interface AdminEventRequest {
   name: string;
   description?: string;
-  eventDate: string;
-  eventTiming: string;
+  eventDate?: string | null;
+  eventTiming?: string | null;
+  isTBA?: boolean;
   speakerName?: string;
   attendanceOpen?: boolean;
   setAsActive?: boolean;       // If true, sets this event as the active portal event
@@ -172,6 +173,8 @@ export interface AdminEventRequest {
  * Admin: Participant view row (joined from attendance + participant + certificate).
  */
 export interface AdminParticipantRow {
+  attendanceId?: string;
+  participantId?: string;
   name: string;
   email: string;
   course: string;

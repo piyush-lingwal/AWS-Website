@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import Papa from "papaparse";
 import { createClient } from "@/lib/supabase/client";
 import type { DbEvent, DbPortalConfig, AdminParticipantRow } from "@/types/certificate";
+import { formatFullName, cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Award,
   Calendar,
@@ -35,9 +37,14 @@ import {
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
-function formatDate(iso: string): string {
+function formatDate(iso?: string | null): string {
+  if (!iso || !iso.trim() || iso.toLowerCase() === "tba") {
+    return "To be announced";
+  }
   try {
-    return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", {
+    const d = new Date(iso + "T00:00:00");
+    if (isNaN(d.getTime())) return "To be announced";
+    return d.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -84,6 +91,7 @@ export default function AdminPage() {
   // Modal / Form state
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DbEvent | null>(null);
+  const [isTBA, setIsTBA] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -96,6 +104,17 @@ export default function AdminPage() {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
+  // Lock body scroll and background mouse wheel when modal is open
+  useEffect(() => {
+    if (showForm) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [showForm]);
+
   // Section B — Participant inspection state
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [inspectingEventId, setInspectingEventId] = useState<string | null>(null);
@@ -106,6 +125,7 @@ export default function AdminPage() {
   const [participantSearch, setParticipantSearch] = useState("");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("ALL");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [deletingParticipantKey, setDeletingParticipantKey] = useState<string | null>(null);
 
   // ── Data Fetching ─────────────────────────────────────────
   const fetchData = useCallback(async (isRefresh = false) => {
@@ -151,7 +171,11 @@ export default function AdminPage() {
       });
       const json = await res.json();
       if (json.success && json.data) {
-        setParticipants(json.data.participants || []);
+        const cleaned = (json.data.participants || []).map((p: AdminParticipantRow) => ({
+          ...p,
+          name: formatFullName(p.name),
+        }));
+        setParticipants(cleaned);
         setTotalAttended(json.data.totalCount || 0);
       } else {
         setParticipants([]);
@@ -192,13 +216,31 @@ export default function AdminPage() {
       attendanceOpen: true,
       setAsActive: false,
     });
+    setIsTBA(false);
     setEditingEvent(null);
     setFormError("");
     setShowForm(false);
   };
 
+  const handleToggleTBA = (checked: boolean) => {
+    setIsTBA(checked);
+    if (checked) {
+      setFormData((prev) => ({
+        ...prev,
+        eventTiming: "",
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        eventDate: prev.eventDate || new Date().toISOString().split("T")[0],
+        eventTiming: prev.eventTiming || "11:00 AM - 12:30 PM",
+      }));
+    }
+  };
+
   const startCreate = () => {
     resetForm();
+    setIsTBA(false);
     setFormData((prev) => ({
       ...prev,
       eventDate: new Date().toISOString().split("T")[0],
@@ -211,11 +253,13 @@ export default function AdminPage() {
 
   const startEdit = (event: DbEvent) => {
     setEditingEvent(event);
+    const eventIsTBA = !event.event_date || event.event_date.toLowerCase() === "tba" || !event.event_timing;
+    setIsTBA(eventIsTBA);
     setFormData({
       name: event.name,
       description: event.description || "",
-      eventDate: event.event_date,
-      eventTiming: event.event_timing,
+      eventDate: event.event_date || "",
+      eventTiming: event.event_timing || "",
       speakerName: event.speaker_name || "",
       attendanceOpen: event.attendance_open,
       setAsActive: portalConfig?.active_event_id === event.id,
@@ -229,16 +273,42 @@ export default function AdminPage() {
     setFormSubmitting(true);
     setFormError("");
 
+    if (!formData.name.trim()) {
+      setFormError("Event Title is required.");
+      setFormSubmitting(false);
+      return;
+    }
+
+    if (!isTBA) {
+      if (!formData.eventDate) {
+        setFormError("Event Date is required unless marked as To be announced.");
+        setFormSubmitting(false);
+        return;
+      }
+      if (!formData.eventTiming.trim()) {
+        setFormError("Timing is required unless marked as To be announced.");
+        setFormSubmitting(false);
+        return;
+      }
+    }
+
     try {
       const url = editingEvent
         ? `/api/admin/events/${editingEvent.id}`
         : "/api/admin/events";
       const method = editingEvent ? "PUT" : "POST";
 
+      const payload = {
+        ...formData,
+        isTBA,
+        eventDate: isTBA ? null : formData.eventDate,
+        eventTiming: isTBA ? null : formData.eventTiming,
+      };
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -345,6 +415,45 @@ export default function AdminPage() {
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to delete event", { id: "delete-event" });
+    }
+  };
+
+  // ── Remove Participant ──────────────────────────────────────
+  const handleRemoveParticipant = async (p: AdminParticipantRow) => {
+    if (!selectedEventId) return;
+
+    const isConfirmed = window.confirm(
+      `Are you sure you want to remove participant "${p.name}" (${p.email})?\n\nWarning: This will permanently delete their attendance record and any associated certificate for this event.`
+    );
+    if (!isConfirmed) return;
+
+    const key = p.attendanceId || p.email;
+    setDeletingParticipantKey(key);
+    toast.loading(`Removing ${p.name}…`, { id: "remove-participant" });
+
+    try {
+      const res = await fetch(`/api/admin/events/${selectedEventId}/participants`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          attendanceId: p.attendanceId,
+          participantId: p.participantId,
+          certificateId: p.certificateId,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to remove participant");
+      }
+
+      toast.success(`Removed "${p.name}" from event.`, { id: "remove-participant" });
+      await fetchParticipants(selectedEventId);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to remove participant", { id: "remove-participant" });
+    } finally {
+      setDeletingParticipantKey(null);
     }
   };
 
@@ -597,9 +706,6 @@ export default function AdminPage() {
                   <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                     Active Session Controls
                   </h2>
-                  <p className="text-xs text-[#71717A]">
-                    The session currently served to students accessing the Attendance Portal
-                  </p>
                 </div>
               </div>
 
@@ -634,10 +740,17 @@ export default function AdminPage() {
                             <span>{formatDate(activeEvent.event_date)}</span>
                           </div>
 
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
-                            <Clock className="w-3.5 h-3.5 text-[#FF9900]" />
-                            <span>{activeEvent.event_timing}</span>
-                          </div>
+                          {activeEvent.event_timing ? (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
+                              <Clock className="w-3.5 h-3.5 text-[#FF9900]" />
+                              <span>{activeEvent.event_timing}</span>
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#71717A]">
+                              <Clock className="w-3.5 h-3.5 text-[#71717A]" />
+                              <span>Timing TBA</span>
+                            </div>
+                          )}
 
                           {activeEvent.speaker_name && (
                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
@@ -650,17 +763,6 @@ export default function AdminPage() {
 
                       {/* Right Action Stack */}
                       <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-2.5 shrink-0">
-                        <button
-                          onClick={() => handleInspectAttendees(activeEvent.id)}
-                          className={`h-10 px-4 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
-                            inspectingEventId === activeEvent.id
-                              ? "bg-[#6C63FF] text-white shadow-lg shadow-[#6C63FF]/30"
-                              : "bg-[#6C63FF]/15 hover:bg-[#6C63FF]/25 border border-[#6C63FF]/30 text-white"
-                          }`}
-                        >
-                          <Users className="w-3.5 h-3.5" />
-                          <span>{inspectingEventId === activeEvent.id ? "Hide Attendees" : "Inspect Attendees"}</span>
-                        </button>
 
                         <button
                           onClick={() => startEdit(activeEvent)}
@@ -708,11 +810,6 @@ export default function AdminPage() {
                               {portalConfig?.attendance_enabled ? "OPEN & ACCEPTING" : "CLOSED / PAUSED"}
                             </span>
                           </div>
-                          <p className="text-xs text-[#71717A] mt-0.5">
-                            {portalConfig?.attendance_enabled
-                              ? "Students scanning the session QR code can submit attendance and receive their certificate."
-                              : "The attendance portal is closed. Form submissions are currently blocked."}
-                          </p>
                         </div>
                       </div>
 
@@ -866,10 +963,17 @@ export default function AdminPage() {
                               <Calendar className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
                               <span className="truncate">{formatDate(event.event_date)}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
-                              <span className="truncate">{event.event_timing}</span>
-                            </div>
+                            {event.event_timing ? (
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                                <span className="truncate">{event.event_timing}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-[#71717A]">
+                                <Clock className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                                <span className="truncate">Timing to be announced</span>
+                              </div>
+                            )}
                             {event.speaker_name && (
                               <div className="flex items-center gap-2">
                                 <User className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
@@ -1013,25 +1117,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-              {/* Event Context Pill Bar */}
-              {currentViewEvent && (
-                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#71717A]">Session Context:</span>
-                    <strong className="text-white">{currentViewEvent.name}</strong>
-                    <span className="text-[#71717A]">• {formatDate(currentViewEvent.event_date)}</span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-[#A1A1AA] font-mono text-[11px]">
-                      Attended: <strong className="text-white text-sm">{totalAttended}</strong>
-                    </span>
-                    <span className="text-[#A1A1AA] font-mono text-[11px]">
-                      Certificates: <strong className="text-white text-sm">{totalVerifiedCerts}</strong>
-                    </span>
-                  </div>
-                </div>
-              )}
 
               {/* Search & Course Filter Controls */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -1201,30 +1286,44 @@ export default function AdminPage() {
 
                               {/* Action Buttons */}
                               <td className="py-4 px-4 text-right whitespace-nowrap">
-                                {p.certificateId ? (
-                                  <div className="flex items-center justify-end gap-1.5">
-                                    {/* Download PDF button */}
-                                    <a
-                                      href={`/api/certificates/${p.certificateId}`}
-                                      download={`${p.certificateId}.pdf`}
-                                      className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center justify-center transition-colors cursor-pointer"
-                                      title="Download PDF Certificate"
-                                    >
-                                      <Download className="w-3.5 h-3.5" />
-                                    </a>
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {p.certificateId && (
+                                    <>
+                                      {/* Download PDF button */}
+                                      <a
+                                        href={`/api/certificates/${p.certificateId}`}
+                                        download={`${p.certificateId}.pdf`}
+                                        className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center justify-center transition-colors cursor-pointer"
+                                        title="Download PDF Certificate"
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                      </a>
 
-                                    {/* Send email button */}
-                                    <button
-                                      onClick={() => handleSendSingleEmail(p.certificateId!, p.email)}
-                                      className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-[#6C63FF]/20 text-[#A1A1AA] hover:text-[#6C63FF] border border-white/[0.06] hover:border-[#6C63FF]/30 flex items-center justify-center transition-colors cursor-pointer"
-                                      title="Email Certificate with PDF Attachment"
-                                    >
-                                      <Send className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span className="text-[10px] text-[#52525B]">No Cert</span>
-                                )}
+                                      {/* Send email button */}
+                                      <button
+                                        onClick={() => handleSendSingleEmail(p.certificateId!, p.email)}
+                                        className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-[#6C63FF]/20 text-[#A1A1AA] hover:text-[#6C63FF] border border-white/[0.06] hover:border-[#6C63FF]/30 flex items-center justify-center transition-colors cursor-pointer"
+                                        title="Email Certificate with PDF Attachment"
+                                      >
+                                        <Send className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  )}
+
+                                  {/* Remove participant button */}
+                                  <button
+                                    onClick={() => handleRemoveParticipant(p)}
+                                    disabled={deletingParticipantKey === (p.attendanceId || p.email)}
+                                    className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-red-500/20 text-[#71717A] hover:text-red-400 border border-white/[0.06] hover:border-red-500/30 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40"
+                                    title="Remove Participant & Certificate"
+                                  >
+                                    {deletingParticipantKey === (p.attendanceId || p.email) ? (
+                                      <div className="w-3 h-3 rounded-full border border-red-400/30 border-t-red-400 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1244,15 +1343,23 @@ export default function AdminPage() {
       {/* ── CREATE / EDIT EVENT MODAL (FROSTED GLASS) ───── */}
       {/* ══════════════════════════════════════════════════ */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center overscroll-contain"
+          data-lenis-prevent
+          onWheel={(e) => e.stopPropagation()}
+        >
           <div
-            className="absolute inset-0 bg-black/75 backdrop-blur-md transition-opacity"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity"
             onClick={resetForm}
           />
-          <div className="relative w-full max-w-lg p-1 rounded-[2rem] bg-white/[0.05] border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden">
+          <div
+            className="relative w-full max-w-xl p-1 rounded-[2rem] bg-white/[0.05] border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto"
+            data-lenis-prevent
+            onWheel={(e) => e.stopPropagation()}
+          >
+            <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden flex flex-col max-h-[85vh]">
               {/* Modal Header */}
-              <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between">
+              <div className="px-6 sm:px-7 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
                 <div>
                   <h3 className="text-lg font-bold text-white tracking-tight">
                     {editingEvent ? "Edit Event Session" : "Create New Event Session"}
@@ -1272,11 +1379,19 @@ export default function AdminPage() {
               </div>
 
               {/* Modal Form */}
-              <form onSubmit={handleFormSubmit}>
-                <div className="p-6 space-y-4.5 max-h-[65vh] overflow-y-auto">
+              <form onSubmit={handleFormSubmit} className="flex flex-col min-h-0 flex-1 overflow-hidden">
+                <div
+                  className="p-6 sm:p-7 space-y-5.5 overflow-y-auto overscroll-contain flex-1 min-h-0"
+                  style={{
+                    scrollbarWidth: "thin",
+                    scrollbarColor: "rgba(255, 255, 255, 0.2) transparent",
+                  }}
+                  data-lenis-prevent
+                  onWheel={(e) => e.stopPropagation()}
+                >
                   {/* Event Name */}
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
                       Event Title <span className="text-[#6C63FF]">*</span>
                     </label>
                     <input
@@ -1285,96 +1400,115 @@ export default function AdminPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g. Cloud Kickstart 2026: AWS Architecture"
-                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
+                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF]/30 transition-all"
                     />
                   </div>
 
                   {/* Description */}
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
-                      Description
-                    </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
+                        Description
+                      </label>
+                      <span className="text-[11px] text-[#71717A]">Optional</span>
+                    </div>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="Brief overview of topics covered, cloud services explored, and student takeaways."
                       rows={2}
-                      className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors resize-none leading-relaxed"
+                      className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF]/30 transition-all resize-none leading-relaxed"
                     />
                   </div>
 
                   {/* Date & Timing Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
-                        Event Date <span className="text-[#6C63FF]">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formData.eventDate}
-                        onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white focus:outline-none focus:border-[#6C63FF] transition-colors [color-scheme:dark]"
-                      />
+                  <div className={cn("grid gap-4", isTBA ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
+                    {/* Event Date Column */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between min-h-[20px]">
+                        <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
+                          Event Date {!isTBA && <span className="text-[#6C63FF]">*</span>}
+                        </label>
+                      </div>
+
+                      {isTBA ? (
+                        <div
+                          onClick={() => handleToggleTBA(false)}
+                          className="w-full h-11 px-3.5 rounded-xl bg-[#15151C]/80 border border-dashed border-[#6C63FF]/40 hover:border-[#6C63FF] text-white flex items-center justify-between cursor-pointer transition-all group"
+                          title="Click to specify date and timing"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Calendar className="w-4 h-4 text-[#A78BFA]" />
+                            <span className="text-xs sm:text-sm text-[#E4E4E7] font-medium">
+                              Date & Timing to be announced
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#6C63FF]/15 text-[#A78BFA] border border-[#6C63FF]/30 font-semibold group-hover:bg-[#6C63FF]/25 transition-colors">
+                            Set Date
+                          </span>
+                        </div>
+                      ) : (
+                        <DatePicker
+                          value={formData.eventDate}
+                          onChange={(date) =>
+                            setFormData((prev) => ({ ...prev, eventDate: date }))
+                          }
+                          onSelectTBA={() => handleToggleTBA(true)}
+                          placeholder="Select event date"
+                          required
+                        />
+                      )}
                     </div>
-                    <div>
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
-                        Timing <span className="text-[#6C63FF]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.eventTiming}
-                        onChange={(e) => setFormData({ ...formData, eventTiming: e.target.value })}
-                        placeholder="e.g. 11:00 AM - 12:30 PM"
-                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
-                      />
-                    </div>
+
+                    {/* Timing Column - Hidden if TBA */}
+                    {!isTBA && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between min-h-[20px]">
+                          <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
+                            Timing <span className="text-[#6C63FF]">*</span>
+                          </label>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={formData.eventTiming}
+                          onChange={(e) =>
+                            setFormData({ ...formData, eventTiming: e.target.value })
+                          }
+                          placeholder="e.g. 11:00 AM - 12:30 PM"
+                          className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF]/30 transition-all"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Speaker Name */}
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] mb-1.5 font-medium">
-                      Speaker / Lead Presenter
-                    </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
+                        Speaker / Lead Presenter
+                      </label>
+                      <span className="text-[11px] text-[#71717A]">Optional</span>
+                    </div>
                     <input
                       type="text"
                       value={formData.speakerName}
-                      onChange={(e) => setFormData({ ...formData, speakerName: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, speakerName: e.target.value })
+                      }
                       placeholder="e.g. Mr. Aashu Dev"
-                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
+                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF]/30 transition-all"
                     />
                   </div>
 
-                  {/* Toggles */}
-                  <div className="pt-2 space-y-3">
-                    {/* Attendance Open Toggle */}
-                    <label className="p-3.5 rounded-xl bg-[#15151C] border border-white/[0.06] flex items-center justify-between cursor-pointer">
-                      <div>
-                        <span className="text-xs font-semibold text-white block">
-                          Attendance Open
-                        </span>
-                        <span className="text-[11px] text-[#71717A]">
-                          Allow attendees to mark presence and receive certificates
-                        </span>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={formData.attendanceOpen}
-                        onChange={(e) =>
-                          setFormData({ ...formData, attendanceOpen: e.target.checked })
-                        }
-                        className="w-4 h-4 rounded border-white/20 bg-black/40 text-[#6C63FF] focus:ring-[#6C63FF]"
-                      />
-                    </label>
-
-                    {/* Set As Active Toggle */}
-                    <label className="p-3.5 rounded-xl bg-[#15151C] border border-white/[0.06] flex items-center justify-between cursor-pointer">
-                      <div>
-                        <span className="text-xs font-semibold text-white block">
+                  {/* Set As Active Toggle */}
+                  <div className="pt-1">
+                    <label className="p-3.5 sm:p-4 rounded-xl bg-[#15151C] border border-white/[0.06] hover:border-white/[0.12] flex items-center justify-between cursor-pointer transition-colors group">
+                      <div className="pr-3">
+                        <span className="text-xs font-semibold text-white block group-hover:text-[#A78BFA] transition-colors">
                           Set as Active Portal Event
                         </span>
-                        <span className="text-[11px] text-[#71717A]">
+                        <span className="text-[11px] text-[#71717A] mt-0.5 block leading-normal">
                           Immediately display this event on the student Attendance Portal
                         </span>
                       </div>
@@ -1384,7 +1518,7 @@ export default function AdminPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, setAsActive: e.target.checked })
                         }
-                        className="w-4 h-4 rounded border-white/20 bg-black/40 text-[#6C63FF] focus:ring-[#6C63FF]"
+                        className="w-4 h-4 rounded border-white/20 bg-black/40 text-[#6C63FF] focus:ring-[#6C63FF] accent-[#6C63FF] cursor-pointer shrink-0"
                       />
                     </label>
                   </div>
@@ -1397,7 +1531,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Modal Footer */}
-                <div className="px-6 py-4 border-t border-white/[0.06] bg-white/[0.01] flex items-center justify-between gap-2.5">
+                <div className="px-6 py-4 border-t border-white/[0.06] bg-[#0F0F14] flex items-center justify-between gap-2.5 shrink-0">
                   {editingEvent ? (
                     <button
                       type="button"
