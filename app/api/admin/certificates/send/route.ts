@@ -16,7 +16,7 @@
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
-import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
+import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import { sendCertificateEmail } from "@/lib/email";
 import type { ApiResponse } from "@/types/certificate";
 
@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
           recipient_name_snapshot,
           event_name_snapshot,
           event_date_snapshot,
+          award_title,
           verification_url,
           participant:participants (
             email,
@@ -106,33 +107,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Generate the PDF
-      const pdfResult = await generateCertificatePdf({
-        certificateId: cert.certificate_id,
-        participantName: cert.recipient_name_snapshot,
-        eventTitle: cert.event_name_snapshot,
-        eventDate: cert.event_date_snapshot,
-      });
+      // Dispatch Email (PDF is downloaded directly from the verification portal)
+      const safeVerificationUrl = (cert.verification_url || "").includes("localhost")
+        ? getVerificationUrl(cert.certificate_id)
+        : (cert.verification_url || getVerificationUrl(cert.certificate_id));
 
-      if (!pdfResult.success || !pdfResult.pdfBuffer) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Failed to generate certificate PDF for email delivery.",
-          } satisfies ApiResponse,
-          { status: 500 }
-        );
-      }
-
-      // Dispatch Email
       const emailResult = await sendCertificateEmail({
         to: recipientEmail,
         recipientName: cert.recipient_name_snapshot,
         eventName: cert.event_name_snapshot,
         eventDate: cert.event_date_snapshot,
         certificateId: cert.certificate_id,
-        verificationUrl: cert.verification_url,
-        pdfBuffer: pdfResult.pdfBuffer,
+        verificationUrl: safeVerificationUrl,
+        awardTitle: cert.award_title || undefined,
       });
 
       if (!emailResult.success) {
@@ -172,13 +159,15 @@ export async function POST(request: NextRequest) {
           recipient_name_snapshot,
           event_name_snapshot,
           event_date_snapshot,
+          award_title,
           verification_url,
           participant:participants (
             email,
             full_name
           )
         `)
-        .eq("event_id", eventId);
+        .eq("event_id", eventId)
+        .is("award_title", null);
 
       if (fetchErr) {
         return NextResponse.json(
@@ -215,18 +204,9 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-          const pdfResult = await generateCertificatePdf({
-            certificateId: cert.certificate_id,
-            participantName: cert.recipient_name_snapshot,
-            eventTitle: cert.event_name_snapshot,
-            eventDate: cert.event_date_snapshot,
-          });
-
-          if (!pdfResult.success || !pdfResult.pdfBuffer) {
-            failedCount++;
-            errors.push(`PDF error for ${cert.certificate_id}`);
-            continue;
-          }
+          const safeVerificationUrl = (cert.verification_url || "").includes("localhost")
+            ? getVerificationUrl(cert.certificate_id)
+            : (cert.verification_url || getVerificationUrl(cert.certificate_id));
 
           const res = await sendCertificateEmail({
             to: recipientEmail,
@@ -234,8 +214,8 @@ export async function POST(request: NextRequest) {
             eventName: cert.event_name_snapshot,
             eventDate: cert.event_date_snapshot,
             certificateId: cert.certificate_id,
-            verificationUrl: cert.verification_url,
-            pdfBuffer: pdfResult.pdfBuffer,
+            verificationUrl: safeVerificationUrl,
+            awardTitle: cert.award_title || undefined,
           });
 
           if (res.success) {

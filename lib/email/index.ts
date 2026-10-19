@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import {
@@ -19,7 +21,24 @@ export interface SendEmailResult {
 }
 
 export interface SendCertificateEmailParams extends CertificateEmailData {
-  pdfBuffer: Buffer;
+  pdfBuffer?: Buffer;
+}
+
+type EmailAttachment = {
+  filename: string;
+  content: Buffer;
+  cid?: string;
+};
+
+const CERTIFICATE_BANNER_CID = "certificate-banner";
+
+function withDisplayName(address: string, displayName?: string): string {
+  if (!displayName) {
+    return address;
+  }
+
+  const email = address.match(/<([^<>]+)>/)?.[1] ?? address;
+  return `${displayName} <${email}>`;
 }
 
 /**
@@ -68,18 +87,32 @@ export async function sendCertificateEmail(
   data: SendCertificateEmailParams
 ): Promise<SendEmailResult> {
   const { to, certificateId, pdfBuffer } = data;
-  const subject = `Your Certificate of Participation — AWS Student Builder Group (${data.eventName})`;
-  const html = generateCertificateEmailHtml(data);
+  const subject = data.awardTitle
+    ? `Congratulations on Your Achievement | ${data.eventName} – AWS SBG`
+    : `Your Certificate of Participation — AWS Student Builder Group (${data.eventName})`;
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://awstulas.org").replace(/\/+$/, "");
+  const bannerUrl = `${siteUrl}/email/banner.png`;
+  const html = generateCertificateEmailHtml(data, {
+    bannerSrc: bannerUrl,
+  });
   const text = generateCertificateEmailText(data);
 
-  const attachments = [
-    {
+  const attachments: EmailAttachment[] = [];
+  if (pdfBuffer) {
+    attachments.push({
       filename: `${certificateId}.pdf`,
       content: pdfBuffer,
-    },
-  ];
+    });
+  }
 
-  return sendGenericEmail({ to, subject, html, text, attachments });
+  return sendGenericEmail({
+    to,
+    subject,
+    html,
+    text,
+    attachments,
+    fromName: "AWS Student Builder Group",
+  });
 }
 
 /**
@@ -95,12 +128,14 @@ async function sendGenericEmail({
   html,
   text,
   attachments,
+  fromName,
 }: {
   to: string;
   subject: string;
   html: string;
   text: string;
-  attachments?: Array<{ filename: string; content: Buffer }>;
+  attachments?: EmailAttachment[];
+  fromName?: string;
 }): Promise<SendEmailResult> {
   const gmailUser = process.env.GMAIL_USER?.trim();
   const gmailPass = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
@@ -146,7 +181,7 @@ async function sendGenericEmail({
 
         if (resendApiKey) {
           console.log("[Email/Gmail] Falling back to Resend API over HTTPS...");
-          return await sendViaResend(resendApiKey, to, subject, html, text, attachments);
+          return await sendViaResend(resendApiKey, to, subject, html, text, attachments, fromName);
         }
 
         return { success: false, provider: "gmail", error: `Gmail SMTP failed: ${err587.message}` };
@@ -156,7 +191,7 @@ async function sendGenericEmail({
 
   // ── 2. Resend API Provider (Over HTTPS) ───────────────────────────────
   if (resendApiKey) {
-    return await sendViaResend(resendApiKey, to, subject, html, text, attachments);
+    return await sendViaResend(resendApiKey, to, subject, html, text, attachments, fromName);
   }
 
   // ── 3. Custom SMTP Provider ──────────────────────────────────────────
@@ -176,7 +211,10 @@ async function sendGenericEmail({
         socketTimeout: 15000,
       });
 
-      const fromAddress = process.env.EMAIL_FROM || `AWS Student Builder Group <${smtpUser}>`;
+      const fromAddress = withDisplayName(
+        process.env.EMAIL_FROM || `AWS Student Builder Group <${smtpUser}>`,
+        fromName
+      );
 
       const info = await transporter.sendMail({
         from: fromAddress,
@@ -215,14 +253,16 @@ async function sendViaResend(
   subject: string,
   html: string,
   text: string,
-  attachments?: Array<{ filename: string; content: Buffer }>
+  attachments?: EmailAttachment[],
+  fromName?: string
 ): Promise<SendEmailResult> {
   try {
-    const fromAddress =
+    const configuredFromAddress =
       process.env.RESEND_FROM ||
       (process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes("@gmail.com")
         ? process.env.EMAIL_FROM
         : "AWS Student Builder Group <onboarding@resend.dev>");
+    const fromAddress = withDisplayName(configuredFromAddress, fromName);
 
     const resend = new Resend(apiKey);
     const res = await resend.emails.send({
@@ -234,6 +274,7 @@ async function sendViaResend(
       attachments: attachments?.map((att) => ({
         filename: att.filename,
         content: att.content,
+        ...(att.cid ? { contentId: att.cid } : {}),
       })),
     });
 

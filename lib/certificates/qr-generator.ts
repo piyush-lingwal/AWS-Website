@@ -13,7 +13,7 @@ import QRCode from "qrcode";
 const DEFAULT_BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   process.env.NEXT_PUBLIC_APP_URL ||
-  "http://localhost:3000";
+  "https://awstulas.org";
 
 /**
  * Constructs the public verification URL for a certificate.
