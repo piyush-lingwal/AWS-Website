@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import type { DbEvent, DbPortalConfig, AdminParticipantRow, DbTeamMember } from "@/types/certificate";
 import { formatFullName, cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
+import { EventMediaModal } from "@/components/features/admin/EventMediaModal";
 import {
   ArrowRight,
   Calendar,
@@ -54,6 +55,32 @@ import {
 } from "lucide-react";
 
 export type AdminTab = "overview" | "events" | "registrations" | "team" | "settings";
+
+export interface AdminMediaPoster {
+  url: string;
+  name: string;
+  size: number;
+  originalSize?: number;
+  file?: File;
+  isExisting?: boolean;
+}
+
+export interface AdminMediaPhoto {
+  id: string;
+  url: string;
+  name: string;
+  size: number;
+  originalSize?: number;
+  file?: File;
+  isExisting?: boolean;
+}
+
+function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return "0 KB";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
 
 // ── Helpers ───────────────────────────────────────────────────
 function formatDate(iso?: string | null): string {
@@ -130,7 +157,7 @@ function AdminPageContent() {
         if (!user) return;
 
         if (
-          user.email?.toLowerCase().includes("media") ||
+          user.email?.toLowerCase() === "media@awssbg.com" ||
           user.user_metadata?.role === "media"
         ) {
           setIsMediaLead(true);
@@ -307,10 +334,16 @@ function AdminPageContent() {
   const [bulkImportMode, setBulkImportMode] = useState<"append" | "overwrite">("append");
   // ── Media Assets Modal State (Media Lead / Event Media) ─────
   const [selectedMediaEvent, setSelectedMediaEvent] = useState<DbEvent | null>(null);
-  const [posterFile, setPosterFile] = useState<File | null>(null);
-  const [posterPreview, setPosterPreview] = useState<string | null>(null);
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [mediaPoster, setMediaPoster] = useState<AdminMediaPoster | null>(null);
+  const [mediaPhotos, setMediaPhotos] = useState<AdminMediaPhoto[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+  const [posterFile, setPosterFile] = useState<any>(null);
+  const [posterPreview, setPosterPreview] = useState<any>(null);
+  const [photoFiles, setPhotoFiles] = useState<any[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<any[]>([]);
+
+
+
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const posterInputRef = useRef<HTMLInputElement>(null);
   const photosInputRef = useRef<HTMLInputElement>(null);
@@ -377,7 +410,21 @@ function AdminPageContent() {
 
       if (eventsData.success) {
         const loadedEvents: DbEvent[] = eventsData.data || [];
-        setEvents(loadedEvents);
+        const enriched = loadedEvents.map((ev) => {
+          try {
+            const cached = localStorage.getItem(`aws_event_media_${ev.id}`);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              return {
+                ...ev,
+                poster_url: ev.poster_url || parsed.poster?.url || null,
+                photos: ev.photos && ev.photos.length > 0 ? ev.photos : (parsed.photos || []).map((p: any) => p.url),
+              };
+            }
+          } catch {}
+          return ev;
+        });
+        setEvents(enriched);
       }
       if (configData.success) setPortalConfig(configData.data || null);
 
@@ -924,25 +971,43 @@ function AdminPageContent() {
   };
 
   // ── Media Modal & Asset Handlers (Media Lead / Event Media)
+  const handleMediaSaved = (saved: { poster: any; photos: any[] }) => {
+    if (!selectedMediaEvent) return;
+    setEvents((prev) =>
+      prev.map((ev) =>
+        ev.id === selectedMediaEvent.id
+          ? {
+              ...ev,
+              poster_url: saved.poster?.url || null,
+              photos: saved.photos.map((p: any) => p.url),
+            }
+          : ev
+      )
+    );
+  };
+
   const openMediaModal = (event: DbEvent) => {
     setSelectedMediaEvent(event);
-    setPosterFile(null);
-    setPosterPreview(event.poster_url || null);
-    setPhotoFiles([]);
-    setPhotoPreviews(event.photos || []);
+    return;
+
+
+
+
   };
 
   const closeMediaModal = () => {
-    if (posterPreview && posterPreview.startsWith("blob:")) {
+    setSelectedMediaEvent(null);
+    return;
+    if (false) {
       URL.revokeObjectURL(posterPreview);
     }
     photoPreviews.forEach((url) => {
       if (url.startsWith("blob:")) URL.revokeObjectURL(url);
     });
     setSelectedMediaEvent(null);
-    setPosterFile(null);
+
     setPosterPreview(null);
-    setPhotoFiles([]);
+
     setPhotoPreviews([]);
     setUploadingMedia(false);
   };
@@ -957,28 +1022,26 @@ function AdminPageContent() {
       toast.error("Poster image must be less than 10MB.");
       return;
     }
-    if (posterPreview && posterPreview.startsWith("blob:")) {
+    setSelectedMediaEvent(null);
+    return;
+    if (false) {
       URL.revokeObjectURL(posterPreview);
     }
 
-    // Convert to WebP for consistent format across the site
+    // Convert + compress to WebP via server-side Sharp API
     try {
       const { convertToWebp } = await import("@/lib/convert-to-webp");
-      const isAlreadyWebp = file.type === "image/webp";
-      if (!isAlreadyWebp) {
-        toast.loading("Converting to WebP…", { id: "webp-convert" });
-      }
+      toast.loading("Converting & compressing to WebP…", { id: "webp-convert" });
       const converted = await convertToWebp(file);
-      if (!isAlreadyWebp) {
-        toast.success(
-          `Converted "${file.name}" → "${converted.name}" (${(converted.size / 1024).toFixed(0)} KB)`,
-          { id: "webp-convert", duration: 3000 }
-        );
-      }
+      const savedPct = Math.round((1 - converted.size / file.size) * 100);
+      toast.success(
+        `"${file.name}" → ${converted.name} (${(converted.size / 1024).toFixed(0)} KB${savedPct > 0 ? `, ${savedPct}% smaller` : ""})`,
+        { id: "webp-convert", duration: 4000 }
+      );
       setPosterFile(converted);
       setPosterPreview(URL.createObjectURL(converted));
     } catch {
-      toast.error("WebP conversion failed — using original file.");
+      toast.error("WebP conversion failed — using original file.", { id: "webp-convert" });
       setPosterFile(file);
       setPosterPreview(URL.createObjectURL(file));
     }
@@ -1002,10 +1065,7 @@ function AdminPageContent() {
 
     if (validFiles.length === 0) return;
 
-    const needsConversion = validFiles.some((f) => f.type !== "image/webp");
-    if (needsConversion) {
-      toast.loading(`Converting ${validFiles.length} photo(s) to WebP…`, { id: "photos-webp" });
-    }
+    toast.loading(`Compressing ${validFiles.length} photo(s) to WebP…`, { id: "photos-webp" });
 
     try {
       const { convertMultipleToWebp } = await import("@/lib/convert-to-webp");
@@ -1016,14 +1076,15 @@ function AdminPageContent() {
       setPhotoFiles((prev) => [...prev, ...convertedFiles]);
       setPhotoPreviews((prev) => [...prev, ...newPreviews]);
 
-      if (needsConversion) {
-        toast.success(
-          `${convertedFiles.length} photo(s) converted to WebP format!`,
-          { id: "photos-webp", duration: 3000 }
-        );
-      }
+      const totalOriginal = validFiles.reduce((sum, f) => sum + f.size, 0);
+      const totalCompressed = convertedFiles.reduce((sum, f) => sum + f.size, 0);
+      const savedPct = Math.round((1 - totalCompressed / totalOriginal) * 100);
+      toast.success(
+        `${convertedFiles.length} photo(s) compressed to WebP! (${(totalCompressed / 1024).toFixed(0)} KB total${savedPct > 0 ? `, ${savedPct}% smaller` : ""})`,
+        { id: "photos-webp", duration: 4000 }
+      );
     } catch {
-      toast.error("WebP conversion failed for some photos — keeping original format.", { id: "photos-webp" });
+      toast.error("WebP compression failed for some photos — keeping original format.", { id: "photos-webp" });
       const fallbackPreviews = validFiles.map((file) => URL.createObjectURL(file));
       setPhotoFiles((prev) => [...prev, ...validFiles]);
       setPhotoPreviews((prev) => [...prev, ...fallbackPreviews]);
@@ -2537,6 +2598,16 @@ function AdminPageContent() {
                                 {event.event_type || "Event"}
                               </span>
 
+                              {(event.poster_url || (event.photos && event.photos.length > 0)) && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-500/15 text-purple-300 border border-purple-500/25 whitespace-nowrap">
+                                  <Camera className="w-2.5 h-2.5 text-purple-400" />
+                                  {event.poster_url && event.photos && event.photos.length > 0
+                                    ? `Poster + ${event.photos.length} Photos`
+                                    : event.poster_url
+                                    ? "Poster"
+                                    : `${event.photos?.length} Photos`}
+                                </span>
+                              )}
                               {isViewing && (
                                 <span className="text-[10px] font-mono text-[#A78BFA] bg-[#6C63FF]/10 px-2 py-0.5 rounded whitespace-nowrap">
                                   Viewing
@@ -4707,7 +4778,14 @@ function AdminPageContent() {
       {/* ══════════════════════════════════════════════════ */}
       {/* ── MEDIA ASSETS UPLOAD MODAL (MEDIA LEAD / S3) ─── */}
       {/* ══════════════════════════════════════════════════ */}
-      {selectedMediaEvent && (
+      {/* ── Media Assets Modal (Promotional Poster & Photos) ── */}
+      <EventMediaModal
+        event={selectedMediaEvent}
+        isOpen={Boolean(selectedMediaEvent)}
+        onClose={closeMediaModal}
+        onSave={handleMediaSaved}
+      />
+      {false && selectedMediaEvent && (
         <div
           className="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center overscroll-contain animate-in fade-in duration-200"
           data-lenis-prevent
@@ -4817,7 +4895,7 @@ function AdminPageContent() {
                           type="button"
                           onClick={() => {
                             if (posterPreview.startsWith("blob:")) URL.revokeObjectURL(posterPreview);
-                            setPosterFile(null);
+                        
                             setPosterPreview(null);
                           }}
                           className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
