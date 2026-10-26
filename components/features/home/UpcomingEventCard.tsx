@@ -11,9 +11,9 @@ import {
   Clock,
   MapPin,
   ArrowRight,
-  Sparkles,
 } from "lucide-react";
 import type { ApiResponse, DbEvent } from "@/types/certificate";
+import { UpcomingPosterStage } from "@/components/features/home/UpcomingPosterStage";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -41,7 +41,7 @@ function parseEventDate(iso: string | null) {
   }
 }
 
-/** Curated conference backdrops for past events cards */
+/** Fallback conference backdrops if past events have no poster/photo */
 const PAST_EVENT_IMAGES = [
   "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80",
   "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80",
@@ -52,8 +52,9 @@ export default function UpcomingEventCard() {
   const containerRef = React.useRef<HTMLElement>(null);
   const [upcomingEvent, setUpcomingEvent] = React.useState<DbEvent | null>(null);
   const [pastEvents, setPastEvents] = React.useState<
-    { title: string; date: string; image: string }[]
+    { id: string; title: string; date: string; image: string; hasRealPoster: boolean }[]
   >([]);
+  const [failedPastImages, setFailedPastImages] = React.useState<Record<string, boolean>>({});
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -85,7 +86,7 @@ export default function UpcomingEventCard() {
             return timeA - timeB;
           });
 
-        // Past events: strictly genuine events with a valid date before today, sorted latest first (up to 3 recent, NO presets)
+        // Past events: strictly genuine events with a valid date before today, sorted latest first
         const past = json.data
           .filter((item) => {
             if (!item.event_date || item.event_date.trim() === "") return false;
@@ -103,13 +104,23 @@ export default function UpcomingEventCard() {
             setUpcomingEvent(upcoming[0]);
           }
 
-          // Strictly map ONLY genuine past events from database (up to 3 recent, NO mock filler)
+          // Map past events with real event poster priority (Option 1)
           if (past.length > 0) {
-            const mappedPast = past.slice(0, 3).map((item, idx) => ({
-              title: item.name,
-              date: parseEventDate(item.event_date ?? "").formatted,
-              image: PAST_EVENT_IMAGES[idx % PAST_EVENT_IMAGES.length],
-            }));
+            const mappedPast = past.slice(0, 3).map((item, idx) => {
+              const realPoster =
+                item.poster_url ||
+                (Array.isArray(item.photos) && item.photos.length > 0
+                  ? item.photos[0]
+                  : null);
+
+              return {
+                id: item.id,
+                title: item.name,
+                date: parseEventDate(item.event_date ?? "").formatted,
+                image: realPoster || PAST_EVENT_IMAGES[idx % PAST_EVENT_IMAGES.length],
+                hasRealPoster: Boolean(realPoster),
+              };
+            });
             setPastEvents(mappedPast);
           } else {
             setPastEvents([]);
@@ -203,7 +214,7 @@ export default function UpcomingEventCard() {
 
           {/* ── THE FEATURED UPCOMING EVENT CARD ── */}
           <div className="upcoming-featured-card relative mt-16 sm:mt-20 lg:mt-10 xl:mt-12">
-            {/* Peeking AWS Cloud Mascot (Positioned on top border matching reference image) */}
+            {/* Peeking AWS Cloud Mascot */}
             <div className="absolute z-20 pointer-events-none select-none drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)] bottom-full translate-y-[16px] sm:translate-y-[20px] lg:translate-y-[26px] xl:translate-y-[30px] right-3 sm:right-6 lg:right-[19%] xl:right-[22%] w-36 sm:w-48 lg:w-[320px] xl:w-[350px]">
               <Image
                 src="/whats-next-kiro.webp"
@@ -216,160 +227,122 @@ export default function UpcomingEventCard() {
             </div>
 
             <div className="relative rounded-[2rem] border border-primary/30 bg-gradient-to-br from-[#12101E]/95 via-[#0C0B15]/95 to-[#08070F]/95 p-5 sm:p-7 md:p-8 backdrop-blur-2xl shadow-[0_25px_60px_-15px_rgba(124,58,237,0.25)] ring-1 ring-white/10 overflow-hidden">
-            {/* Top ambient highlight gradient line */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-            <div className="pointer-events-none absolute -top-24 left-1/3 h-48 w-80 rounded-full bg-primary/20 blur-3xl" />
+              {/* Top ambient highlight gradient line */}
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+              <div className="pointer-events-none absolute -top-24 left-1/3 h-48 w-80 rounded-full bg-primary/20 blur-3xl" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
-              {/* Left Column: Embedded Mini-Poster Stage Frame */}
-              <div className="lg:col-span-5 w-full">
-                <div className="relative rounded-2xl overflow-hidden border border-primary/40 bg-gradient-to-br from-[#1A1333] via-[#100C22] to-[#080511] p-5 sm:p-6 min-h-[260px] sm:min-h-[290px] flex flex-col justify-between shadow-2xl group">
-                  {/* Atmospheric background conference image overlay */}
-                  <div className="absolute inset-0 z-0">
-                    <Image
-                      src="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80"
-                      alt="Event Stage Atmosphere"
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 40vw"
-                      className="object-cover opacity-25 group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#080511] via-[#100C22]/80 to-transparent" />
-                  </div>
-
-                  {/* Top Bar of Poster */}
-                  <div className="relative z-10 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Image
-                        src="/logos/AWS_logo.svg"
-                        alt="AWS"
-                        width={30}
-                        height={18}
-                        className="h-3.5 w-auto brightness-200"
-                      />
-                      <div className="text-[9px] font-mono uppercase tracking-widest text-white/80 font-bold leading-tight">
-                        STUDENT
-                        <br />
-                        BUILDER GROUP
-                      </div>
-                    </div>
-
-                    <div className="w-7 h-7 rounded-full border border-primary/30 bg-white/[0.05] p-1 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                      <Image
-                        src="/logos/SBG_logo.png"
-                        alt="AWS Builder Logo"
-                        width={20}
-                        height={20}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Middle Title Preview */}
-                  <div className="relative z-10 my-auto py-3">
-                    <div className="text-xl sm:text-2xl font-display font-extrabold text-white tracking-tight leading-none">
-                      AWS
-                    </div>
-                    <div className="text-2xl sm:text-3xl font-display font-extrabold text-primary-light tracking-tight mt-0.5">
-                      {event.name}
-                    </div>
-                    <div className="mt-2.5 inline-block px-3 py-1 rounded-full border border-primary/30 text-[9.5px] font-mono tracking-widest uppercase text-white/90 bg-primary/20 backdrop-blur-md font-semibold">
-                      {isFallback ? "ANNOUNCING SOON" : "OFFICIAL COMMUNITY EVENT"}
-                    </div>
-                  </div>
-
-                  {/* Bottom Venue Pill */}
-                  <div className="relative z-10 flex items-center">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 border border-white/10 text-[11px] text-white/90 backdrop-blur-md">
-                      <MapPin className="w-3 h-3 text-primary-light shrink-0" />
-                      <span className="truncate">Tulas University, Dehradun</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Detailed Info & Registration CTA */}
-              <div className="lg:col-span-7 flex flex-col justify-between space-y-4">
-                {/* Header row with UPCOMING EVENT and Register Now Button */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-primary-light">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-[11px] sm:text-xs font-mono uppercase font-bold tracking-wider">
-                      {isFallback ? "COMMUNITY ANNOUNCEMENT" : "UPCOMING EVENT"}
-                    </span>
-                  </div>
-
-                  {/* REGISTER NOW CTA BUTTON -> Redirects to Meetup */}
-                  <a
-                    href={MEETUP_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#6C63FF] via-[#7C3AED] to-[#8B5CF6] hover:brightness-110 text-white text-xs sm:text-sm font-bold tracking-wide shadow-lg shadow-[#7C3AED]/30 transition-all hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+                {/* Left Column: Embedded Poster Stage Frame (Real Poster or 3D Graphic) */}
+                <div className="lg:col-span-5 w-full">
+                  <Link
+                    href="/events"
+                    onClick={() => {
+                      try {
+                        sessionStorage.setItem("target_event_id", event.id);
+                      } catch {}
+                    }}
+                    className="block group/poster cursor-pointer"
+                    title={`View ${event.name} in Timeline`}
                   >
-                    <span>{isFallback ? "Join on Meetup" : "Register Now"}</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </a>
+                    <UpcomingPosterStage event={event} isFallback={isFallback} />
+                  </Link>
                 </div>
 
-                {/* Big Title */}
-                <div>
-                  <h3 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
-                    {event.name}
-                  </h3>
-                  <p className="text-sm sm:text-base text-white/70 leading-relaxed mt-3 line-clamp-3">
-                    {event.description ||
-                      "Join us for our upcoming hands-on session featuring keynote highlights, community discussions, and hands-on workshops. Learn, network, and explore the latest in cloud technology with fellow builders."}
-                  </p>
-                </div>
-
-                {/* Bottom Metadata 3 Columns: Date, Time, Venue */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-white/[0.08]">
-                  {/* Date */}
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 text-primary-light shrink-0">
+                {/* Right Column: Detailed Info & Registration CTA */}
+                <div className="lg:col-span-7 flex flex-col justify-between space-y-4">
+                  {/* Header row with UPCOMING EVENT and Register Now Button */}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-primary-light">
                       <Calendar className="w-4 h-4" />
+                      <span className="text-[11px] sm:text-xs font-mono uppercase font-bold tracking-wider">
+                        {isFallback ? "COMMUNITY ANNOUNCEMENT" : "UPCOMING EVENT"}
+                      </span>
                     </div>
-                    <div>
-                      <div className="text-[10.5px] font-mono uppercase text-white/50 tracking-wider font-semibold">
-                        Date
-                      </div>
-                      <div className="text-xs sm:text-sm font-bold text-white mt-0.5">
-                        {eventDateFormatted}
-                      </div>
-                      <div className="text-[11px] text-white/60">
-                        {eventDayOfWeek || "Upcoming"}
-                      </div>
-                    </div>
+
+                    {/* REGISTER NOW CTA BUTTON -> Redirects to Meetup */}
+                    <a
+                      href={MEETUP_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#6C63FF] via-[#7C3AED] to-[#8B5CF6] hover:brightness-110 text-white text-xs sm:text-sm font-bold tracking-wide shadow-lg shadow-[#7C3AED]/30 transition-all hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
+                    >
+                      <span>{isFallback ? "Join on Meetup" : "Register Now"}</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </a>
                   </div>
 
-                  {/* Time */}
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 text-primary-light shrink-0">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-[10.5px] font-mono uppercase text-white/50 tracking-wider font-semibold">
-                        Time
-                      </div>
-                      <div className="text-xs sm:text-sm font-bold text-white mt-0.5">
-                        {event.event_timing || "11:00 AM - 01:00 PM"}
-                      </div>
-                      <div className="text-[11px] text-white/60">IST</div>
-                    </div>
+                  {/* Big Title */}
+                  <div>
+                    <Link
+                      href="/events"
+                      onClick={() => {
+                        try {
+                          sessionStorage.setItem("target_event_id", event.id);
+                        } catch {}
+                      }}
+                      className="group/title block cursor-pointer"
+                      title="View Event Details in Events Page"
+                    >
+                      <h3 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight group-hover/title:text-primary-light transition-colors">
+                        {event.name}
+                      </h3>
+                    </Link>
+                    <p className="text-sm sm:text-base text-white/70 leading-relaxed mt-3 line-clamp-3">
+                      {event.description ||
+                        "Join us for our upcoming hands-on session featuring keynote highlights, community discussions, and hands-on workshops. Learn, network, and explore the latest in cloud technology with fellow builders."}
+                    </p>
                   </div>
 
-                  {/* Venue */}
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 text-primary-light shrink-0">
-                      <MapPin className="w-4 h-4" />
+                  {/* Bottom Metadata 3 Columns: Date, Time, Venue */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-white/[0.08]">
+                    {/* Date */}
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 text-primary-light shrink-0">
+                        <Calendar className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-[10.5px] font-mono uppercase text-white/50 tracking-wider font-semibold">
+                          Date
+                        </div>
+                        <div className="text-xs sm:text-sm font-bold text-white mt-0.5">
+                          {eventDateFormatted}
+                        </div>
+                        <div className="text-[11px] text-white/60">
+                          {eventDayOfWeek || "Upcoming"}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-[10.5px] font-mono uppercase text-white/50 tracking-wider font-semibold">
-                        Venue
+
+                    {/* Time */}
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 text-primary-light shrink-0">
+                        <Clock className="w-4 h-4" />
                       </div>
-                      <div className="text-xs sm:text-sm font-bold text-white mt-0.5">
-                        Tulas University
+                      <div>
+                        <div className="text-[10.5px] font-mono uppercase text-white/50 tracking-wider font-semibold">
+                          Time
+                        </div>
+                        <div className="text-xs sm:text-sm font-bold text-white mt-0.5">
+                          {event.event_timing || "11:00 AM - 01:00 PM"}
+                        </div>
+                        <div className="text-[11px] text-white/60">IST</div>
                       </div>
-                      <div className="text-[11px] text-white/60">Dehradun</div>
+                    </div>
+
+                    {/* Venue */}
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 text-primary-light shrink-0">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-[10.5px] font-mono uppercase text-white/50 tracking-wider font-semibold">
+                          Venue
+                        </div>
+                        <div className="text-xs sm:text-sm font-bold text-white mt-0.5">
+                          Tulas University
+                        </div>
+                        <div className="text-[11px] text-white/60">Dehradun</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -377,7 +350,6 @@ export default function UpcomingEventCard() {
             </div>
           </div>
         </div>
-      </div>
 
         {/* ════════════════════════════════════════════════════════════════ */}
         {/* ── BOTTOM SECTION: "Moments from Our Journey." (PAST EVENTS) ─── */}
@@ -409,7 +381,7 @@ export default function UpcomingEventCard() {
               </h3>
             </div>
 
-            {/* Genuine Past Events Photo Cards (strictly 1, 2, or up to 3 recent) */}
+            {/* Genuine Past Events Photo Cards with Real Event Posters */}
             <div
               className={
                 pastEvents.length === 1
@@ -420,18 +392,33 @@ export default function UpcomingEventCard() {
               }
             >
               {pastEvents.map((item, index) => (
-                <div
-                  key={index}
-                  className="group relative rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03] hover:border-primary/40 transition-all duration-300 flex flex-col justify-between"
+                <Link
+                  key={item.id || index}
+                  href="/events"
+                  onClick={() => {
+                    try {
+                      sessionStorage.setItem("target_event_id", item.id);
+                    } catch {}
+                  }}
+                  className="group relative rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03] hover:border-primary/50 hover:bg-white/[0.06] transition-all duration-300 flex flex-col justify-between cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/10"
                 >
-                  {/* Image Frame */}
+                  {/* Real Event Poster / Photo Frame */}
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/40">
                     <Image
-                      src={item.image}
+                      src={
+                        failedPastImages[item.id]
+                          ? PAST_EVENT_IMAGES[index % PAST_EVENT_IMAGES.length]
+                          : item.image
+                      }
                       alt={item.title}
                       fill
                       sizes="(max-width: 640px) 100vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                      onError={() => {
+                        setTimeout(() => {
+                          setFailedPastImages((prev) => ({ ...prev, [item.id]: true }));
+                        }, 0);
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0C0B14] via-transparent to-transparent opacity-80" />
                   </div>
@@ -441,12 +428,17 @@ export default function UpcomingEventCard() {
                     <h4 className="text-xs sm:text-sm font-bold text-white line-clamp-1 group-hover:text-primary-light transition-colors">
                       {item.title}
                     </h4>
-                    <div className="flex items-center gap-1.5 mt-2 text-[11px] text-white/60">
-                      <Calendar className="w-3.5 h-3.5 text-primary-light shrink-0" />
-                      <span>{item.date}</span>
+                    <div className="flex items-center justify-between mt-2 text-[11px] text-white/60">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-primary-light shrink-0" />
+                        <span>{item.date}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-primary-light opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                        View Event <ArrowRight className="w-2.5 h-2.5" />
+                      </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 

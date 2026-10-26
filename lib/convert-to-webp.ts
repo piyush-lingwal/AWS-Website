@@ -1,12 +1,12 @@
 // ============================================================
-// Client-side Image → WebP Converter
+// Client-side Image → WebP Converter (via Server Sharp API)
 // ============================================================
 //
-// Converts any browser-supported image format (PNG, JPG, BMP,
-// GIF, AVIF, TIFF, etc.) to WebP using the Canvas API.
+// Sends images to /api/admin/convert-image which uses Sharp
+// to convert AND compress to WebP at 150–200 KB target size.
 //
-// Quality is set to 1.0 (maximum) by default so the converted
-// image remains visually identical to the original.
+// Falls back to the browser Canvas API if the server call
+// fails (e.g., network error, dev mode without server).
 //
 // Usage:
 //   import { convertToWebp } from "@/lib/convert-to-webp";
@@ -15,25 +15,85 @@
 // ============================================================
 
 /**
- * Convert any image File to WebP format at the specified quality.
+ * Convert and compress an image File to WebP via the server-side
+ * Sharp API. Falls back to client-side Canvas conversion if the
+ * server is unreachable.
  *
- * @param file     - The source image file (PNG, JPG, BMP, etc.)
- * @param quality  - WebP quality: 0.0 (lowest) to 1.0 (highest). Default 1.0.
- * @returns          A new File with `.webp` extension and `image/webp` MIME type.
+ * @param file - The source image file (PNG, JPG, BMP, etc.)
+ * @returns A new File with `.webp` extension, compressed to ~150-200 KB.
  */
-export async function convertToWebp(
-  file: File,
-  quality: number = 1.0
-): Promise<File> {
-  // Already .webp — skip conversion
-  if (file.type === "image/webp") {
+export async function convertToWebp(file: File): Promise<File> {
+  // Already .webp and small enough — skip
+  if (file.type === "image/webp" && file.size <= 210 * 1024) {
     return file;
   }
 
-  // SVGs don't rasterize well through canvas at arbitrary sizes — skip them
+  // SVGs should not be rasterized
   if (file.type === "image/svg+xml") {
     return file;
   }
+
+  try {
+    return await convertViaServer(file);
+  } catch (err) {
+    console.warn("[convert-to-webp] Server conversion failed, falling back to Canvas:", err);
+    return await convertViaCanvas(file);
+  }
+}
+
+/**
+ * Batch-convert multiple image Files to WebP.
+ * Processes all files in parallel. If any single file fails,
+ * the original is returned instead.
+ */
+export async function convertMultipleToWebp(files: File[]): Promise<File[]> {
+  return Promise.all(
+    files.map(async (file) => {
+      try {
+        return await convertToWebp(file);
+      } catch (err) {
+        console.warn(`[convert-to-webp] Skipping "${file.name}":`, err);
+        return file;
+      }
+    })
+  );
+}
+
+// ── Server-side conversion (Sharp) ──────────────────────────
+
+async function convertViaServer(file: File): Promise<File> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/admin/convert-image", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || `Server returned ${res.status}`);
+  }
+
+  const blob = await res.blob();
+
+  // Read filename from response header, or derive from original
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const filenameMatch = disposition.match(/filename="?([^";\s]+)"?/);
+  const outputName = filenameMatch
+    ? filenameMatch[1]
+    : file.name.replace(/\.[^.]+$/, "") + ".webp";
+
+  return new File([blob], outputName, {
+    type: "image/webp",
+    lastModified: Date.now(),
+  });
+}
+
+// ── Client-side fallback (Canvas API) ───────────────────────
+
+async function convertViaCanvas(file: File): Promise<File> {
+  if (file.type === "image/webp") return file;
 
   const blobUrl = URL.createObjectURL(file);
 
@@ -45,9 +105,7 @@ export async function convertToWebp(
     canvas.height = img.naturalHeight;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      throw new Error("Canvas 2D context is unavailable.");
-    }
+    if (!ctx) throw new Error("Canvas 2D context unavailable.");
 
     ctx.drawImage(img, 0, 0);
 
@@ -55,48 +113,22 @@ export async function convertToWebp(
       canvas.toBlob(
         (blob) => {
           if (blob) resolve(blob);
-          else reject(new Error(`WebP conversion failed for "${file.name}".`));
+          else reject(new Error(`Canvas WebP conversion failed for "${file.name}".`));
         },
         "image/webp",
-        quality
+        0.82 // Reasonable quality for fallback
       );
     });
 
-    // Derive new filename: photo.png → photo.webp
     const baseName = file.name.replace(/\.[^.]+$/, "") || file.name;
-    const webpFile = new File([webpBlob], `${baseName}.webp`, {
+    return new File([webpBlob], `${baseName}.webp`, {
       type: "image/webp",
       lastModified: Date.now(),
     });
-
-    return webpFile;
   } finally {
     URL.revokeObjectURL(blobUrl);
   }
 }
-
-/**
- * Batch-convert multiple image Files to WebP.
- * Returns results in the same order. If a single file fails,
- * the error is logged and that file is returned unconverted.
- */
-export async function convertMultipleToWebp(
-  files: File[],
-  quality: number = 1.0
-): Promise<File[]> {
-  return Promise.all(
-    files.map(async (file) => {
-      try {
-        return await convertToWebp(file, quality);
-      } catch (err) {
-        console.warn(`[convert-to-webp] Skipping "${file.name}":`, err);
-        return file; // Return original as fallback
-      }
-    })
-  );
-}
-
-// ── Internal Helpers ────────────────────────────────────────
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {

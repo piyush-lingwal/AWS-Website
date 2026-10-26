@@ -87,7 +87,7 @@ export async function getAdminSession(): Promise<AdminLookup> {
   } else if (data?.role === "super_admin" || data?.role === "admin") {
     role = data.role as AdminRole;
   } else if (
-    user.email?.toLowerCase().includes("media") ||
+    user.email?.toLowerCase() === "media@awssbg.com" ||
     user.user_metadata?.role === "media"
   ) {
     role = "media";

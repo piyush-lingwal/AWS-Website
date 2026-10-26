@@ -10,6 +10,8 @@
 
 import { NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import path from "path";
+import fs from "fs/promises";
 import type { ApiResponse, DbEvent } from "@/types/certificate";
 
 /**
@@ -100,11 +102,11 @@ export async function GET(): Promise<NextResponse<ApiResponse<DbEvent[]>>> {
   try {
     let { data, error } = await supabase
       .from("events")
-      .select("id, name, description, event_date, event_timing, speaker_name, attendance_open, event_type")
+      .select("id, name, description, event_date, event_timing, speaker_name, attendance_open, event_type, poster_url, photos")
       .order("event_date", { ascending: true });
 
     // Fallback if column event_type is not yet added to the events table
-    if (error && (error.code === "42703" || error.code === "PGRST204" || error.message?.includes("event_type"))) {
+    if (error && (error.code === "42703" || error.code === "PGRST204" || error.message?.includes("poster_url") || error.message?.includes("event_type"))) {
       const fallback = await supabase
         .from("events")
         .select("id, name, description, event_date, event_timing, speaker_name, attendance_open")
@@ -126,7 +128,42 @@ export async function GET(): Promise<NextResponse<ApiResponse<DbEvent[]>>> {
     }
 
     return NextResponse.json(
-      { success: true, data: data ?? [] },
+      {
+        success: true,
+        data: await Promise.all(
+          (data || []).map(async (ev: any) => {
+            let posterUrl = ev.poster_url || null;
+            let photos = Array.isArray(ev.photos) ? ev.photos : [];
+
+            if (!posterUrl && photos.length === 0) {
+              try {
+                const manifestPath = path.join(
+                  process.cwd(),
+                  "public",
+                  "events",
+                  "uploads",
+                  ev.id,
+                  "manifest.json"
+                );
+                const raw = await fs.readFile(manifestPath, "utf-8");
+                const manifest = JSON.parse(raw);
+                if (manifest.poster?.url) posterUrl = manifest.poster.url;
+                if (Array.isArray(manifest.photos)) {
+                  photos = manifest.photos.map((p: any) => p.url).filter(Boolean);
+                }
+              } catch {
+                // No manifest on disk
+              }
+            }
+
+            return {
+              ...ev,
+              poster_url: posterUrl,
+              photos,
+            };
+          })
+        ),
+      },
       {
         headers: {
           "Cache-Control": "public, s-maxage=10, stale-while-revalidate=60",

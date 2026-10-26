@@ -11,6 +11,7 @@ import type { DbEvent, DbPortalConfig, AdminParticipantRow, DbTeamMember } from 
 import { formatFullName, cn } from "@/lib/utils";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { DatePicker } from "@/components/ui/date-picker";
+import { EventMediaModal } from "@/components/features/admin/EventMediaModal";
 import { TopPerformerImportDialog } from "@/components/features/TopPerformerImportDialog";
 import {
   ArrowRight,
@@ -56,6 +57,32 @@ import {
 } from "lucide-react";
 
 export type AdminTab = "overview" | "events" | "registrations" | "team" | "settings";
+
+export interface AdminMediaPoster {
+  url: string;
+  name: string;
+  size: number;
+  originalSize?: number;
+  file?: File;
+  isExisting?: boolean;
+}
+
+export interface AdminMediaPhoto {
+  id: string;
+  url: string;
+  name: string;
+  size: number;
+  originalSize?: number;
+  file?: File;
+  isExisting?: boolean;
+}
+
+function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return "0 KB";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
 
 // ── Helpers ───────────────────────────────────────────────────
 function formatDate(iso?: string | null): string {
@@ -132,7 +159,7 @@ function AdminPageContent() {
         if (!user) return;
 
         if (
-          user.email?.toLowerCase().includes("media") ||
+          user.email?.toLowerCase() === "media@awssbg.com" ||
           user.user_metadata?.role === "media"
         ) {
           setIsMediaLead(true);
@@ -309,10 +336,16 @@ function AdminPageContent() {
   const [bulkImportMode, setBulkImportMode] = useState<"append" | "overwrite">("append");
   // ── Media Assets Modal State (Media Lead / Event Media) ─────
   const [selectedMediaEvent, setSelectedMediaEvent] = useState<DbEvent | null>(null);
-  const [posterFile, setPosterFile] = useState<File | null>(null);
-  const [posterPreview, setPosterPreview] = useState<string | null>(null);
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [mediaPoster, setMediaPoster] = useState<AdminMediaPoster | null>(null);
+  const [mediaPhotos, setMediaPhotos] = useState<AdminMediaPhoto[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+  const [posterFile, setPosterFile] = useState<any>(null);
+  const [posterPreview, setPosterPreview] = useState<any>(null);
+  const [photoFiles, setPhotoFiles] = useState<any[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<any[]>([]);
+
+
+
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const posterInputRef = useRef<HTMLInputElement>(null);
   const photosInputRef = useRef<HTMLInputElement>(null);
@@ -379,7 +412,21 @@ function AdminPageContent() {
 
       if (eventsData.success) {
         const loadedEvents: DbEvent[] = eventsData.data || [];
-        setEvents(loadedEvents);
+        const enriched = loadedEvents.map((ev) => {
+          try {
+            const cached = localStorage.getItem(`aws_event_media_${ev.id}`);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              return {
+                ...ev,
+                poster_url: ev.poster_url || parsed.poster?.url || null,
+                photos: ev.photos && ev.photos.length > 0 ? ev.photos : (parsed.photos || []).map((p: any) => p.url),
+              };
+            }
+          } catch {}
+          return ev;
+        });
+        setEvents(enriched);
       }
       if (configData.success) setPortalConfig(configData.data || null);
 
@@ -932,25 +979,43 @@ function AdminPageContent() {
   };
 
   // ── Media Modal & Asset Handlers (Media Lead / Event Media)
+  const handleMediaSaved = (saved: { poster: any; photos: any[] }) => {
+    if (!selectedMediaEvent) return;
+    setEvents((prev) =>
+      prev.map((ev) =>
+        ev.id === selectedMediaEvent.id
+          ? {
+              ...ev,
+              poster_url: saved.poster?.url || null,
+              photos: saved.photos.map((p: any) => p.url),
+            }
+          : ev
+      )
+    );
+  };
+
   const openMediaModal = (event: DbEvent) => {
     setSelectedMediaEvent(event);
-    setPosterFile(null);
-    setPosterPreview(event.poster_url || null);
-    setPhotoFiles([]);
-    setPhotoPreviews(event.photos || []);
+    return;
+
+
+
+
   };
 
   const closeMediaModal = () => {
-    if (posterPreview && posterPreview.startsWith("blob:")) {
+    setSelectedMediaEvent(null);
+    return;
+    if (false) {
       URL.revokeObjectURL(posterPreview);
     }
     photoPreviews.forEach((url) => {
       if (url.startsWith("blob:")) URL.revokeObjectURL(url);
     });
     setSelectedMediaEvent(null);
-    setPosterFile(null);
+
     setPosterPreview(null);
-    setPhotoFiles([]);
+
     setPhotoPreviews([]);
     setUploadingMedia(false);
   };
@@ -965,28 +1030,26 @@ function AdminPageContent() {
       toast.error("Poster image must be less than 10MB.");
       return;
     }
-    if (posterPreview && posterPreview.startsWith("blob:")) {
+    setSelectedMediaEvent(null);
+    return;
+    if (false) {
       URL.revokeObjectURL(posterPreview);
     }
 
-    // Convert to WebP for consistent format across the site
+    // Convert + compress to WebP via server-side Sharp API
     try {
       const { convertToWebp } = await import("@/lib/convert-to-webp");
-      const isAlreadyWebp = file.type === "image/webp";
-      if (!isAlreadyWebp) {
-        toast.loading("Converting to WebP…", { id: "webp-convert" });
-      }
+      toast.loading("Converting & compressing to WebP…", { id: "webp-convert" });
       const converted = await convertToWebp(file);
-      if (!isAlreadyWebp) {
-        toast.success(
-          `Converted "${file.name}" → "${converted.name}" (${(converted.size / 1024).toFixed(0)} KB)`,
-          { id: "webp-convert", duration: 3000 }
-        );
-      }
+      const savedPct = Math.round((1 - converted.size / file.size) * 100);
+      toast.success(
+        `"${file.name}" → ${converted.name} (${(converted.size / 1024).toFixed(0)} KB${savedPct > 0 ? `, ${savedPct}% smaller` : ""})`,
+        { id: "webp-convert", duration: 4000 }
+      );
       setPosterFile(converted);
       setPosterPreview(URL.createObjectURL(converted));
     } catch {
-      toast.error("WebP conversion failed — using original file.");
+      toast.error("WebP conversion failed — using original file.", { id: "webp-convert" });
       setPosterFile(file);
       setPosterPreview(URL.createObjectURL(file));
     }
@@ -1010,10 +1073,7 @@ function AdminPageContent() {
 
     if (validFiles.length === 0) return;
 
-    const needsConversion = validFiles.some((f) => f.type !== "image/webp");
-    if (needsConversion) {
-      toast.loading(`Converting ${validFiles.length} photo(s) to WebP…`, { id: "photos-webp" });
-    }
+    toast.loading(`Compressing ${validFiles.length} photo(s) to WebP…`, { id: "photos-webp" });
 
     try {
       const { convertMultipleToWebp } = await import("@/lib/convert-to-webp");
@@ -1024,14 +1084,15 @@ function AdminPageContent() {
       setPhotoFiles((prev) => [...prev, ...convertedFiles]);
       setPhotoPreviews((prev) => [...prev, ...newPreviews]);
 
-      if (needsConversion) {
-        toast.success(
-          `${convertedFiles.length} photo(s) converted to WebP format!`,
-          { id: "photos-webp", duration: 3000 }
-        );
-      }
+      const totalOriginal = validFiles.reduce((sum, f) => sum + f.size, 0);
+      const totalCompressed = convertedFiles.reduce((sum, f) => sum + f.size, 0);
+      const savedPct = Math.round((1 - totalCompressed / totalOriginal) * 100);
+      toast.success(
+        `${convertedFiles.length} photo(s) compressed to WebP! (${(totalCompressed / 1024).toFixed(0)} KB total${savedPct > 0 ? `, ${savedPct}% smaller` : ""})`,
+        { id: "photos-webp", duration: 4000 }
+      );
     } catch {
-      toast.error("WebP conversion failed for some photos — keeping original format.", { id: "photos-webp" });
+      toast.error("WebP compression failed for some photos — keeping original format.", { id: "photos-webp" });
       const fallbackPreviews = validFiles.map((file) => URL.createObjectURL(file));
       setPhotoFiles((prev) => [...prev, ...validFiles]);
       setPhotoPreviews((prev) => [...prev, ...fallbackPreviews]);
@@ -2545,6 +2606,16 @@ function AdminPageContent() {
                                 {event.event_type || "Event"}
                               </span>
 
+                              {(event.poster_url || (event.photos && event.photos.length > 0)) && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-500/15 text-purple-300 border border-purple-500/25 whitespace-nowrap">
+                                  <Camera className="w-2.5 h-2.5 text-purple-400" />
+                                  {event.poster_url && event.photos && event.photos.length > 0
+                                    ? `Poster + ${event.photos.length} Photos`
+                                    : event.poster_url
+                                    ? "Poster"
+                                    : `${event.photos?.length} Photos`}
+                                </span>
+                              )}
                               {isViewing && (
                                 <span className="text-[10px] font-mono text-[#A78BFA] bg-[#6C63FF]/10 px-2 py-0.5 rounded whitespace-nowrap">
                                   Viewing
@@ -4722,282 +4793,14 @@ function AdminPageContent() {
       {/* ══════════════════════════════════════════════════ */}
       {/* ── MEDIA ASSETS UPLOAD MODAL (MEDIA LEAD / S3) ─── */}
       {/* ══════════════════════════════════════════════════ */}
-      {selectedMediaEvent && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto p-2 sm:p-4 flex items-center justify-center overscroll-contain animate-in fade-in duration-200"
-          data-lenis-prevent
-          onWheel={(e) => e.stopPropagation()}
-        >
-          {/* Backdrop with blur */}
-          <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
-            onClick={closeMediaModal}
-          />
+      {/* ── Media Assets Modal (Promotional Poster & Photos) ── */}
+      <EventMediaModal
+        event={selectedMediaEvent}
+        isOpen={Boolean(selectedMediaEvent)}
+        onClose={closeMediaModal}
+        onSave={handleMediaSaved}
+      />
 
-          {/* Modal Container */}
-          <div
-            className="relative w-full max-w-2xl p-1 rounded-[2rem] bg-white/[0.05] border border-white/10 shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200 my-auto"
-            data-lenis-prevent
-            onWheel={(e) => e.stopPropagation()}
-          >
-            <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden flex flex-col max-h-[88vh]">
-              {/* Header */}
-              <div className="px-6 sm:px-7 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0 bg-[#121218]">
-                <div className="min-w-0 pr-4">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-white tracking-tight truncate">
-                      Event Media Studio
-                    </h3>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#6C63FF]/20 text-[#A78BFA] border border-[#6C63FF]/30 shrink-0">
-                      {formatDate(selectedMediaEvent.event_date)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#A1A1AA] mt-1 truncate">
-                    Uploading assets for <span className="text-white font-medium">&quot;{selectedMediaEvent.name}&quot;</span>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeMediaModal}
-                  className="h-8 w-8 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-[#71717A] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Scrollable Content */}
-              <div
-                className="p-6 sm:p-7 space-y-6 overflow-y-auto overscroll-contain flex-1 min-h-0"
-                style={{
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "rgba(255, 255, 255, 0.2) transparent",
-                }}
-              >
-                {/* ── Section 1: Event Poster / Banner ── */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-semibold">
-                        Event Poster / Main Banner
-                      </label>
-                      <p className="text-[11px] text-[#71717A] mt-0.5">
-                        High-resolution promotional banner (any image format — auto-converted to WebP)
-                      </p>
-                    </div>
-                    {posterPreview && (
-                      <button
-                        type="button"
-                        onClick={() => posterInputRef.current?.click()}
-                        className="text-[11px] font-mono text-[#A78BFA] hover:text-white underline cursor-pointer"
-                      >
-                        Replace Poster
-                      </button>
-                    )}
-                  </div>
-
-                  <input
-                    ref={posterInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handlePosterSelect(e.target.files[0]);
-                      }
-                    }}
-                  />
-
-                  {posterPreview ? (
-                    <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 group">
-                      <div className="aspect-video w-full max-h-56 overflow-hidden flex items-center justify-center bg-[#0A0A0E]">
-                        <img
-                          src={posterPreview}
-                          alt="Poster Preview"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                      <div className="p-3 bg-[#14141B] border-t border-white/[0.06] flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <ImageIcon className="w-4 h-4 text-[#A78BFA] shrink-0" />
-                          <span className="text-white truncate font-medium">
-                            {posterFile ? posterFile.name : "Current Event Poster"}
-                          </span>
-                          {posterFile && (
-                            <span className="text-[#71717A] font-mono text-[10px] shrink-0">
-                              ({(posterFile.size / (1024 * 1024)).toFixed(2)} MB)
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (posterPreview.startsWith("blob:")) URL.revokeObjectURL(posterPreview);
-                            setPosterFile(null);
-                            setPosterPreview(null);
-                          }}
-                          className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
-                          title="Remove poster"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => posterInputRef.current?.click()}
-                      className="w-full py-8 px-4 rounded-2xl border-2 border-dashed border-white/10 hover:border-[#6C63FF]/50 bg-white/[0.015] hover:bg-[#6C63FF]/[0.02] flex flex-col items-center justify-center cursor-pointer transition-all group text-center"
-                    >
-                      <div className="w-12 h-12 rounded-2xl bg-white/[0.04] group-hover:bg-[#6C63FF]/15 border border-white/[0.08] group-hover:border-[#6C63FF]/30 flex items-center justify-center text-[#71717A] group-hover:text-[#A78BFA] mb-3 transition-colors">
-                        <Upload className="w-5 h-5" />
-                      </div>
-                      <p className="text-xs font-semibold text-white group-hover:text-[#A78BFA] transition-colors">
-                        Click to select or drag event poster
-                      </p>
-                      <p className="text-[11px] text-[#71717A] mt-1">
-                        Any image format • Auto-converted to high-quality .webp
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* ── Section 2: Event Photos / Gallery ── */}
-                <div className="space-y-3 pt-4 border-t border-white/[0.06]">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-semibold">
-                          Event Photos &amp; Moments
-                        </label>
-                        {photoPreviews.length > 0 && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/[0.06] text-[#D4D4D8]">
-                            {photoPreviews.length} selected
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[#71717A] mt-0.5">
-                        Moments, speaker shots, and workshop photos from this session
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => photosInputRef.current?.click()}
-                      className="h-8 px-3 rounded-lg text-xs font-medium text-[#A78BFA] hover:text-white bg-[#6C63FF]/10 hover:bg-[#6C63FF]/20 border border-[#6C63FF]/25 transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add Photos</span>
-                    </button>
-                  </div>
-
-                  <input
-                    ref={photosInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files.length > 0) {
-                        handlePhotosSelect(e.target.files);
-                      }
-                    }}
-                  />
-
-                  {photoPreviews.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {photoPreviews.map((preview, idx) => (
-                        <div
-                          key={idx}
-                          className="relative aspect-video rounded-xl overflow-hidden border border-white/10 bg-black/40 group"
-                        >
-                          <img
-                            src={preview}
-                            alt={`Photo ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePhoto(idx)}
-                              className="h-8 w-8 rounded-lg bg-red-500/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-lg"
-                              title="Delete photo"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Add more button tile in grid */}
-                      <div
-                        onClick={() => photosInputRef.current?.click()}
-                        className="aspect-video rounded-xl border border-dashed border-white/10 hover:border-[#6C63FF]/50 bg-white/[0.02] hover:bg-[#6C63FF]/[0.03] flex flex-col items-center justify-center cursor-pointer transition-colors text-center p-2 group"
-                      >
-                        <Plus className="w-5 h-5 text-[#71717A] group-hover:text-[#A78BFA] transition-colors" />
-                        <span className="text-[11px] text-[#71717A] group-hover:text-white mt-1">
-                          Add More
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => photosInputRef.current?.click()}
-                      className="w-full py-8 px-4 rounded-2xl border-2 border-dashed border-white/10 hover:border-[#6C63FF]/50 bg-white/[0.015] hover:bg-[#6C63FF]/[0.02] flex flex-col items-center justify-center cursor-pointer transition-all group text-center"
-                    >
-                      <div className="w-12 h-12 rounded-2xl bg-white/[0.04] group-hover:bg-[#6C63FF]/15 border border-white/[0.08] group-hover:border-[#6C63FF]/30 flex items-center justify-center text-[#71717A] group-hover:text-[#A78BFA] mb-3 transition-colors">
-                        <Camera className="w-5 h-5" />
-                      </div>
-                      <p className="text-xs font-semibold text-white group-hover:text-[#A78BFA] transition-colors">
-                        Click to select session gallery photos
-                      </p>
-                      <p className="text-[11px] text-[#71717A] mt-1">
-                        Any image format • Auto-converted to high-quality .webp
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* S3 Notice for Media Lead / Lead */}
-                <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-start gap-2.5">
-                  <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
-                  <p className="leading-relaxed">
-                    Uploaded assets are automatically converted to high-quality WebP format for optimal site performance, ready for AWS S3 sync.
-                  </p>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="px-6 sm:px-7 py-4 border-t border-white/[0.06] bg-[#121218] flex items-center justify-between gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={closeMediaModal}
-                  disabled={uploadingMedia}
-                  className="h-10 px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveMedia}
-                  disabled={uploadingMedia || (!posterFile && photoFiles.length === 0)}
-                  className="h-10 px-5 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer disabled:opacity-40 shadow-lg shadow-[#6C63FF]/20 flex items-center gap-2"
-                >
-                  {uploadingMedia ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Uploading to S3…</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4" />
-                      <span>Save &amp; Upload Media</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ══════════════════════════════════════════════════ */}
       {/* ── CUSTOM CONFIRMATION DIALOG MODAL ────────────── */}
