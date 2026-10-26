@@ -148,15 +148,25 @@ function StatusIndicator({ status }: { status: EventStatus }) {
   );
 }
 
-function EventCard({ event, className }: { event: Event; className?: string }) {
+function EventCard({
+  event,
+  className,
+  isHighlighted,
+}: {
+  event: Event;
+  className?: string;
+  isHighlighted?: boolean;
+}) {
   const isPast = event.status === "past";
   const isCurrent = event.status === "current";
 
   return (
     <SpotlightCard
       className={cn(
-        "group relative overflow-hidden rounded-2xl border transition-all duration-300 flex flex-col h-full",
+        "group relative overflow-hidden rounded-2xl border transition-all duration-500 flex flex-col h-full",
+        isHighlighted && "border-primary ring-2 ring-primary/80 shadow-[0_0_40px_rgba(124,58,237,0.5)] scale-[1.01]",
         isCurrent
+
           ? "border-primary/40 bg-bg-card/90 shadow-[0_12px_40px_-15px_rgba(124,58,237,0.25)] ring-1 ring-primary/20"
           : isPast
           ? "border-border/60 bg-bg-card/50 hover:border-border hover:bg-bg-card/70"
@@ -166,6 +176,7 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
       contentClassName="h-full flex flex-col flex-1"
       spotlightColor={
         isCurrent
+
           ? "rgba(167, 139, 250, 0.025)"
           : isPast
           ? "rgba(113, 113, 122, 0.01)"
@@ -173,6 +184,7 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
       }
       borderColor={
         isCurrent
+
           ? "rgba(167, 139, 250, 0.08)"
           : isPast
           ? "rgba(113, 113, 122, 0.03)"
@@ -288,6 +300,16 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
               </span>
               <Link
                 href="/gallery"
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem(
+                      "selected_gallery_event",
+                      event.id || event.title
+                    );
+                  } catch {
+                    // ignore
+                  }
+                }}
                 className="group/btn inline-flex items-center gap-1.5 text-xs text-primary-light hover:text-white transition-colors font-medium cursor-pointer"
               >
                 <Camera className="w-3.5 h-3.5 text-primary-light/80 group-hover/btn:text-white transition-colors" />
@@ -426,6 +448,71 @@ export function Events() {
   const upcomingEvents = events.filter((e) => e.status !== "past");
   // Sort concluded events with most recent first
   const pastEvents = [...events.filter((e) => e.status === "past")].reverse();
+
+  // ── Scroll to target event if navigated from Landing Page ──
+  const [highlightedEventId, setHighlightedEventId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (loading || events.length === 0) return;
+
+    let targetId: string | null = null;
+
+    if (typeof window !== "undefined") {
+      try {
+        const stored = sessionStorage.getItem("target_event_id");
+        if (stored) {
+          targetId = stored;
+          sessionStorage.removeItem("target_event_id");
+        }
+      } catch {}
+
+      if (!targetId && window.location.hash) {
+        const hash = window.location.hash.replace("#", "");
+        targetId = hash.startsWith("event-") ? hash.replace("event-", "") : hash;
+      }
+      if (!targetId && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        targetId = params.get("event") || params.get("id");
+      }
+
+      if (window.location.search || window.location.hash) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+
+    if (!targetId) return;
+
+    const normalized = targetId.trim().toLowerCase();
+
+    const foundEvent = events.find(
+      (ev) =>
+        ev.id.toLowerCase() === normalized ||
+        ev.title.toLowerCase() === normalized ||
+        ev.title.toLowerCase().includes(normalized) ||
+        normalized.includes(ev.id.toLowerCase())
+    );
+
+    const elId = foundEvent ? `event-${foundEvent.id}` : `event-${normalized}`;
+
+    let highlightTimer: NodeJS.Timeout | null = null;
+    const scrollTimer = setTimeout(() => {
+      const el = document.getElementById(elId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (foundEvent) {
+          setHighlightedEventId(foundEvent.id);
+          highlightTimer = setTimeout(() => {
+            setHighlightedEventId(null);
+          }, 3500);
+        }
+      }
+    }, 400);
+
+    return () => {
+      clearTimeout(scrollTimer);
+      if (highlightTimer) clearTimeout(highlightTimer);
+    };
+  }, [loading, events]);
 
   // ── GSAP animations ───────────────────────────────────────
   useGSAP(
@@ -758,8 +845,8 @@ export function Events() {
                   )}
 
                   <TimelineContent className="pb-10 pt-1 w-full max-w-2xl">
-                    <div className="group">
-                      <EventCard event={event} />
+                    <div id={`event-${event.id}`} className="group scroll-mt-32">
+                      <EventCard event={event} isHighlighted={highlightedEventId === event.id} />
                     </div>
                   </TimelineContent>
                 </TimelineItem>
@@ -796,8 +883,8 @@ export function Events() {
             {/* Grid of Concluded Event Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
               {pastEvents.map((event) => (
-                <div key={event.id} className="concluded-event-item h-full flex flex-col">
-                  <EventCard event={event} className="h-full flex-1" />
+                <div key={event.id} id={`event-${event.id}`} className="concluded-event-item h-full flex flex-col scroll-mt-32">
+                  <EventCard event={event} isHighlighted={highlightedEventId === event.id} className="h-full flex-1" />
                 </div>
               ))}
             </div>

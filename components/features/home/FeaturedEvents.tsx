@@ -107,10 +107,11 @@ export function FeaturedEvents() {
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PREVIEW_EVENTS.map((ev) => (
+            <Link key={ev.title} href="/events" className="block cursor-pointer h-full">
             <SpotlightCard
-              key={ev.title}
+
               spotlightColor={ev.spotlightColor}
-              className={`event-card group flex flex-col gap-3 p-5 ${ev.border}`}
+              className={`event-card group flex flex-col gap-3 p-5 h-full ${ev.border}`}
             >
               <span className={`inline-flex w-fit rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-transform duration-300 group-hover:scale-105 ${ev.tagColor}`}>
                 {ev.tag}
@@ -118,6 +119,7 @@ export function FeaturedEvents() {
               <h3 className="font-display text-[15px] font-semibold text-text-primary group-hover:text-primary-light transition-colors duration-200">{ev.title}</h3>
               <p className="text-[13px] leading-relaxed text-text-secondary">{ev.desc}</p>
             </SpotlightCard>
+            </Link>
           ))}
         </div>
       </div>

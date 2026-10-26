@@ -1,0 +1,40 @@
+{
+  "eventId": "ea0a5c93-6073-436d-9441-e19ef7bcbc30",
+  "poster": {
+    "url": "https://yurstqavqsejlnudxomg.supabase.co/storage/v1/object/public/event-media/ea0a5c93-6073-436d-9441-e19ef7bcbc30/poster_1792763834477_IMG-20261020-WA0003.webp",
+    "name": "IMG-20261020-WA0003.webp",
+    "size": 174620,
+    "originalSize": 279356
+  },
+  "photos": [
+    {
+      "id": "photo-1792764079114-0-5pxp",
+      "url": "https://yurstqavqsejlnudxomg.supabase.co/storage/v1/object/public/event-media/ea0a5c93-6073-436d-9441-e19ef7bcbc30/photos/1792764119594_0_IMG_9601.webp",
+      "name": "IMG_9601.webp",
+      "size": 143416,
+      "originalSize": 6189519
+    },
+    {
+      "id": "photo-1792859204777-0-q7jw",
+      "url": "/events/uploads/ea0a5c93-6073-436d-9441-e19ef7bcbc30/photos/1792859215515_0_KS-photo2.webp",
+      "name": "KS-photo2.webp",
+      "size": 145080,
+      "originalSize": 5658491
+    },
+    {
+      "id": "photo-1792859204777-1-nc62",
+      "url": "https://yurstqavqsejlnudxomg.supabase.co/storage/v1/object/public/event-media/ea0a5c93-6073-436d-9441-e19ef7bcbc30/photos/1792859216518_1_KS-photo.webp",
+      "name": "KS-photo.webp",
+      "size": 206208,
+      "originalSize": 6969425
+    },
+    {
+      "id": "photo-1792992666366-0-bsya",
+      "url": "https://yurstqavqsejlnudxomg.supabase.co/storage/v1/object/public/event-media/ea0a5c93-6073-436d-9441-e19ef7bcbc30/photos/1792992679658_0_KS-photo.webp",
+      "name": "KS-photo.webp",
+      "size": 206208,
+      "originalSize": 6969425
+    }
+  ],
+  "updatedAt": "2026-10-26T05:31:21.431Z"
+}

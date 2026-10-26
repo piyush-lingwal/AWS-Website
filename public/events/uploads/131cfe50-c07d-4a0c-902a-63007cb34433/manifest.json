@@ -1,0 +1,26 @@
+{
+  "eventId": "131cfe50-c07d-4a0c-902a-63007cb34433",
+  "poster": {
+    "url": "https://yurstqavqsejlnudxomg.supabase.co/storage/v1/object/public/event-media/131cfe50-c07d-4a0c-902a-63007cb34433/poster_1792859139500_CK-poster.webp",
+    "name": "CK-poster.webp",
+    "size": 192742,
+    "originalSize": 2952414
+  },
+  "photos": [
+    {
+      "id": "photo-1792859122859-0-iku8",
+      "url": "https://yurstqavqsejlnudxomg.supabase.co/storage/v1/object/public/event-media/131cfe50-c07d-4a0c-902a-63007cb34433/photos/1792859145718_0_CK-pic2.webp",
+      "name": "CK-pic2.webp",
+      "size": 178186,
+      "originalSize": 928174
+    },
+    {
+      "id": "photo-1792859122869-1-4p6p",
+      "url": "https://yurstqavqsejlnudxomg.supabase.co/storage/v1/object/public/event-media/131cfe50-c07d-4a0c-902a-63007cb34433/photos/1792859146955_1_CK-pic1.webp",
+      "name": "CK-pic1.webp",
+      "size": 170084,
+      "originalSize": 197350
+    }
+  ],
+  "updatedAt": "2026-10-24T16:25:49.569Z"
+}

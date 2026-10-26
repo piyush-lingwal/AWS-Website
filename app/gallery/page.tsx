@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Gallery } from "@/components/features/gallery/Gallery";
 
@@ -11,5 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default function GalleryPage() {
-  return <Gallery />;
+  return (
+    <Suspense fallback={null}>
+      <Gallery />
+    </Suspense>
+  );
 }
