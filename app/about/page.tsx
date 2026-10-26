@@ -19,15 +19,27 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <>
+    <main className="min-h-screen bg-[#0B0A09] text-white overflow-x-hidden">
+      {/* Screen 1: Who We Are */}
       <About />
+
+      {/* Screen 2: What makes us different */}
       <AboutComparison />
+
+      {/* Screen 3: The builder journey */}
       <AboutTimeline />
+
+      {/* Screen 4: Our Pillars */}
       <AboutPillars />
+
+      {/* Screen 5: The AWS Ecosystem */}
       <AboutEcosystem />
+
+      {/* Screen 6: Technologies We Explore */}
       <AboutTechnologies />
-      {/* <AboutStats /> - Hidden for now */}
+
+      {/* Screen 7: Ready to Build / CTA */}
       <AboutCTA />
-    </>
+    </main>
   );
 }

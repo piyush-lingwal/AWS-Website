@@ -19,8 +19,8 @@
   }
 
   ::selection {
-    background-color: #7c3aed;
-    color: #fafafa;
+    background-color: #FF9900;
+    color: #0B0A09;
   }
 
   /* Fix Browser Autofill UI in dark mode */
@@ -34,15 +34,15 @@
   select:-webkit-autofill:hover,
   select:-webkit-autofill:focus {
     -webkit-text-fill-color: #fafafa !important;
-    -webkit-box-shadow: 0 0 0px 1000px #18181b inset !important;
-    box-shadow: 0 0 0px 1000px #18181b inset !important;
-    border-color: #27272a !important;
+    -webkit-box-shadow: 0 0 0px 1000px #120F0C inset !important;
+    box-shadow: 0 0 0px 1000px #120F0C inset !important;
+    border-color: #26201A !important;
     transition: background-color 5000s ease-in-out 0s;
   }
 
   /* Dark mode dropdown menu options styling */
   select option {
-    background-color: #18181b !important;
+    background-color: #120F0C !important;
     color: #fafafa !important;
     padding: 10px 14px;
   }
@@ -50,12 +50,12 @@
   select option:focus,
   select option:active,
   select option:checked {
-    background-color: #27272a !important;
-    color: #a78bfa !important;
+    background-color: #1A1612 !important;
+    color: #FFB84D !important;
   }
 
   :focus-visible {
-    outline: 2px solid #a78bfa;
+    outline: 2px solid #FF9900;
     outline-offset: 3px;
     border-radius: 2px;
   }
@@ -64,14 +64,14 @@
     width: 10px;
   }
   ::-webkit-scrollbar-track {
-    background: #09090b;
+    background: #0B0A09;
   }
   ::-webkit-scrollbar-thumb {
-    background: #27272a;
+    background: #26201A;
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #3f3f46;
+    background: #3D3329;
   }
 
   @media (prefers-reduced-motion: reduce) {

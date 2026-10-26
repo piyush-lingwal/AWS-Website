@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
+import { motion } from "framer-motion";
 import { CirclePlus } from "@/components/ui/animate-ui/icons/circle-plus";
 import { Layers } from "@/components/ui/animate-ui/icons/layers";
 import { Hammer } from "@/components/ui/animate-ui/icons/hammer";
@@ -12,257 +11,278 @@ import { PartyPopper } from "@/components/ui/animate-ui/icons/party-popper";
 import { BadgeCheck } from "@/components/ui/animate-ui/icons/badge-check";
 import { Star } from "@/components/ui/animate-ui/icons/star";
 import { LayoutDashboard } from "@/components/ui/animate-ui/icons/layout-dashboard";
-import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
-import { ArrowLeft } from "@/components/ui/animate-ui/icons/arrow-left";
-import { ArrowDown } from "@/components/ui/animate-ui/icons/arrow-down";
-import { PixelHeading } from "@/components/ui/pixel-heading-character";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
-
-const STEPS = [
-  { icon: CirclePlus, title: "Join SBG", description: "Become part of the builder community.", phase: "01", direction: "right" },
-  { icon: Layers, title: "AWS Fundamentals", description: "Core services, IAM, cloud concepts.", phase: "02", direction: "right" },
-  { icon: Hammer, title: "Hands-on Workshops", description: "Build in live sandbox environments.", phase: "03", direction: "down" },
-  { icon: Blocks, title: "Cloud Projects", description: "Deploy real applications on AWS.", phase: "04", direction: "left" },
-  { icon: PartyPopper, title: "Hackathons", description: "Compete, build fast, win prizes.", phase: "05", direction: "left" },
-  { icon: BadgeCheck, title: "AWS Certifications", description: "Earn industry-recognized credentials.", phase: "06", direction: "down" },
-  { icon: Star, title: "Leadership", description: "Mentor, organize, and lead initiatives.", phase: "07", direction: "right" },
-  { icon: LayoutDashboard, title: "Internships & Careers", description: "Launch your cloud career.", phase: "08", direction: "end" },
-];
-
-const GRID_POSITIONS = [
-  "lg:col-start-1 lg:row-start-1", // 01
-  "lg:col-start-2 lg:row-start-1", // 02
-  "lg:col-start-3 lg:row-start-1", // 03
-  "lg:col-start-3 lg:row-start-2", // 04
-  "lg:col-start-2 lg:row-start-2", // 05
-  "lg:col-start-1 lg:row-start-2", // 06
-  "lg:col-start-1 lg:row-start-3", // 07
-  "lg:col-start-2 lg:row-start-3", // 08
+const PHASES = [
+  {
+    phase: "PHASE 01",
+    title: "Join SBG",
+    description: "Become part of the builder community.",
+    icon: CirclePlus,
+    gridClass: "lg:col-start-1 lg:row-start-1",
+  },
+  {
+    phase: "PHASE 02",
+    title: "AWS Fundamentals",
+    description: "Core services, IAM, cloud concepts.",
+    icon: Layers,
+    gridClass: "lg:col-start-2 lg:row-start-1",
+  },
+  {
+    phase: "PHASE 03",
+    title: "Hands-on Workshops",
+    description: "Build in live sandbox environments.",
+    icon: Hammer,
+    gridClass: "lg:col-start-3 lg:row-start-1",
+  },
+  {
+    phase: "PHASE 04",
+    title: "Cloud Projects",
+    description: "Deploy real applications on AWS.",
+    icon: Blocks,
+    gridClass: "lg:col-start-3 lg:row-start-2",
+  },
+  {
+    phase: "PHASE 05",
+    title: "Hackathons",
+    description: "Compete, build fast, win prizes.",
+    icon: PartyPopper,
+    gridClass: "lg:col-start-2 lg:row-start-2",
+  },
+  {
+    phase: "PHASE 06",
+    title: "AWS Certifications",
+    description: "Earn industry-recognized credentials.",
+    icon: BadgeCheck,
+    gridClass: "lg:col-start-1 lg:row-start-2",
+  },
+  {
+    phase: "PHASE 07",
+    title: "Leadership",
+    description: "Mentor, organize, and lead initiatives.",
+    icon: Star,
+    gridClass: "lg:col-start-1 lg:row-start-3",
+  },
+  {
+    phase: "PHASE 08",
+    title: "Internships & Careers",
+    description: "Launch your cloud career.",
+    icon: LayoutDashboard,
+    gridClass: "lg:col-start-2 lg:row-start-3",
+  },
 ];
 
 export function AboutTimeline() {
-  const containerRef = React.useRef<HTMLElement>(null);
-  const headingRef = React.useRef<HTMLHeadingElement>(null);
-  const pathRef = React.useRef<SVGPathElement>(null);
-
-  useGSAP(() => {
-    gsap.from(".timeline-header-el", {
-      opacity: 0,
-      y: 20,
-      stagger: 0.1,
-      duration: 0.6,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: ".timeline-header",
-        start: "top 85%",
-        toggleActions: "play none none reverse",
-      },
-    });
-
-    const cards = gsap.utils.toArray<HTMLElement>(".s-timeline-card");
-    const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
-
-    if (isDesktop) {
-      gsap.set(cards, { opacity: 0, y: 35, scale: 0.92 });
-
-      // Animate SVG Flipped-S track stroke draw when heading reaches just below navbar (80px)
-      if (pathRef.current && headingRef.current) {
-        const pathLength = pathRef.current.getTotalLength();
-        gsap.set(pathRef.current, {
-          strokeDasharray: pathLength,
-          strokeDashoffset: pathLength,
-        });
-
-        gsap.to(pathRef.current, {
-          strokeDashoffset: 0,
-          ease: "none",
-          scrollTrigger: {
-            trigger: headingRef.current,
-            start: "top 80px",
-            end: "+=2600",
-            scrub: 0.8,
-          },
-        });
-      }
-
-      // Pin section on desktop when the h2 heading reaches just below the navbar (80px)
-      if (headingRef.current) {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: headingRef.current,
-            start: "top 140px",
-            end: "+=2600",
-            pin: containerRef.current,
-            scrub: 0.8,
-            anticipatePin: 1,
-          },
-        });
-
-        cards.forEach((card, index) => {
-          tl.to(
-            card,
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              duration: 0.9,
-              ease: "power2.out",
-            },
-            index * 0.9
-          );
-        });
-      }
-    } else {
-      // Mobile view: NO PINNING! Cards reveal smoothly as user scrolls naturally
-      gsap.set(cards, { opacity: 0, y: 30, scale: 0.95 });
-      ScrollTrigger.batch(cards, {
-        onEnter: (batch) => {
-          gsap.to(batch, {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.6,
-            stagger: 0.1,
-            ease: "power2.out",
-            overwrite: true,
-          });
-        },
-        onLeaveBack: (batch) => {
-          gsap.to(batch, {
-            opacity: 0,
-            y: 30,
-            scale: 0.95,
-            duration: 0.3,
-            overwrite: true,
-          });
-        },
-        start: "top 88%",
-      });
-    }
-
-    const refreshTimer = setTimeout(() => ScrollTrigger.refresh(), 200);
-    return () => clearTimeout(refreshTimer);
-  }, { scope: containerRef });
-
   return (
-    <section ref={containerRef} className="bg-grid bg-noise relative overflow-hidden bg-bg min-h-screen flex flex-col justify-center py-6 lg:py-10">
-      {/* Background ambient lighting */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/4 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-primary/10 blur-[150px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-10 bottom-10 h-[400px] w-[400px] rounded-full bg-secondary/8 blur-[140px]"
+    <section
+      id="about-journey"
+      className="relative w-full h-screen min-h-[660px] max-h-screen bg-[#0B0A09] text-white overflow-hidden flex items-center select-none"
+    >
+      {/* ── AMBIENT WARM GLOWS ── */}
+      <motion.div
+        aria-hidden="true"
+        animate={{
+          opacity: [0.3, 0.5, 0.3],
+          scale: [1, 1.08, 1],
+        }}
+        transition={{
+          duration: 7,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="pointer-events-none absolute -top-24 left-1/4 w-[480px] sm:w-[580px] h-[480px] sm:h-[580px] rounded-full bg-gradient-to-br from-[#FF9900]/20 via-[#E88B00]/8 to-transparent blur-[130px] z-0"
       />
 
-      <div className="relative mx-auto max-w-content w-full px-4 sm:px-6">
-        {/* Header */}
-        <div className="timeline-header max-w-2xl text-center md:text-left mx-auto md:mx-0 mb-6 lg:mb-7">
-          <p className="timeline-header-el text-[11px] uppercase tracking-[0.16em] text-muted">
-            Your Journey
-          </p>
-          <h2
-            ref={headingRef}
-            className="timeline-header-el mt-2 font-display text-[26px] sm:text-[30px] md:text-[34px] font-semibold leading-[1.1] tracking-tight text-text-primary"
+      <motion.div
+        aria-hidden="true"
+        animate={{
+          opacity: [0.35, 0.6, 0.35],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{
+          duration: 5.5,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="pointer-events-none absolute bottom-10 right-10 w-[380px] sm:w-[480px] h-[380px] sm:h-[480px] rounded-full bg-gradient-to-br from-[#FF9900]/24 via-[#FFB84D]/10 to-transparent blur-[110px] z-0"
+      />
+
+      {/* Subtle depth vignette */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.65)_100%)] z-0"
+      />
+
+      {/* ── MAIN CONTENT CONTAINER (Fits normal laptop height) ── */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 h-full flex flex-col justify-center lg:pt-4 pb-6 lg:pb-0">
+        {/* ── HEADER ── */}
+        <div className="flex flex-col space-y-1.5 sm:space-y-2 mb-4 sm:mb-5">
+          {/* Eyebrow */}
+          <motion.div
+            initial={{ opacity: 0, x: -16 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="flex items-center gap-3"
           >
-            The builder{" "}
-            <PixelHeading mode="uniform" className="text-gradient">journey.</PixelHeading>
-          </h2>
-          <p className="timeline-header-el mt-2 max-w-lg text-[13.5px] sm:text-[14.5px] leading-relaxed text-text-secondary">
+            <motion.span
+              initial={{ width: 0 }}
+              whileInView={{ width: 26 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.65, delay: 0.15, ease: "easeOut" }}
+              className="h-[2px] bg-[#FF9900] inline-block rounded-full"
+            />
+            <span className="text-[#FF9900] text-xs sm:text-sm font-bold tracking-[0.22em] uppercase">
+              YOUR JOURNEY
+            </span>
+          </motion.div>
+
+          {/* Title */}
+          <motion.h2
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
+            className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl lg:text-[42px] xl:text-[48px] leading-[1.08] tracking-tight text-white"
+          >
+            <span>The builder </span>
+            <span className="text-[#FF9900]">journey.</span>
+          </motion.h2>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.25, ease: "easeOut" }}
+            className="text-white/65 text-xs sm:text-sm md:text-[14.5px] max-w-2xl font-normal leading-relaxed"
+          >
             From day one to career launch — here&apos;s the path every builder walks in a serpentine flow.
-          </p>
+          </motion.p>
         </div>
 
-        {/* Desktop Flipped-S Serpentine Layout */}
-        <div className="relative mt-2">
-          {/* Connector Track SVG Overlay for Desktop */}
-          <div className="hidden lg:block pointer-events-none absolute -inset-x-6 -inset-y-4 z-0">
-            <svg className="w-full h-full" viewBox="0 0 1000 500" fill="none">
-              {/* Background guide path */}
-              <path
-                d="M 166 80 L 833 80 C 960 80 960 250 833 250 L 166 250 C 40 250 40 420 166 420 L 500 420"
-                stroke="rgba(255, 255, 255, 0.07)"
-                strokeWidth="3"
-                strokeDasharray="6 6"
-              />
-              {/* Animated glowing serpentine stroke path with shimmer */}
-              <path
-                ref={pathRef}
-                d="M 166 80 L 833 80 C 960 80 960 250 833 250 L 166 250 C 40 250 40 420 166 420 L 500 420"
-                stroke="url(#flipped-s-shimmer-gradient)"
-                strokeWidth="4"
-                strokeLinecap="round"
-                className="drop-shadow-[0_0_14px_rgba(192,132,252,0.7)]"
-              />
-              <defs>
-                <linearGradient id="flipped-s-shimmer-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#7C3AED" />
-                  <stop offset="35%" stopColor="#C084FC" />
-                  <stop offset="50%" stopColor="#FFFFFF" />
-                  <stop offset="65%" stopColor="#06B6D4" />
-                  <stop offset="100%" stopColor="#3B82F6" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-
-          {/* Cards Grid: 3 columns on lg+, vertical on mobile */}
-          <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-            {STEPS.map((step, i) => {
-              const Icon = step.icon;
-              const positionClass = GRID_POSITIONS[i];
-
-              return (
-                <div
-                  key={i}
-                  className={`s-timeline-card group relative overflow-hidden flex flex-col justify-between rounded-xl border border-border/80 bg-bg-card/90 backdrop-blur-xl p-4 sm:p-4.5 transition-all duration-300 hover:border-primary/60 hover:shadow-[0_0_30px_-5px_rgba(124,58,237,0.3)] hover:-translate-y-1 ${positionClass}`}
-                >
-                  {/* Shimmer light beam pass effect on card reveal / hover */}
-                  <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/15 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                  </div>
-
-                  {/* Top row: Phase Badge & Step Direction Indicator */}
-                  <div className="relative z-10 flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 text-[10.5px] font-mono font-medium uppercase tracking-wider text-primary-light/70 bg-primary/5 rounded-full border border-primary/15 opacity-70 group-hover:opacity-100 transition-opacity">
-                      Phase {step.phase}
-                    </span>
-
-                    {/* Flow arrow indicators */}
-                    <div className="hidden lg:flex items-center text-muted/60 group-hover:text-primary-light transition-colors">
-                      {step.direction === "right" && <ArrowRight size={16} animateOnHover loop />}
-                      {step.direction === "left" && <ArrowLeft size={16} animateOnHover loop />}
-                      {step.direction === "down" && <ArrowDown size={16} animateOnHover loop />}
-                    </div>
-                  </div>
-
-                  {/* Icon & Title */}
-                  <div className="relative z-10 flex items-center gap-3 mb-2">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/25 via-accent/15 to-info/10 border border-primary/30 text-primary-light group-hover:scale-110 group-hover:border-primary shadow-[0_0_15px_-3px_rgba(124,58,237,0.3)] transition-all">
-                      <Icon size={17} strokeWidth={2} animateOnHover />
-                    </div>
-                    <h3 className="font-display text-[16px] font-semibold text-text-primary group-hover:text-primary-light transition-colors">
-                      {step.title}
-                    </h3>
-                  </div>
-
-                  {/* Description */}
-                  <p className="relative z-10 text-[13px] leading-relaxed text-text-secondary">
-                    {step.description}
-                  </p>
-
-                  {/* Mobile direction arrow */}
-                  {i < STEPS.length - 1 && (
-                    <div className="relative z-10 lg:hidden mt-3 pt-2 border-t border-border/50 flex items-center justify-end text-[10.5px] text-muted font-mono">
-                      <ArrowDown size={13} className="text-primary/60" animateOnView />
-                    </div>
-                  )}
+        {/* ── 3-COLUMN SERPENTINE GRID (Compact, perfectly proportioned cards) ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 lg:gap-4 items-start w-full max-w-4xl lg:max-w-[940px] xl:max-w-[960px]">
+          {PHASES.map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={item.phase}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: 0.15 + idx * 0.05 }}
+                className={`${item.gridClass} group relative p-3.5 sm:p-4 rounded-[18px] sm:rounded-2xl bg-[#120F0C]/85 backdrop-blur-md border border-[#FF9900]/30 hover:border-[#FF9900]/60 transition-all duration-300 shadow-[0_0_20px_rgba(255,153,0,0.03)] hover:shadow-[0_0_30px_rgba(255,153,0,0.12)] flex flex-col justify-start w-full max-w-[305px]`}
+              >
+                {/* Top card row: Phase Pill + Icon */}
+                <div className="flex items-center justify-between">
+                  <span className="border border-[#FF9900]/45 text-[#FF9900] text-[9.5px] sm:text-[10px] font-bold tracking-widest px-2.5 py-0.5 rounded-full uppercase">
+                    {item.phase}
+                  </span>
+                  <span className="text-[#FF9900] opacity-85 group-hover:opacity-100 group-hover:scale-110 transition-all">
+                    <Icon size={16} />
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Card Title & Description */}
+                <div className="mt-2.5 sm:mt-3">
+                  <h3 className="text-[15px] sm:text-[16px] font-bold text-white group-hover:text-[#FFB84D] transition-colors leading-snug">
+                    {item.title}
+                  </h3>
+                  <p className="text-[12px] sm:text-[12.5px] text-white/60 mt-1 leading-normal font-normal">
+                    {item.description}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* BOTTOM-RIGHT OVERLAY: Mascot (Compact) + Badge beside 08        */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 right-3 sm:right-5 md:right-7 lg:right-8 xl:right-12 z-20 flex items-center gap-2 sm:gap-3 md:gap-3.5 pointer-events-none">
+        {/* "Your path starts here!" Tilted Pill Badge (Compact & Shifted Right) */}
+        <motion.div
+          initial={{ opacity: 0, x: -15, scale: 0.9, rotate: -5 }}
+          whileInView={{
+            opacity: 1,
+            x: 0,
+            scale: 1,
+            rotate: -5,
+            y: [-3, 3, -3],
+          }}
+          viewport={{ once: true }}
+          transition={{
+            opacity: { duration: 0.6, delay: 0.4 },
+            x: { duration: 0.65, delay: 0.4, type: "spring", stiffness: 220, damping: 20 },
+            scale: { duration: 0.6, delay: 0.4 },
+            rotate: { duration: 0.6, delay: 0.4 },
+            y: { duration: 3.8, repeat: Infinity, ease: "easeInOut" },
+          }}
+          whileHover={{
+            scale: 1.06,
+            rotate: -3,
+            boxShadow: "0 0 35px rgba(255, 153, 0, 0.55)",
+            borderColor: "#FFB84D",
+            transition: { duration: 0.2 },
+          }}
+          className="pointer-events-auto relative group cursor-pointer px-3 py-1.5 sm:px-4 sm:py-2 md:px-4.5 md:py-2.5 rounded-xl bg-[#120F0C]/90 backdrop-blur-md border-[1.6px] border-[#FF9900] shadow-[0_0_20px_rgba(255,153,0,0.3)] flex items-center justify-center transition-all select-none"
+        >
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF9900]/12 via-transparent to-[#FF9900]/8 opacity-70 pointer-events-none" />
+          <span className="relative z-10 font-bold text-xs sm:text-[13px] md:text-sm text-white tracking-tight whitespace-nowrap">
+            Your path starts here!
+          </span>
+        </motion.div>
+
+        {/* AWS Builder Cloud Mascot (03.png - Compact size & shifted right) */}
+        <div className="pointer-events-auto relative flex flex-col items-center">
+          {/* Ground Shadow */}
+          <motion.div
+            animate={{
+              scale: [1, 1.15, 1],
+              opacity: [0.75, 0.4, 0.75],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="absolute -bottom-1 w-24 sm:w-28 md:w-32 lg:w-36 h-2.5 sm:h-3 rounded-full bg-black/90 blur-md pointer-events-none"
+          />
+
+          {/* Jumping Mascot Animation */}
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            whileInView={{
+              opacity: 1,
+              y: [0, -10, 0],
+              scale: 1,
+              rotate: [-1, 1.5, -1],
+            }}
+            viewport={{ once: true }}
+            transition={{
+              opacity: { duration: 0.7, delay: 0.3 },
+              scale: { duration: 0.7, delay: 0.3 },
+              y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+              rotate: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+            }}
+            whileHover={{
+              scale: 1.05,
+              rotate: 0,
+              transition: { duration: 0.25 },
+            }}
+            className="relative z-10 cursor-pointer select-none origin-bottom"
+          >
+            <Image
+              src="/site-elements/about/03.png"
+              alt="AWS Student Builder Group Cloud Mascot - Jumping Celebration"
+              width={340}
+              height={340}
+              priority
+              className="w-auto h-36 sm:h-40 md:h-44 lg:h-52 xl:h-56 object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.85)]"
+            />
+          </motion.div>
         </div>
       </div>
     </section>

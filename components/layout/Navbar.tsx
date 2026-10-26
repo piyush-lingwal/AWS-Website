@@ -87,12 +87,12 @@ export function Navbar() {
                 key={`mobile-link-${idx}`}
                 href={item.link}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="relative w-full rounded-xl px-4 py-3 text-[15px] font-medium text-text-secondary transition-colors transition-transform duration-200 hover:bg-white/5 hover:text-text-primary active:scale-[0.98]"
+                className="relative w-full rounded-xl px-4 py-3 text-[15px] font-medium text-white/70 transition-colors transition-transform duration-200 hover:bg-[#FF9900]/10 hover:text-[#FF9900] active:scale-[0.98]"
               >
                 <span className="block">{item.name}</span>
               </Link>
             ))}
-            <div className="mt-2 flex w-full flex-col gap-3 border-t border-white/5 pt-3">
+            <div className="mt-2 flex w-full flex-col gap-3 border-t border-[#FF9900]/15 pt-3">
               <NavbarButton
                 as={Link}
                 href="/register"

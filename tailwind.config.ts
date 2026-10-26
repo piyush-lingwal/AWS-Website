@@ -33,13 +33,13 @@ const config: Config = {
         accent: "#C084FC",
         secondary: "#8B5CF6",
         bg: {
-          DEFAULT: "#09090B",
-          surface: "#111827",
-          elevated: "#1F2937",
-          card: "#18181B",
+          DEFAULT: "#0B0A09",
+          surface: "#14100D",
+          elevated: "#1A1612",
+          card: "#120F0C",
         },
         border: {
-          DEFAULT: "#27272A",
+          DEFAULT: "#26201A",
         },
         muted: "#71717A",
         text: {
