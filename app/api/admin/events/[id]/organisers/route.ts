@@ -19,7 +19,7 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
-import { getEventIssueDate } from "@/lib/certificates/issue-date";
+import { getEventIssueDate, insertCertificateWithDisplayDate } from "@/lib/certificates/issue-date";
 import { mapLimit } from "@/lib/media/concurrency";
 import { isUuid } from "@/lib/auth/roles";
 import { validateOrganiser } from "@/lib/certificates/organiser";
@@ -107,7 +107,9 @@ async function issueOne(db: Db, event: EventInfo, rowNumber: number, raw: unknow
       return !!data;
     });
 
-    const insert = await db.from("certificates").insert({
+    // insertCertificateWithDisplayDate retries without event_date_display_snapshot
+    // if that column is not present yet (migrations applied out of order).
+    const insert = await insertCertificateWithDisplayDate(db, {
       certificate_id: certificateId,
       event_id: event.id,
       participant_id: participantId,

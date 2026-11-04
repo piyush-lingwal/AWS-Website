@@ -69,21 +69,20 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
             course,
             roll_no
           )`;
-      let dataRes = await supabase
-        .from("certificates")
-        .select(baseColumns + ", event_date_display_snapshot, certificate_kind, role_snapshot")
-        .eq("certificate_id", cleanId)
-        .maybeSingle();
-      // Fall back for a database missing the later snapshot/kind columns.
-      if (
-        dataRes.error &&
-        (isMissingColumnError(dataRes.error, "event_date_display_snapshot") ||
-          isMissingColumnError(dataRes.error, "certificate_kind") ||
-          isMissingColumnError(dataRes.error, "role_snapshot"))
-      ) {
-        dataRes = await supabase.from("certificates").select(baseColumns).eq("certificate_id", cleanId).maybeSingle();
+      // These columns come from separate migrations and may be applied out of
+      // order, so add each optional one independently and drop only the ones a
+      // given database is missing (rather than falling back to bare columns).
+      const optionalColumns = ["event_date_display_snapshot", "certificate_kind", "role_snapshot"];
+      let present = [...optionalColumns];
+      let data: Record<string, any> | null = null;
+      for (;;) {
+        const select = present.length ? baseColumns + ", " + present.join(", ") : baseColumns;
+        const res = await supabase.from("certificates").select(select).eq("certificate_id", cleanId).maybeSingle();
+        if (!res.error) { data = res.data as Record<string, any> | null; break; }
+        const missing = present.find((c) => isMissingColumnError(res.error, c));
+        if (!missing) { data = null; break; } // a real error, not a missing optional column
+        present = present.filter((c) => c !== missing);
       }
-      const data = dataRes.data as (Record<string, any>) | null;
 
       if (data) {
         const part = Array.isArray(data.participant)

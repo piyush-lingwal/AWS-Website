@@ -48,23 +48,20 @@ export async function GET(
     //    selected when available; fall back for a DB without the column yet.
     const columns = "id, certificate_id, event_id, recipient_name_snapshot, event_name_snapshot, event_date_snapshot, award_title, verification_url";
     // event_date_display_snapshot, certificate_kind and role_snapshot come from
-    // later migrations; fall back to the base columns if they are not present yet.
-    let certRes = await supabase
-      .from("certificates")
-      .select(columns + ", event_date_display_snapshot, certificate_kind, role_snapshot")
-      .eq("certificate_id", cleanId)
-      .maybeSingle();
-    if (
-      certRes.error &&
-      (isMissingColumnError(certRes.error, "event_date_display_snapshot") ||
-        isMissingColumnError(certRes.error, "certificate_kind") ||
-        isMissingColumnError(certRes.error, "role_snapshot"))
-    ) {
-      certRes = await supabase.from("certificates").select(columns).eq("certificate_id", cleanId).maybeSingle();
+    // separate migrations; request each optional column and drop only the ones
+    // this database is missing, so a missing display column never hides the kind/role.
+    let present = ["event_date_display_snapshot", "certificate_kind", "role_snapshot"];
+    let cert: Record<string, string | null> | null = null;
+    for (;;) {
+      const select = present.length ? columns + ", " + present.join(", ") : columns;
+      const res = await supabase.from("certificates").select(select).eq("certificate_id", cleanId).maybeSingle();
+      if (!res.error) { cert = res.data as Record<string, string | null> | null; break; }
+      const missing = present.find((c) => isMissingColumnError(res.error, c));
+      if (!missing) { cert = null; break; }
+      present = present.filter((c) => c !== missing);
     }
-    const cert = certRes.data as (Record<string, string | null>) | null;
 
-    if (certRes.error || !cert) {
+    if (!cert) {
       return NextResponse.json(
         { success: false, error: "Certificate not found." } satisfies ApiResponse,
         { status: 404 }
