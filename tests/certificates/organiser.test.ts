@@ -19,8 +19,8 @@ test("validateOrganiser rejects missing or bad fields", () => {
 });
 
 test("organiserRecognitionLine weaves in the role, or falls back", () => {
-  assert.equal(organiserRecognitionLine("Technical Lead"), "as Technical Lead of the Organising Team of");
-  assert.equal(organiserRecognitionLine("  Design  Lead  "), "as Design Lead of the Organising Team of");
+  assert.equal(organiserRecognitionLine("Technical Lead"), "as Technical Lead of the Organising Team for");
+  assert.equal(organiserRecognitionLine("  Design  Lead  "), "as Design Lead of the Organising Team for");
   assert.equal(organiserRecognitionLine(""), RECOGNITION_LINE.organiser);
   assert.equal(organiserRecognitionLine(null), RECOGNITION_LINE.organiser);
   assert.equal(organiserRecognitionLine(undefined), RECOGNITION_LINE.organiser);

@@ -79,7 +79,7 @@ export const RECOGNITION_LINE = {
 export function organiserRecognitionLine(role?: string | null): string {
   const clean = (role ?? "").trim().replace(/\s+/g, " ");
   if (!clean) return RECOGNITION_LINE.organiser;
-  const withRole = `as ${clean} of the Organising Team of`;
+  const withRole = `as ${clean} of the Organising Team for`;
   return withRole.length <= 48 ? withRole : RECOGNITION_LINE.organiser;
 }
 
