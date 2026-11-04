@@ -6,6 +6,12 @@ import {
   getCertificateAwardLayout,
 } from "@/lib/certificates/award-title";
 import { generateQRCodeDataUrl } from "@/lib/certificates/qr-generator";
+import {
+  CERTIFICATE_THEME_INFO,
+  DEFAULT_CERTIFICATE_THEME,
+  templateFileName,
+  type CertificateTheme,
+} from "@/lib/certificates/theme";
 
 interface CertificatePreviewProps {
   participantName: string;
@@ -16,6 +22,8 @@ interface CertificatePreviewProps {
   certificateId?: string;
   verificationUrl?: string;
   awardTitle?: string;
+  /** Colour theme of the event. Must match what the PDF uses (lib/certificates/svg-generator.ts). */
+  theme?: CertificateTheme;
 }
 
 function escapeXml(unsafe: string): string {
@@ -45,8 +53,10 @@ export function CertificatePreview({
   certificateId,
   verificationUrl,
   awardTitle,
+  theme = DEFAULT_CERTIFICATE_THEME,
 }: CertificatePreviewProps) {
   const normalizedAwardTitle = getAwardTitle(awardTitle);
+  const accent = CERTIFICATE_THEME_INFO[theme].accent;
   const [baseSvg, setBaseSvg] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [qr, setQr] = useState<{ certificateId: string; dataUrl: string } | null>(null);
@@ -56,9 +66,7 @@ export function CertificatePreview({
   useEffect(() => {
     let isCurrent = true;
     setIsLoading(true);
-    const templateName = normalizedAwardTitle
-      ? "Certificate-of-Excellence-Template.svg"
-      : "Certificate-Template.svg";
+    const templateName = templateFileName(theme, Boolean(normalizedAwardTitle));
 
     fetch(`/templates/${templateName}`)
       .then((res) => {
@@ -82,7 +90,7 @@ export function CertificatePreview({
     return () => {
       isCurrent = false;
     };
-  }, [normalizedAwardTitle]);
+  }, [normalizedAwardTitle, theme]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -131,7 +139,7 @@ export function CertificatePreview({
     const line3Xml = `<text x="${cx}" y="1568" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="34" font-weight="400" fill="#555555">in recognition of their participation in</text>`;
 
     // ── Line 4: Event Name ───────────────────────────────────────
-    const eventXml = `<text x="${cx}" y="1668" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${eventSize}" font-weight="700" fill="#FF9900">${escapeXml(event)}</text>`;
+    const eventXml = `<text x="${cx}" y="1668" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${eventSize}" font-weight="700" fill="${accent}">${escapeXml(event)}</text>`;
 
     // ── Line 5: "conducted by..." ────────────────────────────────
     const line5aXml = `<text x="${cx}" y="1762" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${line5Size}" font-weight="400" fill="#444444">conducted by AWS Student Builder Group at Tulas University</text>`;
@@ -196,11 +204,11 @@ export function CertificatePreview({
         <text x="${cx}" y="1347" text-anchor="middle" font-size="34" font-weight="400" fill="#555555">This certificate is proudly presented to</text>
         <text x="${cx}" y="1497" text-anchor="middle" font-size="${nameSize}" font-weight="700" fill="#161D26">${escapeXml(name)}</text>
         <text x="${cx}" y="1562" text-anchor="middle" font-size="32" font-weight="400" fill="#555555">for securing</text>
-        <rect x="${cx - rankWidth / 2 - 195}" y="${rankLineY}" width="140" height="5" fill="#FF9900"/>
-        <rect x="${cx + rankWidth / 2 + 55}" y="${rankLineY}" width="140" height="5" fill="#FF9900"/>
-        <text x="${cx}" y="${rankBaseline}" text-anchor="middle" font-size="${rankSize}" font-weight="700" fill="#FF9900">${escapeXml(rankText)}</text>
+        <rect x="${cx - rankWidth / 2 - 195}" y="${rankLineY}" width="140" height="5" fill="${accent}"/>
+        <rect x="${cx + rankWidth / 2 + 55}" y="${rankLineY}" width="140" height="5" fill="${accent}"/>
+        <text x="${cx}" y="${rankBaseline}" text-anchor="middle" font-size="${rankSize}" font-weight="700" fill="${accent}">${escapeXml(rankText)}</text>
         <text x="${cx}" y="${eventPrefixBaseline}" text-anchor="middle" font-size="32" font-weight="400" fill="#555555">${escapeXml(contextText)}</text>
-        <text x="${cx}" y="${eventBaseline}" text-anchor="middle" font-size="${eventSize}" font-weight="700" fill="#FF9900">${escapeXml(event)}</text>
+        <text x="${cx}" y="${eventBaseline}" text-anchor="middle" font-size="${eventSize}" font-weight="700" fill="${accent}">${escapeXml(event)}</text>
       `;
       const qrAndMetaXml = `
         <g id="dynamic-verification-meta">
@@ -254,6 +262,7 @@ export function CertificatePreview({
     verificationUrl,
     qrDataUrl,
     normalizedAwardTitle,
+    accent,
   ]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);

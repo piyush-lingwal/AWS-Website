@@ -45,6 +45,20 @@ test("templateFileName picks the pair for the theme", () => {
   assert.equal(templateFileName("purple", true), "Certificate-of-Excellence-Template-Purple.svg");
 });
 
+// The /verify page draws its own copy of the certificate (CertificatePreview) and the PDF is drawn
+// by svg-generator. A hard-coded accent in either one shows the wrong colour for a purple event.
+test("certificate renderers take their accent from the theme, never a hard-coded colour", () => {
+  for (const file of ["components/certificates/CertificatePreview.tsx", "lib/certificates/svg-generator.ts"]) {
+    const source = readFileSync(new URL(`../../${file}`, import.meta.url), "utf8");
+    for (const theme of CERTIFICATE_THEMES) {
+      const accent = CERTIFICATE_THEME_INFO[theme].accent;
+      assert.ok(!source.toLowerCase().includes(accent.toLowerCase()), `${file} hard-codes ${accent}`);
+    }
+    assert.ok(/CERTIFICATE_THEME_INFO\[theme\]\.accent/.test(source), `${file} does not use the theme accent`);
+    assert.ok(/templateFileName\(/.test(source) , `${file} does not pick its template via the theme`);
+  }
+});
+
 test("every theme has both template files on disk, using its own accent colour", () => {
   for (const theme of CERTIFICATE_THEMES) {
     const info = CERTIFICATE_THEME_INFO[theme];

@@ -4,6 +4,7 @@ import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { CertificatePreview } from "@/components/certificates/CertificatePreview";
+import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
 import {
   ShieldCheck,
   Award,
@@ -107,6 +108,8 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           issuedBy: "AWS Student Builder Group • Tulas University",
           pdfUrl: data.pdf_url || `/api/certificates/${data.certificate_id}`,
           verificationUrl: data.verification_url,
+          // Same lookup the PDF uses, so the preview and the download always match.
+          theme: await getEventCertificateTheme(supabase, data.event_id),
         };
       }
     }
@@ -255,6 +258,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                     certificateId={cert.certificateId}
                     verificationUrl={cert.verificationUrl || undefined}
                     awardTitle={cert.awardTitle || undefined}
+                    theme={cert.theme}
                   />
                 </div>
               </div>
