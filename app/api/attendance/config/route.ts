@@ -9,6 +9,7 @@
 
 import { NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { isMissingColumnError } from "@/lib/certificates/event-theme";
 import type { ApiResponse, PortalConfigResponse } from "@/types/certificate";
 
 export const dynamic = "force-dynamic";
@@ -47,12 +48,33 @@ export async function GET() {
     return NextResponse.json({ success: true, data: response } satisfies ApiResponse<PortalConfigResponse>);
   }
 
-  // 3. Fetch the active event details
-  const { data: event, error: eventError } = await supabase
-    .from("events")
-    .select("id, name, description, event_date, event_timing, speaker_name, attendance_open")
-    .eq("id", config.active_event_id)
-    .single();
+  // 3. Fetch the active event details. event_end_date is optional: if the
+  //    migration is not applied yet, fall back to the select without it.
+  const columnsWithEnd = "id, name, description, event_date, event_end_date, event_timing, speaker_name, attendance_open";
+  const columnsNoEnd = "id, name, description, event_date, event_timing, speaker_name, attendance_open";
+  type ActiveEvent = {
+    id: string;
+    name: string;
+    description: string | null;
+    event_date: string | null;
+    event_end_date?: string | null;
+    event_timing: string | null;
+    speaker_name: string | null;
+    attendance_open: boolean | null;
+  };
+  let event: ActiveEvent | null;
+  let eventError;
+  {
+    const res = await supabase.from("events").select(columnsWithEnd).eq("id", config.active_event_id).single();
+    event = res.data as ActiveEvent | null;
+    eventError = res.error;
+  }
+
+  if (eventError && isMissingColumnError(eventError, "event_end_date")) {
+    const retry = await supabase.from("events").select(columnsNoEnd).eq("id", config.active_event_id).single();
+    event = retry.data as ActiveEvent | null;
+    eventError = retry.error;
+  }
 
   if (eventError || !event) {
     console.error("[API/attendance/config] Event fetch error:", eventError);
@@ -70,6 +92,7 @@ export async function GET() {
       name: event.name,
       description: event.description,
       eventDate: event.event_date,
+      eventEndDate: event.event_end_date ?? null,
       eventTiming: event.event_timing,
       speakerName: event.speaker_name,
     },

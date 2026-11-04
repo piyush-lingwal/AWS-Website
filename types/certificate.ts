@@ -190,6 +190,7 @@ export interface PortalConfigResponse {
     name: string;
     description: string | null;
     eventDate: string | null;
+    eventEndDate?: string | null;   // Optional last day of a multi-day event (YYYY-MM-DD)
     eventTiming: string | null;
     speakerName: string | null;
   } | null;
