@@ -113,6 +113,7 @@ export interface CertificateGenerationInput {
   signerTitle?: string;        // Custom signer title; falls back to default
   theme?: CertificateTheme;    // Colour theme of the event; falls back to orange
   kind?: CertificateKind;      // "organiser" = Certificate of Appreciation; ignored with an award title
+  role?: string | null;        // Organiser's role, shown on the Certificate of Appreciation
 }
 
 /**

@@ -17,6 +17,7 @@ import { formatEventDate } from "@/lib/certificates/event-date";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TopPerformerImportDialog } from "@/components/features/TopPerformerImportDialog";
 import { AttendeeImportDialog } from "@/components/features/AttendeeImportDialog";
+import { OrganiserIssueDialog } from "@/components/features/OrganiserIssueDialog";
 import { CertificateThemePicker } from "@/components/features/CertificateThemePicker";
 import {
   DEFAULT_CERTIFICATE_THEME,
@@ -1966,6 +1967,15 @@ function AdminPageContent() {
                       eventDate={currentViewEvent.event_date?.trim() ? currentViewEvent.event_date : null}
                       existingEmails={participants.map((p) => p.email)}
                       onImported={() => fetchParticipants(currentViewEvent.id)}
+                    />
+
+                    {/* Issue Certificates of Appreciation to the organising team */}
+                    <OrganiserIssueDialog
+                      key={`org-${currentViewEvent.id}`}
+                      eventId={currentViewEvent.id}
+                      eventName={currentViewEvent.name}
+                      eventHasDate={Boolean(currentViewEvent.event_date?.trim())}
+                      onIssued={() => fetchParticipants(currentViewEvent.id)}
                     />
 
                     {/* Export CSV Button */}

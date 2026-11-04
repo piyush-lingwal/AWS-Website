@@ -71,11 +71,16 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           )`;
       let dataRes = await supabase
         .from("certificates")
-        .select(baseColumns + ", event_date_display_snapshot")
+        .select(baseColumns + ", event_date_display_snapshot, certificate_kind, role_snapshot")
         .eq("certificate_id", cleanId)
         .maybeSingle();
-      // Fall back for a database without the display column yet.
-      if (dataRes.error && isMissingColumnError(dataRes.error, "event_date_display_snapshot")) {
+      // Fall back for a database missing the later snapshot/kind columns.
+      if (
+        dataRes.error &&
+        (isMissingColumnError(dataRes.error, "event_date_display_snapshot") ||
+          isMissingColumnError(dataRes.error, "certificate_kind") ||
+          isMissingColumnError(dataRes.error, "role_snapshot"))
+      ) {
         dataRes = await supabase.from("certificates").select(baseColumns).eq("certificate_id", cleanId).maybeSingle();
       }
       const data = dataRes.data as (Record<string, any>) | null;
@@ -118,6 +123,8 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           theme: await getEventCertificateTheme(supabase, data.event_id),
           // Stored display string (single day or range), or the start date for old certificates.
           eventDateDisplay: certificateDisplayDate(data),
+          kind: data.certificate_kind === "organiser" ? "organiser" : null,
+          role: data.role_snapshot ?? null,
         };
       }
     }
@@ -159,6 +166,12 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold self-start">
                       <Award className="w-3.5 h-3.5" />
                       Certificate of Excellence - {cert.awardTitle}
+                    </div>
+                  )}
+                  {cert.kind === "organiser" && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 text-[#C4B5FD] text-xs font-semibold self-start">
+                      <Award className="w-3.5 h-3.5" />
+                      Certificate of Appreciation{cert.role ? ` - ${cert.role}` : ""}
                     </div>
                   )}
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold self-start sm:self-center">
@@ -267,6 +280,8 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                     verificationUrl={cert.verificationUrl || undefined}
                     awardTitle={cert.awardTitle || undefined}
                     theme={cert.theme}
+                    kind={cert.kind || undefined}
+                    role={cert.role || undefined}
                   />
                 </div>
               </div>

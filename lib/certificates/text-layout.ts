@@ -71,6 +71,19 @@ export const RECOGNITION_LINE = {
 } as const;
 
 /**
+ * The organiser recognition line, with the role woven in when there is one:
+ *   role "Technical Lead" -> "as Technical Lead of the Organising Team of"
+ *   no role              -> "as a member of the Organising Team of"
+ * Overly long roles fall back to the generic line so the certificate never overflows.
+ */
+export function organiserRecognitionLine(role?: string | null): string {
+  const clean = (role ?? "").trim().replace(/\s+/g, " ");
+  if (!clean) return RECOGNITION_LINE.organiser;
+  const withRole = `as ${clean} of the Organising Team of`;
+  return withRole.length <= 48 ? withRole : RECOGNITION_LINE.organiser;
+}
+
+/**
  * Largest font size, up to `spec.size`, at which `charCount` monospaced
  * characters fit inside `spec.maxWidth`. Never below 1.
  */

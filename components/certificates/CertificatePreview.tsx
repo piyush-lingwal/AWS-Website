@@ -14,7 +14,7 @@ import {
   type CertificateKind,
   type CertificateTheme,
 } from "@/lib/certificates/theme";
-import { CERT_TEXT, MONO_ADVANCE_EM, RECOGNITION_LINE, fitMonoSize } from "@/lib/certificates/text-layout";
+import { CERT_TEXT, MONO_ADVANCE_EM, RECOGNITION_LINE, fitMonoSize, organiserRecognitionLine } from "@/lib/certificates/text-layout";
 
 interface CertificatePreviewProps {
   participantName: string;
@@ -29,6 +29,8 @@ interface CertificatePreviewProps {
   theme?: CertificateTheme;
   /** "organiser" shows the Certificate of Appreciation. Ignored when awardTitle is set. */
   kind?: CertificateKind;
+  /** Organiser's role (e.g. "Technical Lead"), woven into the organiser line. */
+  role?: string;
 }
 
 function escapeXml(unsafe: string): string {
@@ -51,6 +53,7 @@ export function CertificatePreview({
   awardTitle,
   theme = DEFAULT_CERTIFICATE_THEME,
   kind,
+  role,
 }: CertificatePreviewProps) {
   const normalizedAwardTitle = getAwardTitle(awardTitle);
   const resolvedKind = resolveCertificateKind(Boolean(normalizedAwardTitle), kind);
@@ -137,7 +140,7 @@ export function CertificatePreview({
     const nameXml = `<text x="${cx}" y="1460" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${nameSize}" font-weight="700" fill="#161D26">${escapeXml(name)}</text>`;
 
     // ── Line 3: "in recognition of their participation in" ──────
-    const line3Xml = `<text x="${cx}" y="1568" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${CERT_TEXT.recognition.size}" font-weight="400" fill="#555555">${resolvedKind === "organiser" ? RECOGNITION_LINE.organiser : RECOGNITION_LINE.participation}</text>`;
+    const line3Xml = `<text x="${cx}" y="1568" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${CERT_TEXT.recognition.size}" font-weight="400" fill="#555555">${escapeXml(resolvedKind === "organiser" ? organiserRecognitionLine(role) : RECOGNITION_LINE.participation)}</text>`;
 
     // ── Line 4: Event Name ───────────────────────────────────────
     const eventXml = `<text x="${cx}" y="1668" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${eventSize}" font-weight="700" fill="${accent}">${escapeXml(event)}</text>`;
@@ -261,6 +264,7 @@ export function CertificatePreview({
     normalizedAwardTitle,
     accent,
     resolvedKind,
+    role,
   ]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
