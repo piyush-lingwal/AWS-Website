@@ -6,6 +6,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
+import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import type { ApiResponse } from "@/types/certificate";
 
@@ -121,6 +122,7 @@ export async function POST(
     });
     const verificationUrl = getVerificationUrl(certificateId);
 
+    const theme = await getEventCertificateTheme(admin, event.id);
     const pdfResult = await generateCertificatePdf({
       certificateId,
       participantName: topPerformer.full_name,
@@ -128,6 +130,7 @@ export async function POST(
       eventDate: event.event_date,
       awardTitle,
       verificationUrl,
+      theme,
     });
 
     if (!pdfResult.success || !pdfResult.pdfBuffer) {

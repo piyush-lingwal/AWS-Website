@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
+import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
 import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
 import type { ApiResponse } from "@/types/certificate";
 
@@ -45,7 +46,7 @@ export async function GET(
     // 1. Fetch certificate record from DB
     const { data: cert, error: certError } = await supabase
       .from("certificates")
-      .select("id, certificate_id, recipient_name_snapshot, event_name_snapshot, event_date_snapshot, award_title, verification_url")
+      .select("id, certificate_id, event_id, recipient_name_snapshot, event_name_snapshot, event_date_snapshot, award_title, verification_url")
       .eq("certificate_id", cleanId)
       .maybeSingle();
 
@@ -56,7 +57,9 @@ export async function GET(
       );
     }
 
-    // 2. Generate PDF using immutable snapshot fields
+    // 2. Generate PDF using immutable snapshot fields. The colour follows the
+    //    event's current theme (orange when none is set).
+    const theme = await getEventCertificateTheme(supabase, cert.event_id);
     const pdfResult = await generateCertificatePdf({
       certificateId: cert.certificate_id,
       participantName: cert.recipient_name_snapshot,
@@ -64,6 +67,7 @@ export async function GET(
       eventDate: cert.event_date_snapshot,
       awardTitle: cert.award_title || undefined,
       verificationUrl: cert.verification_url || undefined,
+      theme,
     });
 
     if (!pdfResult.success || !pdfResult.pdfBuffer) {

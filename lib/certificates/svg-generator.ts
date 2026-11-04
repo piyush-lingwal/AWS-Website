@@ -19,12 +19,20 @@ import {
   getAwardTitle,
   getCertificateAwardLayout,
 } from "./award-title";
+import {
+  CERTIFICATE_THEME_INFO,
+  DEFAULT_CERTIFICATE_THEME,
+  templateFileName,
+  type CertificateTheme,
+} from "./theme";
 
 export interface SvgCertificateInput {
   participantName: string;
   eventTitle: string;
   eventDate: string;
   awardTitle?: string;
+  /** Colour theme (template pair + accent). Defaults to orange. */
+  theme?: CertificateTheme;
   verificationUrl?: string;
   signerName?: string;
   signerTitle?: string;
@@ -75,11 +83,14 @@ let cachedSignatureDataUri: string | null = null;
 
 /**
  * Loads the selected SVG template from disk for each generation.
+ * An award title selects the Certificate of Excellence design; `theme`
+ * selects the colour variant of whichever design that is.
  */
-export async function getBaseSvgTemplate(awardTitle?: string): Promise<string> {
-  const templateName = getAwardTitle(awardTitle)
-    ? "Certificate-of-Excellence-Template.svg"
-    : "Certificate-Template.svg";
+export async function getBaseSvgTemplate(
+  awardTitle?: string,
+  theme: CertificateTheme = DEFAULT_CERTIFICATE_THEME
+): Promise<string> {
+  const templateName = templateFileName(theme, Boolean(getAwardTitle(awardTitle)));
   const templatePath = path.join(
     process.cwd(),
     "public",
@@ -265,9 +276,12 @@ export async function generateCertificateSvg(
   input: SvgCertificateInput
 ): Promise<string> {
   const awardTitle = getAwardTitle(input.awardTitle);
+  const theme = input.theme ?? DEFAULT_CERTIFICATE_THEME;
+  // Dynamic accent text (event name, rank lines) matches the template's coloured panel.
+  const accent = CERTIFICATE_THEME_INFO[theme].accent;
   const [{ boldFont, regFont }, baseSvg, signatureDataUri] = await Promise.all([
     getFonts(),
-    getBaseSvgTemplate(awardTitle),
+    getBaseSvgTemplate(awardTitle, theme),
     input.signatureDataUri ? Promise.resolve(input.signatureDataUri) : getSignatureDataUri(),
   ]);
 
@@ -330,12 +344,12 @@ export async function generateCertificateSvg(
       cx,
       rankBaseline,
       rankSize,
-      "#FF9900"
+      accent
     );
     const rankLineY = rankBaseline - rankSize * 0.38;
     const rankDecorations = `
-      <rect x="${cx - rankWidth / 2 - 195}" y="${rankLineY}" width="140" height="5" fill="#FF9900"/>
-      <rect x="${cx + rankWidth / 2 + 55}" y="${rankLineY}" width="140" height="5" fill="#FF9900"/>
+      <rect x="${cx - rankWidth / 2 - 195}" y="${rankLineY}" width="140" height="5" fill="${accent}"/>
+      <rect x="${cx + rankWidth / 2 + 55}" y="${rankLineY}" width="140" height="5" fill="${accent}"/>
     `;
 
     const eventPrefix = contextText;
@@ -356,7 +370,7 @@ export async function generateCertificateSvg(
       cx,
       eventBaseline,
       eventSize,
-      "#FF9900"
+      accent
     );
 
     const details = "conducted by AWS Student Builder Group at Tulas University";
@@ -436,9 +450,9 @@ export async function generateCertificateSvg(
   const line3Size = getFittingFontSize(regFont, line3, 34, 1180);
   const line3Path = textToSvgPath(regFont, line3, cx, 1568, line3Size, "#555555");
 
-  // 4. Event Name (bold, amber)
+  // 4. Event Name (bold, theme accent)
   const eventSize = getFittingFontSize(boldFont, eventTitle, 52, 1200);
-  const eventPath = textToSvgPath(boldFont, eventTitle, cx, 1668, eventSize, "#FF9900");
+  const eventPath = textToSvgPath(boldFont, eventTitle, cx, 1668, eventSize, accent);
 
   // 5. "conducted by AWS Student Builder Group at Tulas University"
   const line5 = "conducted by AWS Student Builder Group at Tulas University";

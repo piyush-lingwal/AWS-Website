@@ -7,6 +7,8 @@
 //
 // ============================================================
 
+import type { CertificateTheme } from "@/lib/certificates/theme";
+
 // ============================================================
 // Database Models
 // ============================================================
@@ -28,6 +30,8 @@ export interface DbEvent {
   speaker_name: string | null;
   attendance_open: boolean;
   event_type?: string | null;       // Category: "Workshop" | "Hackathon" | "Quiz" | "Event" | custom
+  /** Certificate colour theme. Absent/null until the certificate_theme migration is applied. */
+  certificate_theme?: CertificateTheme | null;
   /** CDN URL of the event's cover photo (Media Portal), or null if none has been uploaded. */
   cover_url: string | null;
 }
@@ -103,6 +107,7 @@ export interface CertificateGenerationInput {
   achievementText?: string;    // Custom achievement text; falls back to default
   signerName?: string;         // Custom signer name; falls back to default
   signerTitle?: string;        // Custom signer title; falls back to default
+  theme?: CertificateTheme;    // Colour theme of the event; falls back to orange
 }
 
 /**
@@ -200,6 +205,7 @@ export interface AdminEventRequest {
   attendanceOpen?: boolean;
   setAsActive?: boolean;       // If true, sets this event as the active portal event
   eventType?: string | null;   // Category: "Workshop" | "Hackathon" | "Quiz" | "Event" | custom
+  certificateTheme?: CertificateTheme; // Colour of this event's certificates
 }
 
 /**

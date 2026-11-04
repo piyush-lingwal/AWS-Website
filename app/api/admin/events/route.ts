@@ -6,6 +6,12 @@
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { isMissingColumnError, THEME_MIGRATION_HINT } from "@/lib/certificates/event-theme";
+import {
+  DEFAULT_CERTIFICATE_THEME,
+  validateCertificateTheme,
+  type CertificateTheme,
+} from "@/lib/certificates/theme";
 import type { ApiResponse, DbEvent, AdminEventRequest } from "@/types/certificate";
 
 /**
@@ -73,6 +79,13 @@ export async function POST(request: NextRequest) {
     if (!body.eventTiming?.trim()) errors.eventTiming = "Event timing is required.";
   }
 
+  let requestedTheme: CertificateTheme | undefined;
+  if (body.certificateTheme !== undefined) {
+    const theme = validateCertificateTheme(body.certificateTheme);
+    if (theme.ok) requestedTheme = theme.value;
+    else errors.certificateTheme = theme.error;
+  }
+
   if (Object.keys(errors).length > 0) {
     return NextResponse.json(
       { success: false, error: "Validation failed.", data: errors } satisfies ApiResponse,
@@ -90,12 +103,28 @@ export async function POST(request: NextRequest) {
     attendance_open: body.attendanceOpen ?? false,
     event_type: body.eventType?.trim() || null,
   };
+  if (requestedTheme) insertPayload.certificate_theme = requestedTheme;
 
   let { data: newEvent, error: insertError } = await supabase
     .from("events")
     .insert(insertPayload)
     .select("*")
     .single();
+
+  // The certificate_theme migration has not been applied yet. Saving the default
+  // colour without the column changes nothing; any other colour must not be dropped silently.
+  if (insertError && isMissingColumnError(insertError, "certificate_theme")) {
+    if (requestedTheme && requestedTheme !== DEFAULT_CERTIFICATE_THEME) {
+      return NextResponse.json(
+        { success: false, error: THEME_MIGRATION_HINT } satisfies ApiResponse,
+        { status: 409 }
+      );
+    }
+    delete insertPayload.certificate_theme;
+    const retry = await supabase.from("events").insert(insertPayload).select("*").single();
+    newEvent = retry.data;
+    insertError = retry.error;
+  }
 
   // If insert failed because 'event_type' column does not exist yet in database schema cache
   if (insertError && (insertError.code === "PGRST204" || insertError.message?.includes("event_type"))) {

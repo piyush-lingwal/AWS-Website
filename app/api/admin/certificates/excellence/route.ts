@@ -10,6 +10,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
+import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import type { ApiResponse } from "@/types/certificate";
 import { cleanFullName } from "@/lib/utils";
@@ -176,6 +177,7 @@ export async function POST(request: NextRequest) {
 
     const verificationUrl = getVerificationUrl(certificateId);
     const participantName = cleanFullName(participant.full_name);
+    const theme = await getEventCertificateTheme(supabase, event.id);
     const pdfResult = await generateCertificatePdf({
       participantName,
       eventTitle: event.name,
@@ -183,6 +185,7 @@ export async function POST(request: NextRequest) {
       certificateId,
       awardTitle,
       verificationUrl,
+      theme,
     });
 
     if (!pdfResult.success || !pdfResult.pdfBuffer) {

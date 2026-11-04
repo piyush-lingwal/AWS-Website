@@ -17,6 +17,7 @@ import { createHash } from "node:crypto";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
+import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import type {
   ApiResponse,
@@ -242,13 +243,15 @@ export async function POST(request: NextRequest) {
 
     const verificationUrl = getVerificationUrl(certificateId);
 
-    // Generate PDF
+    // Generate PDF in the event's colour theme
+    const theme = await getEventCertificateTheme(supabase, eventId);
     const pdfResult = await generateCertificatePdf({
       participantName: fullName,
       eventTitle: event.name,
       eventDate: event.event_date,
       certificateId,
       verificationUrl,
+      theme,
     });
 
     if (!pdfResult.success || !pdfResult.pdfBuffer) {

@@ -6,6 +6,8 @@
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { isMissingColumnError, THEME_MIGRATION_HINT } from "@/lib/certificates/event-theme";
+import { DEFAULT_CERTIFICATE_THEME, validateCertificateTheme } from "@/lib/certificates/theme";
 import type { ApiResponse, DbEvent, AdminEventRequest } from "@/types/certificate";
 
 /**
@@ -89,6 +91,18 @@ export async function PUT(
   if (body.attendanceOpen !== undefined) updatePayload.attendance_open = body.attendanceOpen;
   if (body.eventType !== undefined) updatePayload.event_type = body.eventType?.trim() || null;
 
+  let requestedTheme: ReturnType<typeof validateCertificateTheme> | null = null;
+  if (body.certificateTheme !== undefined) {
+    requestedTheme = validateCertificateTheme(body.certificateTheme);
+    if (!requestedTheme.ok) {
+      return NextResponse.json(
+        { success: false, error: "Validation failed.", data: { certificateTheme: requestedTheme.error } } satisfies ApiResponse,
+        { status: 400 }
+      );
+    }
+    updatePayload.certificate_theme = requestedTheme.value;
+  }
+
   if (Object.keys(updatePayload).length === 0 && !body.setAsActive) {
     return NextResponse.json(
       { success: false, error: "No fields to update." } satisfies ApiResponse,
@@ -106,6 +120,30 @@ export async function PUT(
       .eq("id", id)
       .select("*")
       .single();
+
+    // The certificate_theme migration has not been applied yet. Saving the default
+    // colour without the column changes nothing; any other colour must not be dropped silently.
+    if (updateError && isMissingColumnError(updateError, "certificate_theme")) {
+      if (requestedTheme?.ok && requestedTheme.value !== DEFAULT_CERTIFICATE_THEME) {
+        return NextResponse.json(
+          { success: false, error: THEME_MIGRATION_HINT } satisfies ApiResponse,
+          { status: 409 }
+        );
+      }
+      delete updatePayload.certificate_theme;
+      if (Object.keys(updatePayload).length > 0) {
+        const retry = await supabase
+          .from("events")
+          .update(updatePayload)
+          .eq("id", id)
+          .select("*")
+          .single();
+        data = retry.data;
+        updateError = retry.error;
+      } else {
+        updateError = null;
+      }
+    }
 
     // If update failed because 'event_type' column does not exist yet in database schema cache
     if (updateError && (updateError.code === "PGRST204" || updateError.message?.includes("event_type"))) {

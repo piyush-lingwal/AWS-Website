@@ -17,6 +17,7 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
+import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
 import { sendCertificateEmail } from "@/lib/email";
 import type { ApiResponse } from "@/types/certificate";
 
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
         .select(`
           id,
           certificate_id,
+          event_id,
           recipient_name_snapshot,
           event_name_snapshot,
           event_date_snapshot,
@@ -107,7 +109,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Generate the PDF
+      // Generate the PDF in the event's colour theme
+      const theme = await getEventCertificateTheme(supabase, cert.event_id);
       const pdfResult = await generateCertificatePdf({
         certificateId: cert.certificate_id,
         participantName: cert.recipient_name_snapshot,
@@ -115,6 +118,7 @@ export async function POST(request: NextRequest) {
         eventDate: cert.event_date_snapshot,
         awardTitle: cert.award_title || undefined,
         verificationUrl: cert.verification_url || undefined,
+        theme,
       });
 
       if (!pdfResult.success || !pdfResult.pdfBuffer) {
@@ -208,6 +212,9 @@ export async function POST(request: NextRequest) {
       let failedCount = 0;
       const errors: string[] = [];
 
+      // One event, one theme: look it up once for the whole batch.
+      const theme = await getEventCertificateTheme(supabase, eventId);
+
       // Process with concurrency limit (2 at a time)
       for (const cert of certs) {
         const participant = Array.isArray(cert.participant)
@@ -228,6 +235,7 @@ export async function POST(request: NextRequest) {
             eventDate: cert.event_date_snapshot,
             awardTitle: cert.award_title || undefined,
             verificationUrl: cert.verification_url || undefined,
+            theme,
           });
 
           if (!pdfResult.success || !pdfResult.pdfBuffer) {

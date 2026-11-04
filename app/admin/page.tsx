@@ -13,6 +13,12 @@ import { getAwardTitle } from "@/lib/certificates/award-title";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TopPerformerImportDialog } from "@/components/features/TopPerformerImportDialog";
 import { AttendeeImportDialog } from "@/components/features/AttendeeImportDialog";
+import { CertificateThemePicker } from "@/components/features/CertificateThemePicker";
+import {
+  DEFAULT_CERTIFICATE_THEME,
+  parseCertificateTheme,
+  type CertificateTheme,
+} from "@/lib/certificates/theme";
 import {
   ArrowRight,
   Calendar,
@@ -170,6 +176,7 @@ function AdminPageContent() {
     setAsActive: false,
     eventType: "" as string,
     customEventType: "",
+    certificateTheme: DEFAULT_CERTIFICATE_THEME as CertificateTheme,
   });
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
@@ -457,6 +464,7 @@ function AdminPageContent() {
       setAsActive: false,
       eventType: "",
       customEventType: "",
+      certificateTheme: DEFAULT_CERTIFICATE_THEME,
     });
     setIsTBA(false);
     setEditingEvent(null);
@@ -510,6 +518,7 @@ function AdminPageContent() {
       setAsActive: portalConfig?.active_event_id === event.id,
       eventType: eventTypeSaved ? (isKnown ? eventTypeSaved : "Custom") : "",
       customEventType: isKnown ? "" : eventTypeSaved,
+      certificateTheme: parseCertificateTheme(event.certificate_theme),
     });
     setFormError("");
     setShowForm(true);
@@ -3612,6 +3621,13 @@ function AdminPageContent() {
                       </div>
                     )}
                   </div>
+
+                  {/* Certificate Color */}
+                  <CertificateThemePicker
+                    value={formData.certificateTheme}
+                    onChange={(certificateTheme) => setFormData((prev) => ({ ...prev, certificateTheme }))}
+                    disabled={formSubmitting}
+                  />
 
                   {/* Description */}
                   <div className="space-y-2">

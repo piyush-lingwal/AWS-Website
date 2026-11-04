@@ -170,6 +170,7 @@ export async function generateCertificatePdf(
       eventTitle: input.eventTitle.trim(),
       eventDate: formattedDate,
       awardTitle,
+      theme: input.theme,
       signerName: input.signerName?.trim(),
       signerTitle: input.signerTitle?.trim(),
       certificateId,
