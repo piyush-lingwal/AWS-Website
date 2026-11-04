@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import type { ApiResponse, AdminParticipantRow } from "@/types/certificate";
 import { cleanFullName } from "@/lib/utils";
+import { chunkRanges, DB_PAGE_LIMIT } from "@/lib/admin/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -56,13 +57,15 @@ export async function GET(
       );
     }
 
-    // 2. Fetch attendance rows joined with participants & certificates
+    // 2. Fetch attendance rows joined with participants & certificates.
     // Excellence certificates have a NULL attendance_id, so they cannot join
     // through attendance even though they share the participant and event.
-    const { data: attendanceRows, error: attError, count } = await supabase
-      .from("attendance")
-      .select(
-        `
+    //
+    // PostgREST silently caps one response at 1000 rows, so a bigger event would
+    // lose attendees without any error. Read the first chunk with an exact count,
+    // then fetch the remaining chunks. `id` is a tie-breaker so chunks never
+    // overlap or skip rows when many submissions share a timestamp.
+    const selectColumns = `
         id,
         submitted_at,
         participant:participants!inner (
@@ -75,11 +78,32 @@ export async function GET(
         certificate:certificates (
           certificate_id
         )
-      `,
-        { count: "exact" }
-      )
-      .eq("event_id", eventId)
-      .order("submitted_at", { ascending: false });
+      `;
+    const fetchChunk = (from: number, to: number) =>
+      supabase
+        .from("attendance")
+        .select(selectColumns, { count: "exact" })
+        .eq("event_id", eventId)
+        .order("submitted_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to);
+
+    const first = await fetchChunk(0, DB_PAGE_LIMIT - 1);
+    let attError = first.error;
+    const count = first.count;
+    const attendanceRows: any[] = first.data ? [...first.data] : [];
+
+    if (!attError && count && count > attendanceRows.length) {
+      const rest = chunkRanges(count).slice(1);
+      const chunks = await Promise.all(rest.map(([from, to]) => fetchChunk(from, to)));
+      for (const chunk of chunks) {
+        if (chunk.error) {
+          attError = chunk.error;
+          break;
+        }
+        attendanceRows.push(...(chunk.data || []));
+      }
+    }
 
     if (attError) {
       console.error("[API/admin/events/participants] Fetch error:", attError);

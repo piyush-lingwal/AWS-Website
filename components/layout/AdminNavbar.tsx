@@ -2,79 +2,59 @@
 
 import { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Calendar,
   Users,
   GraduationCap,
-  SlidersHorizontal,
   LayoutDashboard,
   Menu,
   X,
   LogOut,
+  Camera,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminTabHref, parseAdminTab, type AdminTab } from "@/lib/admin/tabs";
+import { useAdminPortal } from "@/components/admin/AdminPortalProvider";
+import { AttendanceStatus } from "@/components/admin/AttendanceStatus";
 
-type AdminTab = "overview" | "events" | "registrations" | "team" | "settings";
+type NavLink = { id: string; label: string; href: string; icon: React.ComponentType<{ className?: string }> };
 
-const NAV_LINKS: { id: AdminTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const TAB_LINKS: { id: AdminTab; label: string; icon: NavLink["icon"] }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "events", label: "Events", icon: Calendar },
   { id: "registrations", label: "Registrations", icon: Users },
   { id: "team", label: "Team", icon: GraduationCap },
-  { id: "settings", label: "Settings", icon: SlidersHorizontal },
+];
+
+// The five tabs live on /admin; Media has its own page but belongs in the same navigation.
+const NAV_LINKS: NavLink[] = [
+  ...TAB_LINKS.map((t) => ({ ...t, href: adminTabHref(t.id) })),
+  { id: "media", label: "Media", href: "/admin/media-members", icon: Camera },
 ];
 
 function AdminNavbarContent() {
-  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const { logout } = useAdminPortal();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const mobileDrawerRef = useRef<HTMLElement>(null);
 
-  // Sync from URL search params
-  useEffect(() => {
-    const tab = searchParams.get("tab") as AdminTab | null;
-    if (tab && NAV_LINKS.some((l) => l.id === tab)) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
-
-  // Sync from custom window event
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const custom = e as CustomEvent<AdminTab>;
-      if (custom.detail) {
-        setActiveTab(custom.detail);
-      }
-    };
-    window.addEventListener("admin-tab-change", handler);
-    return () => window.removeEventListener("admin-tab-change", handler);
-  }, []);
-
-  const handleTabClick = useCallback(
-    (tabId: AdminTab) => {
-      setIsMobileNavOpen(false);
-      setActiveTab(tabId);
-      if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        url.searchParams.set("tab", tabId);
-        window.history.replaceState({}, "", url.toString());
-        window.dispatchEvent(new CustomEvent("admin-tab-change", { detail: tabId }));
-      }
-      router.push(`/admin?tab=${tabId}`, { scroll: false });
-    },
-    [router]
-  );
+  // The URL is the only source of truth for the active item, so Back, refresh and shared links all agree.
+  const activeId: string | null = pathname.startsWith("/admin/media-members")
+    ? "media"
+    : pathname === "/admin"
+      ? parseAdminTab(searchParams.get("tab"))
+      : null;
 
   useEffect(() => {
     if (!isMobileNavOpen) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    mobileDrawerRef.current?.querySelector<HTMLButtonElement>("nav button")?.focus();
+    mobileDrawerRef.current?.querySelector<HTMLAnchorElement>("nav a")?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setIsMobileNavOpen(false);
@@ -135,11 +115,12 @@ function AdminNavbarContent() {
           >
             {NAV_LINKS.map((link) => {
               const Icon = link.icon;
-              const isActive = activeTab === link.id;
+              const isActive = activeId === link.id;
               return (
-                <button
+                <Link
                   key={link.id}
-                  onClick={() => handleTabClick(link.id)}
+                  href={link.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "h-8 sm:h-8.5 px-2.5 sm:px-3 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0",
                     isActive
@@ -150,10 +131,22 @@ function AdminNavbarContent() {
                 >
                   <Icon className="w-3.5 h-3.5" />
                   <span>{link.label}</span>
-                </button>
+                </Link>
               );
             })}
           </nav>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <AttendanceStatus />
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.1] bg-white/[0.04] text-[#A1A1AA] transition-colors hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]"
+              aria-label="Sign out of Admin Portal"
+              title="Sign Out"
+            >
+              <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <div className="flex lg:hidden h-14 items-center justify-between gap-3 rounded-2xl bg-[#0C0C12]/95 border border-white/10 shadow-lg px-3.5 backdrop-blur-[16px]">
           <button
@@ -167,12 +160,12 @@ function AdminNavbarContent() {
           >
             <Menu className="h-5 w-5" aria-hidden="true" />
           </button>
-          <span className="min-w-0 flex-1 truncate text-center text-sm font-semibold text-white">
-            Admin Portal
-          </span>
+          <div className="flex min-w-0 flex-1 justify-center">
+            <AttendanceStatus align="center" />
+          </div>
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("admin-logout-request"))}
+            onClick={() => void logout()}
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[#A1A1AA] hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
             aria-label="Sign out of Admin Portal"
             title="Sign Out"
@@ -218,12 +211,12 @@ function AdminNavbarContent() {
             <nav aria-label="Admin functions navigation" className="flex flex-col gap-1.5">
               {NAV_LINKS.map((link) => {
                 const Icon = link.icon;
-                const isActive = activeTab === link.id;
+                const isActive = activeId === link.id;
                 return (
-                  <button
+                  <Link
                     key={link.id}
-                    type="button"
-                    onClick={() => handleTabClick(link.id)}
+                    href={link.href}
+                    onClick={() => setIsMobileNavOpen(false)}
                     className={cn(
                       "flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]",
                       isActive
@@ -234,7 +227,7 @@ function AdminNavbarContent() {
                   >
                     <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                     <span>{link.label}</span>
-                  </button>
+                  </Link>
                 );
               })}
             </nav>

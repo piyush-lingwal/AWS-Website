@@ -8,6 +8,9 @@ import { toast } from "sonner";
 // loaded on demand inside the handlers that need them, so they are not part of
 // the /admin first-load bundle.
 import type { DbEvent, DbPortalConfig, AdminParticipantRow, DbTeamMember } from "@/types/certificate";
+import { parseAdminTab, adminTabHref, type AdminTab } from "@/lib/admin/tabs";
+import { clampPage, pageCount, pageRange, pageSlice } from "@/lib/admin/pagination";
+import { useAdminPortal } from "@/components/admin/AdminPortalProvider";
 import { formatFullName, cn } from "@/lib/utils";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -37,7 +40,6 @@ import {
   Copy,
   Check,
   RefreshCw,
-  LogOut,
   Sparkles,
   ShieldCheck,
   Radio,
@@ -61,7 +63,6 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 
-export type AdminTab = "overview" | "events" | "registrations" | "team" | "settings";
 
 // ── Helpers ───────────────────────────────────────────────────
 function formatDate(iso?: string | null): string {
@@ -118,50 +119,37 @@ interface TopPerformerRow {
 }
 
 // ── Main Admin Page ───────────────────────────────────────────
+function PageHeading({ title, description }: { title: string; description?: string }) {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
+      {description && <p className="mt-1 text-sm text-[#A1A1AA]">{description}</p>}
+    </div>
+  );
+}
+
 function AdminPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Navigation State
-  const [activeTab, setActiveTabState] = useState<AdminTab>("overview");
+  // Navigation: the URL (?tab=) is the single source of truth, so Back, refresh and shared links agree.
+  const activeTab: AdminTab = parseAdminTab(searchParams.get("tab"));
+  const setActiveTab = useCallback(
+    (tab: AdminTab) => router.push(adminTabHref(tab), { scroll: false }),
+    [router]
+  );
 
-  const setActiveTab = useCallback((tab: AdminTab) => {
-    setActiveTabState(tab);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.searchParams.set("tab", tab);
-      window.history.replaceState({}, "", url.toString());
-      window.dispatchEvent(new CustomEvent("admin-tab-change", { detail: tab }));
-    }
-  }, []);
-
-  useEffect(() => {
-    const tabParam = searchParams.get("tab") as AdminTab | null;
-    if (
-      tabParam &&
-      ["overview", "events", "registrations", "team", "settings"].includes(tabParam)
-    ) {
-      setActiveTabState(tabParam);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const customEvent = e as CustomEvent<AdminTab>;
-      if (customEvent.detail) {
-        setActiveTabState(customEvent.detail);
-      }
-    };
-    window.addEventListener("admin-tab-change", handler);
-    return () => window.removeEventListener("admin-tab-change", handler);
-  }, []);
-
-  const [events, setEvents] = useState<DbEvent[]>([]);
-  const [portalConfig, setPortalConfig] = useState<DbPortalConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
-
+  // Shared data (events, portal config) is loaded once by <AdminPortalProvider> in app/admin/layout.tsx.
+  const {
+    events,
+    portalConfig,
+    loading,
+    refreshing,
+    error,
+    refresh: fetchData,
+    setAttendanceEnabled,
+    setActiveEvent: handleSetActiveEvent,
+  } = useAdminPortal();
   // Modal / Form state
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DbEvent | null>(null);
@@ -210,6 +198,7 @@ function AdminPageContent() {
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [participantSearch, setParticipantSearch] = useState("");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("ALL");
+  const [participantPage, setParticipantPage] = useState(1);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [deletingParticipantKey, setDeletingParticipantKey] = useState<string | null>(null);
   // Inline "assign as Top Performer" modal (from the attendee directory).
@@ -320,35 +309,6 @@ function AdminPageContent() {
   }, [confirmModal.isOpen, closeConfirm]);
 
   // ── Data Fetching ─────────────────────────────────────────
-  const fetchData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError("");
-
-    try {
-      const [eventsRes, configRes] = await Promise.all([
-        fetch("/api/admin/events", { cache: "no-store" }),
-        fetch("/api/admin/portal-config", { cache: "no-store" }),
-      ]);
-
-      const eventsData = await eventsRes.json();
-      const configData = await configRes.json();
-
-      if (eventsData.success) {
-        const loadedEvents: DbEvent[] = eventsData.data || [];
-        setEvents(loadedEvents);
-      }
-      if (configData.success) setPortalConfig(configData.data || null);
-
-      if (isRefresh) toast.success("Dashboard data refreshed");
-    } catch (e: any) {
-      setError("Failed to load dashboard data: " + (e.message || "Unknown error"));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
   // ── Fetch Team Members ─────────────────────────────────────
   const fetchTeamMembers = useCallback(async () => {
     setLoadingTeamMembers(true);
@@ -366,9 +326,8 @@ function AdminPageContent() {
   }, []);
 
   useEffect(() => {
-    fetchData();
     fetchTeamMembers();
-  }, [fetchData, fetchTeamMembers]);
+  }, [fetchTeamMembers]);
 
   // ── Fetch Participants for Selected Event ──────────────────
   const fetchParticipants = useCallback(async (eventId: string) => {
@@ -435,22 +394,6 @@ function AdminPageContent() {
       setTopPerformersError("");
     }
   }, [portalConfig?.active_event_id, fetchTopPerformers]);
-
-  // ── Auth ──────────────────────────────────────────────────
-  const handleLogout = useCallback(async () => {
-    const { createClient } = await import("@/lib/supabase/client");
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    toast.success("Signed out successfully");
-    router.push("/login");
-    router.refresh();
-  }, [router]);
-
-  useEffect(() => {
-    const handleMobileLogout = () => void handleLogout();
-    window.addEventListener("admin-logout-request", handleMobileLogout);
-    return () => window.removeEventListener("admin-logout-request", handleMobileLogout);
-  }, [handleLogout]);
 
   // ── Form Handlers ─────────────────────────────────────────
   const resetForm = () => {
@@ -587,49 +530,6 @@ function AdminPageContent() {
       setFormError("Request failed: " + (e.message || "Unknown error"));
     } finally {
       setFormSubmitting(false);
-    }
-  };
-
-  // ── Toggle Attendance Master Switch ───────────────────────
-  const toggleAttendance = async (enabled: boolean) => {
-    try {
-      const res = await fetch("/api/admin/portal-config", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attendanceEnabled: enabled }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        toast.success(enabled ? "Attendance collection enabled" : "Attendance collection disabled");
-        await fetchData();
-      } else {
-        toast.error(json.error || "Failed to toggle attendance");
-      }
-    } catch (e: any) {
-      setError("Failed to toggle attendance: " + e.message);
-    }
-  };
-
-  // ── Set Active Event ──────────────────────────────────────
-  const handleSetActiveEvent = async (event: DbEvent) => {
-    try {
-      const res = await fetch("/api/admin/portal-config", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          activeEventId: event.id,
-          attendanceEnabled: event.attendance_open,
-        }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        toast.success(`"${event.name}" is now the active portal event`);
-        await fetchData();
-      } else {
-        toast.error(json.error || "Failed to set active event");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update configuration");
     }
   };
 
@@ -1499,6 +1399,14 @@ function AdminPageContent() {
     });
   }, [participants, participantSearch, selectedCourseFilter]);
 
+  // Show the list 50 rows at a time. The page is clamped at render time, so a shrinking
+  // list (new search, a removed attendee) can never leave the table on an empty page.
+  const PARTICIPANTS_PER_PAGE = 50;
+  const currentParticipantPage = clampPage(participantPage, filteredParticipants.length, PARTICIPANTS_PER_PAGE);
+  const visibleParticipants = pageSlice(filteredParticipants, currentParticipantPage, PARTICIPANTS_PER_PAGE);
+  const participantRange = pageRange(currentParticipantPage, filteredParticipants.length, PARTICIPANTS_PER_PAGE);
+  const participantPages = pageCount(filteredParticipants.length, PARTICIPANTS_PER_PAGE);
+
   // Stats calculation
   const totalVerifiedCerts = useMemo(() => {
     return participants.filter((p) => Boolean(p.certificateId)).length;
@@ -1518,53 +1426,7 @@ function AdminPageContent() {
       }}
     >
       {/* ── Main Operations Container ───────────────────────── */}
-      <main className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 pt-28 sm:pt-36 space-y-10">
-        {/* ── Top Bar: Admin Portal Heading & Sign Out ───────────────────────── */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border flex items-center justify-center shrink-0 bg-gradient-to-br from-[#6C63FF]/20 via-[#6C63FF]/10 to-[#FF9900]/10 border-white/[0.1] text-[#A78BFA] shadow-[0_0_20px_rgba(108,99,255,0.15)]">
-              <ShieldCheck className="w-5 h-5 text-[#A78BFA]" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-display text-white tracking-tight truncate">
-                  Admin Portal
-                </h1>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-[#6C63FF]/10 text-[#A78BFA] border border-[#6C63FF]/20">
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-emerald-400" />
-                  Console
-                </span>
-              </div>
-              <p className="text-xs text-[#71717A] mt-0.5 truncate hidden sm:block">
-                AWS Student Builder Group {"\u2022"} Operations &amp; Management Cockpit
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <a
-              href="/media"
-              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white hover:bg-white/[0.06] border border-white/[0.08] transition-all flex items-center gap-2 bg-white/[0.02] shrink-0"
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>Media Portal</span>
-            </a>
-            <a
-              href="/admin/media-members"
-              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white hover:bg-white/[0.06] border border-white/[0.08] transition-all flex items-center bg-white/[0.02] shrink-0"
-            >
-              Media members
-            </a>
-            <button
-              onClick={handleLogout}
-              className="hidden h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl text-xs font-medium text-[#71717A] hover:text-red-400 hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/20 transition-all lg:flex items-center gap-2 cursor-pointer bg-white/[0.02] shrink-0"
-              title="Sign Out of Admin Portal"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
-            </button>
-          </div>
-        </div>
+      <main className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 pt-24 sm:pt-28 space-y-8">
         {error && (
           <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs sm:text-sm text-red-400 flex items-center gap-3">
             <XCircle className="w-4 h-4 shrink-0" />
@@ -1581,567 +1443,119 @@ function AdminPageContent() {
           </div>
         ) : (
           <>
-            {/* ══════════════════════════════════════════════════ */}
-            {/* ── OVERVIEW: EXECUTIVE SUMMARY OF ALL TABS ─────── */}
-            {/* ══════════════════════════════════════════════════ */}
+            {/* ── OVERVIEW ─────────────────────────────────────── */}
             {activeTab === "overview" && (
               <section className="space-y-6">
-                {/* Executive KPI Bar */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* KPI 1: Events */}
-                  <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg group hover:border-[#6C63FF]/30 transition-all">
-                    <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex flex-col justify-between h-full space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A]">
-                          Events Catalog
-                        </span>
-                        <div className="w-8 h-8 rounded-lg bg-[#6C63FF]/10 border border-[#6C63FF]/20 flex items-center justify-center text-[#A78BFA]">
-                          <Calendar className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight">
-                          {events.length}
-                        </p>
-                        <p className="text-xs text-[#A1A1AA] mt-0.5 truncate">
-                          {activeEvent ? `Active: ${activeEvent.name}` : "No active session"}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setActiveTab("events")}
-                        className="text-[11px] font-medium text-[#A78BFA] hover:text-white flex items-center gap-1 transition-colors cursor-pointer pt-1"
-                      >
-                        <span>Manage events</span>
-                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                      </button>
-                    </div>
-                  </div>
+                <PageHeading title="Overview" description="What is live right now, and where to go next." />
 
-                  {/* KPI 2: Registrations & Attendance */}
-                  <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg group hover:border-emerald-500/30 transition-all">
-                    <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex flex-col justify-between h-full space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A]">
-                          Live Attendance
-                        </span>
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                          <Users className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight">
-                          {totalAttended}
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              portalConfig?.attendance_enabled && activeEvent?.attendance_open
-                                ? "bg-emerald-400 animate-ping"
-                                : "bg-amber-400"
-                            }`}
-                          />
-                          <p className="text-xs text-[#A1A1AA] truncate">
-                            {portalConfig?.attendance_enabled && activeEvent?.attendance_open
-                              ? "Accepting Submissions"
-                              : "Submissions Paused"}
-                          </p>
-                        </div>
-                      </div>
+                <div className="flex flex-col gap-4 rounded-2xl border border-white/[0.08] bg-[#0E0E13] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                  <div className="min-w-0">
+                    <p className="text-xs text-[#71717A]">Active event</p>
+                    <h2 className="mt-1 truncate text-xl font-bold text-white sm:text-2xl">
+                      {activeEvent?.name || "No active event"}
+                    </h2>
+                    <p className="mt-1 text-sm text-[#A1A1AA]">
+                      {activeEvent
+                        ? [formatDate(activeEvent.event_date), activeEvent.event_timing, activeEvent.speaker_name]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "Choose an event to start collecting attendance."}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${
+                        activeEvent && portalConfig?.attendance_enabled && activeEvent.attendance_open
+                          ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+                          : "border-amber-500/25 bg-amber-500/10 text-amber-300"
+                      }`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                      {activeEvent && portalConfig?.attendance_enabled && activeEvent.attendance_open
+                        ? "Attendance open"
+                        : "Attendance closed"}
+                    </span>
+                    <button
+                      onClick={() => setActiveTab("events")}
+                      className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl bg-[#6C63FF] px-3.5 text-xs font-semibold text-white hover:brightness-110"
+                    >
+                      Manage event <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                  {[
+                    { label: "Events", value: events.length, tab: "events" as AdminTab },
+                    {
+                      label: "Checked in",
+                      value: currentViewEvent?.id === activeEvent?.id ? totalAttended : "—",
+                      tab: "registrations" as AdminTab,
+                    },
+                    { label: "Team members", value: teamMembers.length, tab: "team" as AdminTab },
+                  ].map((stat) => (
+                    <button
+                      key={stat.label}
+                      onClick={() => setActiveTab(stat.tab)}
+                      className="cursor-pointer rounded-2xl border border-white/[0.08] bg-[#0E0E13] p-3 text-left transition-colors hover:border-[#6C63FF]/40 sm:p-5"
+                    >
+                      <p className="text-xs text-[#71717A]">{stat.label}</p>
+                      <p className="mt-1 font-mono text-3xl font-bold text-white">{stat.value}</p>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div className="rounded-2xl border border-white/[0.08] bg-[#0E0E13] p-5">
+                    <h3 className="text-sm font-semibold text-white">Quick actions</h3>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={startCreate}
+                        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 text-xs font-semibold text-white hover:bg-white/[0.08]"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> New event
+                      </button>
                       <button
                         onClick={() => setActiveTab("registrations")}
-                        className="text-[11px] font-medium text-emerald-400 hover:text-white flex items-center gap-1 transition-colors cursor-pointer pt-1"
+                        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 text-xs font-semibold text-white hover:bg-white/[0.08]"
                       >
-                        <span>View directory</span>
-                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                        <Users className="h-3.5 w-3.5" /> View attendees
                       </button>
-                    </div>
-                  </div>
-
-                  {/* KPI 3: Team  */}
-                  <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg group hover:border-cyan-500/30 transition-all">
-                    <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex flex-col justify-between h-full space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A]">
-                          Core Team
-                        </span>
-                        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                          <GraduationCap className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight">
-                          {teamMembers.length}
-                        </p>
-                        <p className="text-xs text-[#A1A1AA] mt-0.5 truncate">
-                          Batch {selectedTeamBatch || "2026-27"}
-                        </p>
-                      </div>
                       <button
-                        onClick={() => setActiveTab("team")}
-                        className="text-[11px] font-medium text-cyan-400 hover:text-white flex items-center gap-1 transition-colors cursor-pointer pt-1"
+                        onClick={() => startCreateTeamMember()}
+                        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 text-xs font-semibold text-white hover:bg-white/[0.08]"
                       >
-                        <span>Manage team</span>
-                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                        <Plus className="h-3.5 w-3.5" /> Add team member
                       </button>
                     </div>
                   </div>
 
-                  {/* KPI 4: Portal Gateway */}
-                  <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg group hover:border-amber-500/30 transition-all">
-                    <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex flex-col justify-between h-full space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A]">
-                          Gateway Status
+                  <div className="rounded-2xl border border-white/[0.08] bg-[#0E0E13] p-5">
+                    <h3 className="text-sm font-semibold text-white">Public links</h3>
+                    <div className="mt-3 space-y-2 text-xs">
+                      <div className="flex items-center justify-between rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-2">
+                        <span className="text-[#A1A1AA]">
+                          Student check-in <code className="text-[#A78BFA]">/attendance</code>
                         </span>
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                          <SlidersHorizontal className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-lg sm:text-xl font-bold font-mono text-white tracking-tight flex items-center gap-2">
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              portalConfig?.attendance_enabled ? "bg-emerald-400" : "bg-zinc-500"
-                            }`}
-                          />
-                          {portalConfig?.attendance_enabled ? "LIVE ONLINE" : "DISABLED"}
-                        </p>
-                        <p className="text-xs text-[#A1A1AA] mt-0.5 truncate">
-                          Attendance Gateway
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setActiveTab("settings")}
-                        className="text-[11px] font-medium text-amber-400 hover:text-white flex items-center gap-1 transition-colors cursor-pointer pt-1"
-                      >
-                        <span>System settings</span>
-                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2x2 Bento Summary Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Summary 1: Events Tab Summary */}
-                  <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/[0.08] shadow-xl flex flex-col">
-                    <div className="p-6 rounded-[calc(2rem-4px)] bg-[#0E0E13] flex flex-col justify-between h-full space-y-5">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-[#6C63FF]/10 border border-[#6C63FF]/20 flex items-center justify-center text-[#6C63FF]">
-                              <Calendar className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-white tracking-tight">Events Summary</h3>
-                              <p className="text-xs text-[#71717A]">Active and scheduled sessions</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => setActiveTab("events")}
-                            className="h-8 px-3 rounded-lg text-xs font-medium text-[#A78BFA] hover:text-white bg-[#6C63FF]/10 hover:bg-[#6C63FF]/20 border border-[#6C63FF]/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <span>Open Tab</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        {/* Active Event Highlight Box */}
-                        {activeEvent ? (
-                          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                                Active Session
-                              </span>
-                              <span className="text-xs font-mono text-[#A1A1AA]">
-                                {formatDate(activeEvent.event_date)}
-                              </span>
-                            </div>
-                            <h4 className="text-sm font-semibold text-white truncate">{activeEvent.name}</h4>
-                            <div className="flex flex-wrap items-center gap-3 text-xs text-[#71717A]">
-                              {activeEvent.speaker_name && <span>Speaker: {activeEvent.speaker_name}</span>}
-                              {activeEvent.event_timing && <span>&bull; {activeEvent.event_timing}</span>}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="p-4 rounded-xl bg-white/[0.02] border border-dashed border-white/10 text-center text-xs text-[#71717A]">
-                            No session is currently marked as active
-                          </div>
-                        )}
-
-                        {/* Recent Events List preview */}
-                        <div className="space-y-2">
-                          <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717A] block">
-                            Recent Events ({events.length})
-                          </span>
-                          <div className="space-y-1.5">
-                            {events.slice(0, 3).map((ev) => (
-                              <div
-                                key={ev.id}
-                                className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.015] border border-white/[0.04] text-xs"
-                              >
-                                <span className="font-medium text-white truncate max-w-[200px] sm:max-w-xs">
-                                  {ev.name}
-                                </span>
-                                <span className="text-[11px] font-mono text-[#71717A] shrink-0">
-                                  {formatDate(ev.event_date)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-                        <span className="text-xs text-[#71717A]">{events.length} total cataloged events</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={startCreate}
-                            className="h-8 px-3 rounded-lg text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Create Event</span>
-                          </button>
-                          <button
-                            onClick={() => setActiveTab("events")}
-                            className="h-8 px-3 rounded-lg text-xs font-semibold bg-[#6C63FF] hover:brightness-110 text-white transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <span>Go to Events</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Summary 2: Registrations Tab Summary */}
-                  <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/[0.08] shadow-xl flex flex-col">
-                    <div className="p-6 rounded-[calc(2rem-4px)] bg-[#0E0E13] flex flex-col justify-between h-full space-y-5">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                              <Users className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-white tracking-tight">Registrations Summary</h3>
-                              <p className="text-xs text-[#71717A]">Attendance records and turnouts</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => setActiveTab("registrations")}
-                            className="h-8 px-3 rounded-lg text-xs font-medium text-emerald-400 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <span>Open Tab</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        {/* Turnout stats box */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-[#71717A] block">
-                              Active Event Checked In
-                            </span>
-                            <p className="text-xl font-bold font-mono text-emerald-400 mt-1">
-                              {totalAttended} Students
-                            </p>
-                          </div>
-                          <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-[#71717A] block">
-                              Total Records Cached
-                            </span>
-                            <p className="text-xl font-bold font-mono text-white mt-1">
-                              {participants.length} Records
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Recent Participants preview */}
-                        <div className="space-y-2">
-                          <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717A] block">
-                            Recent Attendees ({currentViewEvent?.name || "Active Session"})
-                          </span>
-                          {participants.length > 0 ? (
-                            <div className="space-y-1.5">
-                              {participants.slice(0, 3).map((p, idx) => (
-                                <div
-                                  key={p.rollNo || p.attendanceId || idx}
-                                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.015] border border-white/[0.04] text-xs"
-                                >
-                                  <div className="min-w-0">
-                                    <span className="font-medium text-white truncate block">{p.name}</span>
-                                    <span className="text-[10px] text-[#71717A] truncate block">{p.rollNo} &bull; {p.course || "General"}</span>
-                                  </div>
-                                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shrink-0">
-                                    Verified
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="p-4 rounded-xl bg-white/[0.02] border border-dashed border-white/10 text-center text-xs text-[#71717A]">
-                              No attendee records loaded yet for this session
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-                        <span className="text-xs text-[#71717A]">Export CSV, certificates & logs</span>
                         <button
-                          onClick={() => setActiveTab("registrations")}
-                          className="h-8 px-3 rounded-lg text-xs font-semibold bg-emerald-500 hover:brightness-110 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/20"
+                          onClick={() => handleCopy(`${window.location.origin}/attendance`, "attendance-link", "Check-in link")}
+                          className="inline-flex cursor-pointer items-center gap-1 text-[#A78BFA] hover:text-white"
                         >
-                          <span>Open Attendee Directory</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          <Copy className="h-3 w-3" /> Copy
                         </button>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Summary 3: Team Tab Summary */}
-                  <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/[0.08] shadow-xl flex flex-col">
-                    <div className="p-6 rounded-[calc(2rem-4px)] bg-[#0E0E13] flex flex-col justify-between h-full space-y-5">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                              <GraduationCap className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-white tracking-tight">Team Summary</h3>
-                              <p className="text-xs text-[#71717A]">Student Builder Group </p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => setActiveTab("team")}
-                            className="h-8 px-3 rounded-lg text-xs font-medium text-cyan-400 hover:text-white bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <span>Open Tab</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        {/* Team batch & size pill */}
-                        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-between">
-                          <div>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-[#71717A] block">
-                              Active Batch
-                            </span>
-                            <p className="text-base font-bold text-white mt-0.5">
-                              {selectedTeamBatch || "2026-27"}
-                            </p>
-                          </div>
-                          <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                            {teamMembers.length} Members
-                          </span>
-                        </div>
-
-                        {/* Team members mini avatar row/grid */}
-                        <div className="space-y-2">
-                          <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717A] block">
-                            Core Leads &amp; Officers Preview
-                          </span>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {teamMembers.slice(0, 6).map((m) => (
-                              <div
-                                key={m.id}
-                                className="p-2.5 rounded-xl bg-white/[0.015] border border-white/[0.04] flex items-center gap-2.5 min-w-0"
-                              >
-                                {m.pic_url ? (
-                                  <img
-                                    src={m.pic_url}
-                                    alt={m.name}
-                                    className="w-7 h-7 rounded-lg object-cover border border-white/10 shrink-0"
-                                  />
-                                ) : (
-                                  <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono text-[10px] flex items-center justify-center shrink-0">
-                                    {m.name.slice(0, 2).toUpperCase()}
-                                  </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-xs font-semibold text-white truncate">{m.name}</p>
-                                  <p className="text-[10px] text-[#71717A] truncate">{m.role || "Builder"}</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-                        <span className="text-xs text-[#71717A]">{teamMembers.length} active members</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setActiveTab("team");
-                              startCreateTeamMember();
-                            }}
-                            className="h-8 px-3 rounded-lg text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <UserPlus className="w-3.5 h-3.5" />
-                            <span>Add Member</span>
-                          </button>
-                          <button
-                            onClick={() => setActiveTab("team")}
-                            className="h-8 px-3 rounded-lg text-xs font-semibold bg-cyan-500 hover:brightness-110 text-white transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <span>Go to Team</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Summary 4: Settings Tab Summary */}
-                  <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/[0.08] shadow-xl flex flex-col">
-                    <div className="p-6 rounded-[calc(2rem-4px)] bg-[#0E0E13] flex flex-col justify-between h-full space-y-5">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                              <SlidersHorizontal className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-bold text-white tracking-tight">Settings Summary</h3>
-                              <p className="text-xs text-[#71717A]">Portal gateway &amp; hardware controls</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => setActiveTab("settings")}
-                            className="h-8 px-3 rounded-lg text-xs font-medium text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <span>Open Tab</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        {/* Gateway status preview */}
-                        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-white">Attendance Gateway</span>
-                            <span
-                              className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                                portalConfig?.attendance_enabled
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                  : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
-                              }`}
-                            >
-                              {portalConfig?.attendance_enabled ? "Accepting Submissions" : "Disabled"}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-[#71717A]">
-                            <span>Bound Active Event:</span>
-                            <span className="font-mono text-white truncate max-w-[180px]">
-                              {activeEvent?.name || "None Selected"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Quick links box */}
-                        <div className="space-y-2">
-                          <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717A] block">
-                            Direct Public Portal Links
-                          </span>
-                          <div className="space-y-1.5 text-xs">
-                            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.015] border border-white/[0.04]">
-                              <span className="text-[#A1A1AA] truncate">Student Check-in: <code className="text-[#6C63FF]">/attendance</code></span>
-                              <button
-                                onClick={() => {
-                                  if (typeof window !== "undefined") {
-                                    navigator.clipboard.writeText(`${window.location.origin}/attendance`);
-                                    toast.success("Attendance link copied to clipboard!");
-                                  }
-                                }}
-                                className="text-[11px] font-mono text-[#A78BFA] hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
-                              >
-                                <Copy className="w-3 h-3" />
-                                <span>Copy</span>
-                              </button>
-                            </div>
-                            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.015] border border-white/[0.04]">
-                              <span className="text-[#A1A1AA] truncate">Certificate Verification: <code className="text-[#6C63FF]">/verify</code></span>
-                              <Link
-                                href="/verify"
-                                target="_blank"
-                                className="text-[11px] font-mono text-[#71717A] hover:text-white flex items-center gap-1 transition-colors"
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                                <span>Visit</span>
-                              </Link>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-                        <span className="text-xs text-[#71717A]">Hardware switches &amp; QR links</span>
-                        <button
-                          onClick={() => setActiveTab("settings")}
-                          className="h-8 px-3 rounded-lg text-xs font-semibold bg-amber-500 hover:brightness-110 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-amber-500/20"
+                      <div className="flex items-center justify-between rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-2">
+                        <span className="text-[#A1A1AA]">
+                          Certificate check <code className="text-[#A78BFA]">/verify</code>
+                        </span>
+                        <Link
+                          href="/verify"
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-[#A78BFA] hover:text-white"
                         >
-                          <span>Go to Settings</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
+                          <ExternalLink className="h-3 w-3" /> Open
+                        </Link>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* ══════════════════════════════════════════════════ */}
-            {/* ── EXECUTIVE METRIC STRIP ──────────────────────── */}
-            {/* ══════════════════════════════════════════════════ */}
-            {activeTab === "events" && (
-              <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Card 1: Active Event */}
-                <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
-                  <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4 h-full">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#6C63FF]/10 border border-[#6C63FF]/20 text-[#6C63FF] shrink-0">
-                      <Radio className="w-5 h-5 animate-pulse" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A] block">
-                        Active Portal Event
-                      </span>
-                      <p className="text-base font-bold text-white truncate mt-0.5">
-                        {activeEvent?.name || "None Configured"}
-                      </p>
-                      <span className="text-xs text-[#A1A1AA] flex items-center gap-1.5 mt-0.5">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            portalConfig?.attendance_enabled && activeEvent?.attendance_open
-                              ? "bg-emerald-400 animate-ping"
-                              : "bg-amber-400"
-                          }`}
-                        />
-                        {portalConfig?.attendance_enabled && activeEvent?.attendance_open
-                          ? "Accepting Submissions"
-                          : "Submissions Paused"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card 2: Total Events Managed */}
-                <div className="p-1 rounded-[1.5rem] bg-white/[0.03] border border-white/[0.08] shadow-lg">
-                  <div className="p-5 rounded-[calc(1.5rem-4px)] bg-[#0D0D12] flex items-center gap-4 h-full">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shrink-0">
-                      <Calendar className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-mono tracking-wider text-[#71717A] block">
-                        Events Catalog
-                      </span>
-                      <p className="text-2xl font-mono font-bold text-white tracking-tight mt-0.5">
-                        {events.length}
-                      </p>
-                      <span className="text-xs text-[#A1A1AA]">
-                        Workshops &amp; webinars
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -2151,19 +1565,9 @@ function AdminPageContent() {
             {/* ══════════════════════════════════════════════════ */}
             {/* ── SECTION A: CURRENT ACTIVE EVENT COCKPIT ─────── */}
             {/* ══════════════════════════════════════════════════ */}
-            {(activeTab === "settings" || activeTab === "events") && (
+            {activeTab === "events" && (
               <section className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#6C63FF]/10 border border-[#6C63FF]/20 text-[10px] font-mono uppercase tracking-wider text-[#A78BFA] mb-2">
-                    <Sparkles className="w-3 h-3 text-[#6C63FF]" />
-                    <span>Real-Time Event Control</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                    Active Session Controls
-                  </h2>
-                </div>
-              </div>
+              <PageHeading title="Events" description="Choose which event students can check in to, and manage your event list." />
 
               {activeEvent ? (
                 /* Double-Bezel Hardware Card */
@@ -2277,7 +1681,7 @@ function AdminPageContent() {
                       {/* Machined Toggle Switch */}
                       <button
                         type="button"
-                        onClick={() => toggleAttendance(!portalConfig?.attendance_enabled)}
+                        onClick={() => setAttendanceEnabled(!portalConfig?.attendance_enabled)}
                         className={`
                           relative w-14 h-8 rounded-full transition-all duration-300 cursor-pointer shrink-0 p-1
                           ${portalConfig?.attendance_enabled ? "bg-emerald-500 shadow-lg shadow-emerald-500/25" : "bg-[#27272A]"}
@@ -2332,9 +1736,6 @@ function AdminPageContent() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-mono text-[#A78BFA] px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                      {events.length} Total Sessions
-                    </span>
                     <button
                       onClick={startCreate}
                       className="h-10 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-2 shadow-md shadow-[#6C63FF]/20 active:scale-[0.98]"
@@ -2508,18 +1909,14 @@ function AdminPageContent() {
                 <>
                   <section
                     ref={attendeesSectionRef}
-                className="space-y-5 pt-8 border-t border-white/[0.08] scroll-mt-24"
+                className="space-y-5 scroll-mt-24"
               >
                 {/* Header with Title & Event Context Selector */}
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono uppercase tracking-wider text-emerald-400 mb-2">
-                      <Users className="w-3 h-3 text-emerald-400" />
-                      <span>Attendance Records &amp; Directory</span>
-                    </div>
                     <div className="flex flex-wrap items-center gap-2.5">
                       <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                        Attendee Directory
+                        Registrations
                       </h2>
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-[#6C63FF]/20 border border-[#6C63FF]/40 text-[#A78BFA]">
                         {currentViewEvent.name}
@@ -2598,7 +1995,10 @@ function AdminPageContent() {
                   <input
                     type="text"
                     value={participantSearch}
-                    onChange={(e) => setParticipantSearch(e.target.value)}
+                    onChange={(e) => {
+                      setParticipantSearch(e.target.value);
+                      setParticipantPage(1);
+                    }}
                     placeholder="Search by student name, roll number, email, or certificate ID…"
                     className="w-full h-10 pl-10 pr-9 rounded-xl text-xs bg-[#111117] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
                   />
@@ -2618,7 +2018,10 @@ function AdminPageContent() {
                     {courseOptions.map((c) => (
                       <button
                         key={c}
-                        onClick={() => setSelectedCourseFilter(c)}
+                        onClick={() => {
+                          setSelectedCourseFilter(c);
+                          setParticipantPage(1);
+                        }}
                         className={`h-8 px-3 rounded-lg text-[11px] font-mono uppercase whitespace-nowrap transition-all cursor-pointer ${
                           selectedCourseFilter === c
                             ? "bg-[#6C63FF] text-white font-bold"
@@ -2659,10 +2062,10 @@ function AdminPageContent() {
                       </p>
                     </div>
                   ) : (
-                    <div className="max-w-full overflow-x-auto">
+                    <div className="max-h-[70vh] max-w-full overflow-auto">
                       <table className="w-full min-w-[760px] text-left text-xs border-collapse">
                         <thead>
-                          <tr className="border-b border-white/[0.06] bg-white/[0.02] text-[#71717A] font-mono text-[10.5px] uppercase tracking-wider">
+                          <tr className="sticky top-0 z-10 border-b border-white/[0.06] bg-[#13131a] text-[#71717A] font-mono text-[10.5px] uppercase tracking-wider">
                             <th className="py-3.5 px-5">Participant</th>
                             <th className="py-3.5 px-4">Contact</th>
                             <th className="py-3.5 px-4">Academic Details</th>
@@ -2672,7 +2075,7 @@ function AdminPageContent() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/[0.04]">
-                          {filteredParticipants.map((p, idx) => (
+                          {visibleParticipants.map((p, idx) => (
                             <tr
                               key={`${p.email}-${idx}`}
                               className="hover:bg-white/[0.025] transition-colors group"
@@ -2812,6 +2215,34 @@ function AdminPageContent() {
                       </table>
                     </div>
                   )}
+                  {!loadingParticipants && filteredParticipants.length > PARTICIPANTS_PER_PAGE && (
+                    <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-3 text-xs text-[#A1A1AA]">
+                      <span>
+                        Showing {participantRange.from}–{participantRange.to} of {filteredParticipants.length}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setParticipantPage(currentParticipantPage - 1)}
+                          disabled={currentParticipantPage <= 1}
+                          className="h-8 cursor-pointer rounded-lg border border-white/10 px-3 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Previous
+                        </button>
+                        <span className="tabular-nums">
+                          {currentParticipantPage} / {participantPages}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setParticipantPage(currentParticipantPage + 1)}
+                          disabled={currentParticipantPage >= participantPages}
+                          className="h-8 cursor-pointer rounded-lg border border-white/10 px-3 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
@@ -2822,10 +2253,6 @@ function AdminPageContent() {
             <section className="space-y-5 pt-8 border-t border-white/[0.08]">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-mono uppercase tracking-wider text-amber-400 mb-2">
-                    <Award className="w-3 h-3" />
-                    <span>Manual Recognition</span>
-                  </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                     Top Performers
                   </h2>
@@ -2856,16 +2283,6 @@ function AdminPageContent() {
 
               {canManageTopPerformers && (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] px-4 py-3">
-                      <span className="block text-[10px] font-mono uppercase tracking-wider text-[#71717A] mb-1">Event</span>
-                      <span className="text-sm font-medium text-white">{currentViewEvent.name}</span>
-                    </div>
-                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] px-4 py-3">
-                      <span className="block text-[10px] font-mono uppercase tracking-wider text-[#71717A] mb-1">Event Date</span>
-                      <span className="text-sm font-medium text-white">{formatDate(currentViewEvent.event_date)}</span>
-                    </div>
-                  </div>
 
                   <div className="flex justify-end">
                     <TopPerformerImportDialog
@@ -3084,12 +2501,8 @@ function AdminPageContent() {
               {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-mono uppercase tracking-wider text-cyan-400 mb-2">
-                    <Users className="w-3 h-3 text-cyan-400" />
-                    <span>Team Management</span>
-                  </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                    Team Members Directory
+                    Team
                   </h2>
                   <p className="text-xs text-[#71717A] mt-1">
                     Manage AWS Student Builder Group members organized by batch & tenure cohorts

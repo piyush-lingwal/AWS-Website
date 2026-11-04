@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/auth/require-admin";
+import { AdminPortalProvider } from "@/components/admin/AdminPortalProvider";
+import { AdminNavbar } from "@/components/layout/AdminNavbar";
 
 export const metadata: Metadata = {
   title: "Admin Portal — AWS Student Builder Group",
@@ -34,5 +36,11 @@ export default async function AdminLayout({
     );
   }
 
-  return <>{children}</>;
+  // The admin navbar lives here, inside the provider, so it can show live attendance status.
+  return (
+    <AdminPortalProvider>
+      <AdminNavbar />
+      {children}
+    </AdminPortalProvider>
+  );
 }

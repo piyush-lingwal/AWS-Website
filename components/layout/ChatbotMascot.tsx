@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 interface ApiMessage {
   role: "user" | "assistant";
@@ -24,6 +25,13 @@ const SUGGESTIONS = [
 ];
 
 export function ChatbotMascot() {
+  const pathname = usePathname();
+  // The public-site assistant has no place on the admin screens (it covered the bottom-right corner).
+  if (pathname?.startsWith("/admin")) return null;
+  return <ChatbotMascotWidget />;
+}
+
+function ChatbotMascotWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {

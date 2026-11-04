@@ -14,15 +14,16 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useRecruitment } from "@/hooks/useRecruitment";
-import { AdminNavbar } from "@/components/layout/AdminNavbar";
 
 export function Navbar() {
   const pathname = usePathname();
+  // /admin renders its own navbar inside app/admin/layout.tsx (it needs the admin data provider).
+  // The public navbar is a separate component so its hooks never run (or change count) on /admin pages.
+  if (pathname?.startsWith("/admin")) return null;
+  return <SiteNavbar />;
+}
 
-  if (pathname?.startsWith("/admin")) {
-    return <AdminNavbar />;
-  }
-
+function SiteNavbar() {
   const BUILDER_CENTER_URL = "https://www.meetup.com/tulas-university-dehradun/";
 
   const navItems = [
