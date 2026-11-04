@@ -12,6 +12,7 @@ import {
   validateCertificateTheme,
   type CertificateTheme,
 } from "@/lib/certificates/theme";
+import { validateEventEndDate } from "@/lib/certificates/event-date";
 import type { ApiResponse, DbEvent, AdminEventRequest } from "@/types/certificate";
 
 /**
@@ -86,6 +87,14 @@ export async function POST(request: NextRequest) {
     else errors.certificateTheme = theme.error;
   }
 
+  // An end date is only meaningful on a dated (non-TBA) event.
+  let endDate: string | null = null;
+  if (!isTBA) {
+    const end = validateEventEndDate(body.eventEndDate, body.eventDate);
+    if (end.ok) endDate = end.value;
+    else errors.eventEndDate = end.error;
+  }
+
   if (Object.keys(errors).length > 0) {
     return NextResponse.json(
       { success: false, error: "Validation failed.", data: errors } satisfies ApiResponse,
@@ -98,6 +107,7 @@ export async function POST(request: NextRequest) {
     name: body.name.trim(),
     description: body.description?.trim() || null,
     event_date: isTBA ? null : (body.eventDate?.trim() || null),
+    event_end_date: endDate,
     event_timing: isTBA ? null : (body.eventTiming?.trim() || null),
     speaker_name: body.speakerName?.trim() || null,
     attendance_open: body.attendanceOpen ?? false,
@@ -121,6 +131,15 @@ export async function POST(request: NextRequest) {
       );
     }
     delete insertPayload.certificate_theme;
+    const retry = await supabase.from("events").insert(insertPayload).select("*").single();
+    newEvent = retry.data;
+    insertError = retry.error;
+  }
+
+  // The event_end_date migration may not be applied yet. The field is optional,
+  // so drop it and retry (a single-day event is the harmless result).
+  if (insertError && isMissingColumnError(insertError, "event_end_date")) {
+    delete insertPayload.event_end_date;
     const retry = await supabase.from("events").insert(insertPayload).select("*").single();
     newEvent = retry.data;
     insertError = retry.error;

@@ -38,6 +38,7 @@ import {
   buildVerifyUrlText,
 } from "./svg-generator";
 import { getAwardTitle } from "./award-title";
+import { formatSingleOrPassThrough } from "./event-date";
 
 // ── IBM Plex Mono Regular Font Cache & Fontkit Patch ──────────
 let cachedRegularFontBytes: Buffer | null = null;
@@ -119,17 +120,9 @@ function svgToPdfY(svgY: number): number {
  * Example: "2026-09-28" → "28 September 2026"
  */
 function formatDate(isoDate: string): string {
-  try {
-    const date = new Date(isoDate);
-    if (isNaN(date.getTime())) return isoDate;
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  } catch {
-    return isoDate;
-  }
+  // The caller may pass a bare ISO date or an already-formatted range
+  // (e.g. "29-30 October 2026"); a range is returned unchanged.
+  return formatSingleOrPassThrough(isoDate);
 }
 
 /**
@@ -171,6 +164,8 @@ export async function generateCertificatePdf(
       eventDate: formattedDate,
       awardTitle,
       theme: input.theme,
+      kind: input.kind,
+      role: input.role,
       signerName: input.signerName?.trim(),
       signerTitle: input.signerTitle?.trim(),
       certificateId,

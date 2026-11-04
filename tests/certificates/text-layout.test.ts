@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { CERT_TEXT, MONO_ADVANCE_EM, fitMonoSize } from "../../lib/certificates/text-layout.ts";
+import { CERT_TEXT, MONO_ADVANCE_EM, RECOGNITION_LINE, fitMonoSize } from "../../lib/certificates/text-layout.ts";
 
 test("fitMonoSize keeps the base size when the line fits and shrinks it when it does not", () => {
   const spec = { size: 40, maxWidth: 600 };
@@ -21,7 +21,8 @@ test("fitMonoSize never returns less than 1, even for absurd input", () => {
 test("the fixed wording on every certificate fits at its full size", () => {
   const fixed: [string, string, { size: number; maxWidth: number }][] = [
     ["presented to", "This certificate is proudly presented to", CERT_TEXT.presentedTo],
-    ["recognition", "in recognition of their participation in", CERT_TEXT.recognition],
+    ["recognition", RECOGNITION_LINE.participation, CERT_TEXT.recognition],
+    ["organiser recognition", RECOGNITION_LINE.organiser, CERT_TEXT.recognition],
     ["conducted by", "conducted by AWS Student Builder Group at Tulas University", CERT_TEXT.conductedBy],
     ["award conducted by", "conducted by AWS Student Builder Group at Tulas University", CERT_TEXT.award.conductedBy],
     ["securing", "for securing", CERT_TEXT.award.securing],

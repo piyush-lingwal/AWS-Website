@@ -18,6 +18,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
 import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { getEventIssueDate, insertCertificateWithDisplayDate } from "@/lib/certificates/issue-date";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import type {
   ApiResponse,
@@ -243,12 +244,14 @@ export async function POST(request: NextRequest) {
 
     const verificationUrl = getVerificationUrl(certificateId);
 
-    // Generate PDF in the event's colour theme
+    // Generate PDF in the event's colour theme. issueDate.display is the single
+    // date or the formatted range; it is snapshotted so it never changes later.
     const theme = await getEventCertificateTheme(supabase, eventId);
+    const issueDate = await getEventIssueDate(supabase, eventId);
     const pdfResult = await generateCertificatePdf({
       participantName: fullName,
       eventTitle: event.name,
-      eventDate: event.event_date,
+      eventDate: issueDate.display,
       certificateId,
       verificationUrl,
       theme,
@@ -271,21 +274,20 @@ export async function POST(request: NextRequest) {
     const pdfUrl = `/api/certificates/${certificateId}`;
     const pdfHash = createHash("sha256").update(pdfResult.pdfBuffer).digest("hex");
 
-    const { error: certInsertError } = await supabase
-      .from("certificates")
-      .insert({
-        certificate_id: certificateId,
-        event_id: eventId,
-        participant_id: participantId,
-        attendance_id: attendance.id,
-        recipient_name_snapshot: fullName,
-        event_name_snapshot: event.name,
-        event_date_snapshot: event.event_date,
-        pdf_url: pdfUrl,
-        verification_url: verificationUrl,
-        pdf_hash: pdfHash,
-        issue_date: new Date().toISOString().split("T")[0],
-      });
+    const { error: certInsertError } = await insertCertificateWithDisplayDate(supabase, {
+      certificate_id: certificateId,
+      event_id: eventId,
+      participant_id: participantId,
+      attendance_id: attendance.id,
+      recipient_name_snapshot: fullName,
+      event_name_snapshot: event.name,
+      event_date_snapshot: issueDate.start,
+      event_date_display_snapshot: issueDate.display,
+      pdf_url: pdfUrl,
+      verification_url: verificationUrl,
+      pdf_hash: pdfHash,
+      issue_date: new Date().toISOString().split("T")[0],
+    });
 
     if (certInsertError) {
       console.error("[API/attendance] Certificate insert error:", certInsertError);

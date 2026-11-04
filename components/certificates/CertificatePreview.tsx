@@ -9,10 +9,12 @@ import { generateQRCodeDataUrl } from "@/lib/certificates/qr-generator";
 import {
   CERTIFICATE_THEME_INFO,
   DEFAULT_CERTIFICATE_THEME,
+  resolveCertificateKind,
   templateFileName,
+  type CertificateKind,
   type CertificateTheme,
 } from "@/lib/certificates/theme";
-import { CERT_TEXT, MONO_ADVANCE_EM, fitMonoSize } from "@/lib/certificates/text-layout";
+import { CERT_TEXT, MONO_ADVANCE_EM, RECOGNITION_LINE, fitMonoSize, organiserRecognitionLine } from "@/lib/certificates/text-layout";
 
 interface CertificatePreviewProps {
   participantName: string;
@@ -25,6 +27,10 @@ interface CertificatePreviewProps {
   awardTitle?: string;
   /** Colour theme of the event. Must match what the PDF uses (lib/certificates/svg-generator.ts). */
   theme?: CertificateTheme;
+  /** "organiser" shows the Certificate of Appreciation. Ignored when awardTitle is set. */
+  kind?: CertificateKind;
+  /** Organiser's role (e.g. "Technical Lead"), woven into the organiser line. */
+  role?: string;
 }
 
 function escapeXml(unsafe: string): string {
@@ -46,8 +52,11 @@ export function CertificatePreview({
   verificationUrl,
   awardTitle,
   theme = DEFAULT_CERTIFICATE_THEME,
+  kind,
+  role,
 }: CertificatePreviewProps) {
   const normalizedAwardTitle = getAwardTitle(awardTitle);
+  const resolvedKind = resolveCertificateKind(Boolean(normalizedAwardTitle), kind);
   const accent = CERTIFICATE_THEME_INFO[theme].accent;
   const [baseSvg, setBaseSvg] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -58,7 +67,7 @@ export function CertificatePreview({
   useEffect(() => {
     let isCurrent = true;
     setIsLoading(true);
-    const templateName = templateFileName(theme, Boolean(normalizedAwardTitle));
+    const templateName = templateFileName(theme, resolvedKind);
 
     fetch(`/templates/${templateName}`)
       .then((res) => {
@@ -82,7 +91,7 @@ export function CertificatePreview({
     return () => {
       isCurrent = false;
     };
-  }, [normalizedAwardTitle, theme]);
+  }, [resolvedKind, theme]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -131,7 +140,7 @@ export function CertificatePreview({
     const nameXml = `<text x="${cx}" y="1460" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${nameSize}" font-weight="700" fill="#161D26">${escapeXml(name)}</text>`;
 
     // ── Line 3: "in recognition of their participation in" ──────
-    const line3Xml = `<text x="${cx}" y="1568" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${CERT_TEXT.recognition.size}" font-weight="400" fill="#555555">in recognition of their participation in</text>`;
+    const line3Xml = `<text x="${cx}" y="1568" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${CERT_TEXT.recognition.size}" font-weight="400" fill="#555555">${escapeXml(resolvedKind === "organiser" ? organiserRecognitionLine(role) : RECOGNITION_LINE.participation)}</text>`;
 
     // ── Line 4: Event Name ───────────────────────────────────────
     const eventXml = `<text x="${cx}" y="1668" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${eventSize}" font-weight="700" fill="${accent}">${escapeXml(event)}</text>`;
@@ -254,6 +263,8 @@ export function CertificatePreview({
     qrDataUrl,
     normalizedAwardTitle,
     accent,
+    resolvedKind,
+    role,
   ]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);

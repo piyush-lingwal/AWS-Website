@@ -4,7 +4,8 @@ import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { CertificatePreview } from "@/components/certificates/CertificatePreview";
-import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { getEventCertificateTheme, isMissingColumnError } from "@/lib/certificates/event-theme";
+import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import {
   ShieldCheck,
   Award,
@@ -53,9 +54,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
   if (isFormatValid) {
     const supabase = getAdminClient();
     if (supabase) {
-      const { data } = await supabase
-        .from("certificates")
-        .select(`
+      const baseColumns = `
           certificate_id,
           recipient_name_snapshot,
           event_name_snapshot,
@@ -69,10 +68,21 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           participant:participants (
             course,
             roll_no
-          )
-        `)
-        .eq("certificate_id", cleanId)
-        .maybeSingle();
+          )`;
+      // These columns come from separate migrations and may be applied out of
+      // order, so add each optional one independently and drop only the ones a
+      // given database is missing (rather than falling back to bare columns).
+      const optionalColumns = ["event_date_display_snapshot", "certificate_kind", "role_snapshot"];
+      let present = [...optionalColumns];
+      let data: Record<string, any> | null = null;
+      for (;;) {
+        const select = present.length ? baseColumns + ", " + present.join(", ") : baseColumns;
+        const res = await supabase.from("certificates").select(select).eq("certificate_id", cleanId).maybeSingle();
+        if (!res.error) { data = res.data as Record<string, any> | null; break; }
+        const missing = present.find((c) => isMissingColumnError(res.error, c));
+        if (!missing) { data = null; break; } // a real error, not a missing optional column
+        present = present.filter((c) => c !== missing);
+      }
 
       if (data) {
         const part = Array.isArray(data.participant)
@@ -110,6 +120,10 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           verificationUrl: data.verification_url,
           // Same lookup the PDF uses, so the preview and the download always match.
           theme: await getEventCertificateTheme(supabase, data.event_id),
+          // Stored display string (single day or range), or the start date for old certificates.
+          eventDateDisplay: certificateDisplayDate(data),
+          kind: data.certificate_kind === "organiser" ? "organiser" : null,
+          role: data.role_snapshot ?? null,
         };
       }
     }
@@ -151,6 +165,12 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold self-start">
                       <Award className="w-3.5 h-3.5" />
                       Certificate of Excellence - {cert.awardTitle}
+                    </div>
+                  )}
+                  {cert.kind === "organiser" && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 text-[#C4B5FD] text-xs font-semibold self-start">
+                      <Award className="w-3.5 h-3.5" />
+                      Certificate of Appreciation{cert.role ? ` - ${cert.role}` : ""}
                     </div>
                   )}
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold self-start sm:self-center">
@@ -195,7 +215,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                         Event Date
                       </div>
                       <div className="text-sm font-semibold text-white truncate">
-                        {formatDate(cert.eventDate)}
+                        {cert.eventDateDisplay}
                       </div>
                     </div>
                   </div>
@@ -254,11 +274,13 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                   <CertificatePreview
                     participantName={cert.recipientName}
                     eventTitle={cert.eventName}
-                    eventDate={formatDate(cert.eventDate)}
+                    eventDate={cert.eventDateDisplay}
                     certificateId={cert.certificateId}
                     verificationUrl={cert.verificationUrl || undefined}
                     awardTitle={cert.awardTitle || undefined}
                     theme={cert.theme}
+                    kind={cert.kind || undefined}
+                    role={cert.role || undefined}
                   />
                 </div>
               </div>

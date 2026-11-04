@@ -31,6 +31,7 @@ import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import { mapLimit } from "@/lib/media/concurrency";
 import { isUuid } from "@/lib/auth/roles";
 import { validateAttendee, type AttendeeInput } from "@/lib/attendance/import";
+import { getEventIssueDate, insertCertificateWithDisplayDate } from "@/lib/certificates/issue-date";
 import type { ApiResponse } from "@/types/certificate";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +54,8 @@ interface EventInfo {
   id: string;
   name: string;
   event_date: string;
+  /** Formatted display date (single day or range), stored in event_date_display_snapshot. */
+  displayDate: string;
 }
 
 type Db = NonNullable<ReturnType<typeof getAdminClient>>;
@@ -122,7 +125,7 @@ async function importOne(db: Db, event: EventInfo, rowNumber: number, raw: unkno
         if (error) throw new Error(`certificate id check: ${error.message}`);
         return !!data;
       });
-      const cert = await db.from("certificates").insert({
+      const cert = await insertCertificateWithDisplayDate(db, {
         certificate_id: certificateId,
         event_id: event.id,
         participant_id: participantId,
@@ -130,6 +133,7 @@ async function importOne(db: Db, event: EventInfo, rowNumber: number, raw: unkno
         recipient_name_snapshot: a.fullName,
         event_name_snapshot: event.name,
         event_date_snapshot: event.event_date,
+        event_date_display_snapshot: event.displayDate,
         pdf_url: `/api/certificates/${certificateId}`,
         verification_url: getVerificationUrl(certificateId),
         issue_date: new Date().toISOString().split("T")[0],
@@ -179,7 +183,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!ev.data.event_date) {
     return fail("Set this event's date before importing attendees. Their certificates show the event date.", 400);
   }
-  const event = ev.data as EventInfo;
+  const issueDate = await getEventIssueDate(db, ev.data.id as string);
+  const event: EventInfo = {
+    id: ev.data.id as string,
+    name: ev.data.name as string,
+    event_date: (issueDate.start ?? (ev.data.event_date as string)),
+    displayDate: issueDate.display,
+  };
 
   // Normalise row numbers and reject an email repeated inside this batch.
   const seen = new Set<string>();

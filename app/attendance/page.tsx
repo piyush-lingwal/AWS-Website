@@ -26,6 +26,7 @@ import type {
   ApiResponse,
 } from "@/types/certificate";
 import { formatFullName, cleanFullName } from "@/lib/utils";
+import { formatEventDate } from "@/lib/certificates/event-date";
 import "@/app/certificate/attendance.css";
 
 interface FormData {
@@ -301,23 +302,9 @@ export default function AttendancePortalPage() {
 
   const event = portalConfig.event;
 
-  // Format event date
-  const formattedDate = (() => {
-    if (!event.eventDate || !event.eventDate.trim() || event.eventDate.toLowerCase() === "tba") {
-      return "To be announced";
-    }
-    try {
-      const d = new Date(event.eventDate + "T00:00:00");
-      if (isNaN(d.getTime())) return "To be announced";
-      return d.toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-    } catch {
-      return event.eventDate;
-    }
-  })();
+  // Format event date: a single day or a collapsed range (29 Oct - 05 Nov 2026),
+  // matching what the certificate shows (lib/certificates/event-date.ts).
+  const formattedDate = formatEventDate(event.eventDate, event.eventEndDate) || "To be announced";
 
   // ── 3. SUCCESS / CONFIRMATION STATE (PHASE 6) ──────────────
   if (submittedData) {
