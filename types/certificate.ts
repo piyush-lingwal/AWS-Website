@@ -25,7 +25,9 @@ export interface DbEvent {
   id: string;
   name: string;
   description: string | null;
-  event_date: string | null;       // ISO date string (YYYY-MM-DD) or null if TBA
+  event_date: string | null;       // ISO date string (YYYY-MM-DD) or null if TBA. Start day for a range.
+  /** Last day of a multi-day event (YYYY-MM-DD). Null = single day. Needs the event_end_date migration. */
+  event_end_date?: string | null;
   event_timing: string | null;     // Display-oriented, e.g. "11:00 AM - 12:30 PM" or null if TBA
   speaker_name: string | null;
   attendance_open: boolean;
@@ -200,6 +202,7 @@ export interface AdminEventRequest {
   name: string;
   description?: string;
   eventDate?: string | null;
+  eventEndDate?: string | null;   // Optional last day of a multi-day event (YYYY-MM-DD)
   eventTiming?: string | null;
   isTBA?: boolean;
   speakerName?: string;

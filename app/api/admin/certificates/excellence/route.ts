@@ -11,6 +11,7 @@ import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
 import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { getEventDisplayDate } from "@/lib/certificates/issue-date";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import type { ApiResponse } from "@/types/certificate";
 import { cleanFullName } from "@/lib/utils";
@@ -178,10 +179,11 @@ export async function POST(request: NextRequest) {
     const verificationUrl = getVerificationUrl(certificateId);
     const participantName = cleanFullName(participant.full_name);
     const theme = await getEventCertificateTheme(supabase, event.id);
+    const displayDate = await getEventDisplayDate(supabase, event.id);
     const pdfResult = await generateCertificatePdf({
       participantName,
       eventTitle: event.name,
-      eventDate: event.event_date,
+      eventDate: displayDate,
       certificateId,
       awardTitle,
       verificationUrl,
@@ -207,7 +209,7 @@ export async function POST(request: NextRequest) {
         attendance_id: attendance.id,
         recipient_name_snapshot: participantName,
         event_name_snapshot: event.name,
-        event_date_snapshot: event.event_date,
+        event_date_snapshot: displayDate,
         pdf_url: pdfUrl,
         verification_url: verificationUrl,
         pdf_hash: pdfHash,

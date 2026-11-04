@@ -110,6 +110,8 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           verificationUrl: data.verification_url,
           // Same lookup the PDF uses, so the preview and the download always match.
           theme: await getEventCertificateTheme(supabase, data.event_id),
+          // Already formatted when the certificate was issued (single day or range); show it verbatim.
+          eventDateDisplay: data.event_date_snapshot,
         };
       }
     }
@@ -195,7 +197,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                         Event Date
                       </div>
                       <div className="text-sm font-semibold text-white truncate">
-                        {formatDate(cert.eventDate)}
+                        {cert.eventDateDisplay}
                       </div>
                     </div>
                   </div>
@@ -254,7 +256,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                   <CertificatePreview
                     participantName={cert.recipientName}
                     eventTitle={cert.eventName}
-                    eventDate={formatDate(cert.eventDate)}
+                    eventDate={cert.eventDateDisplay}
                     certificateId={cert.certificateId}
                     verificationUrl={cert.verificationUrl || undefined}
                     awardTitle={cert.awardTitle || undefined}

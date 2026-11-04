@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { isMissingColumnError, THEME_MIGRATION_HINT } from "@/lib/certificates/event-theme";
 import { DEFAULT_CERTIFICATE_THEME, validateCertificateTheme } from "@/lib/certificates/theme";
+import { validateEventEndDate } from "@/lib/certificates/event-date";
 import type { ApiResponse, DbEvent, AdminEventRequest } from "@/types/certificate";
 
 /**
@@ -82,10 +83,28 @@ export async function PUT(
   if (body.description !== undefined) updatePayload.description = body.description?.trim() || null;
   if (body.isTBA) {
     updatePayload.event_date = null;
+    updatePayload.event_end_date = null; // a TBA event has no range
     updatePayload.event_timing = null;
   } else {
     if (body.eventDate !== undefined) updatePayload.event_date = body.eventDate ? body.eventDate.trim() : null;
     if (body.eventTiming !== undefined) updatePayload.event_timing = body.eventTiming ? body.eventTiming.trim() : null;
+
+    if (body.eventEndDate !== undefined) {
+      // Validate against the start being saved, or the event's current start if start is untouched.
+      let startForCheck = body.eventDate;
+      if (startForCheck === undefined) {
+        const { data: current } = await supabase.from("events").select("event_date").eq("id", id).maybeSingle();
+        startForCheck = current?.event_date ?? null;
+      }
+      const end = validateEventEndDate(body.eventEndDate, startForCheck);
+      if (!end.ok) {
+        return NextResponse.json(
+          { success: false, error: "Validation failed.", data: { eventEndDate: end.error } } satisfies ApiResponse,
+          { status: 400 }
+        );
+      }
+      updatePayload.event_end_date = end.value;
+    }
   }
   if (body.speakerName !== undefined) updatePayload.speaker_name = body.speakerName?.trim() || null;
   if (body.attendanceOpen !== undefined) updatePayload.attendance_open = body.attendanceOpen;
@@ -138,6 +157,19 @@ export async function PUT(
           .eq("id", id)
           .select("*")
           .single();
+        data = retry.data;
+        updateError = retry.error;
+      } else {
+        updateError = null;
+      }
+    }
+
+    // The event_end_date migration may not be applied yet. The field is optional,
+    // so drop it and retry rather than failing the whole update.
+    if (updateError && isMissingColumnError(updateError, "event_end_date")) {
+      delete updatePayload.event_end_date;
+      if (Object.keys(updatePayload).length > 0) {
+        const retry = await supabase.from("events").update(updatePayload).eq("id", id).select("*").single();
         data = retry.data;
         updateError = retry.error;
       } else {

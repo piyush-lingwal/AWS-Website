@@ -13,6 +13,7 @@ import { clampPage, pageCount, pageRange, pageSlice } from "@/lib/admin/paginati
 import { useAdminPortal } from "@/components/admin/AdminPortalProvider";
 import { formatFullName, cn } from "@/lib/utils";
 import { getAwardTitle } from "@/lib/certificates/award-title";
+import { formatEventDate } from "@/lib/certificates/event-date";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TopPerformerImportDialog } from "@/components/features/TopPerformerImportDialog";
 import { AttendeeImportDialog } from "@/components/features/AttendeeImportDialog";
@@ -65,10 +66,13 @@ import {
 
 
 // ── Helpers ───────────────────────────────────────────────────
-function formatDate(iso?: string | null): string {
+function formatDate(iso?: string | null, endIso?: string | null): string {
   if (!iso || !iso.trim() || iso.toLowerCase() === "tba") {
     return "To be announced";
   }
+  // Collapses a start/end pair into a single range string (lib/certificates/event-date.ts).
+  const ranged = formatEventDate(iso, endIso ?? null);
+  if (ranged) return ranged;
   try {
     const d = new Date(iso + "T00:00:00");
     if (isNaN(d.getTime())) return "To be announced";
@@ -165,6 +169,7 @@ function AdminPageContent() {
     eventType: "" as string,
     customEventType: "",
     certificateTheme: DEFAULT_CERTIFICATE_THEME as CertificateTheme,
+    eventEndDate: "",
   });
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
@@ -408,6 +413,7 @@ function AdminPageContent() {
       eventType: "",
       customEventType: "",
       certificateTheme: DEFAULT_CERTIFICATE_THEME,
+      eventEndDate: "",
     });
     setIsTBA(false);
     setEditingEvent(null);
@@ -462,6 +468,7 @@ function AdminPageContent() {
       eventType: eventTypeSaved ? (isKnown ? eventTypeSaved : "Custom") : "",
       customEventType: isKnown ? "" : eventTypeSaved,
       certificateTheme: parseCertificateTheme(event.certificate_theme),
+      eventEndDate: event.event_end_date || "",
     });
     setFormError("");
     setShowForm(true);
@@ -506,6 +513,7 @@ function AdminPageContent() {
         ...formData,
         isTBA,
         eventDate: isTBA ? null : formData.eventDate,
+        eventEndDate: isTBA ? null : (formData.eventEndDate || null),
         eventTiming: isTBA ? null : formData.eventTiming,
         eventType: resolvedEventType,
       };
@@ -1456,7 +1464,7 @@ function AdminPageContent() {
                     </h2>
                     <p className="mt-1 text-sm text-[#A1A1AA]">
                       {activeEvent
-                        ? [formatDate(activeEvent.event_date), activeEvent.event_timing, activeEvent.speaker_name]
+                        ? [formatDate(activeEvent.event_date, activeEvent.event_end_date), activeEvent.event_timing, activeEvent.speaker_name]
                             .filter(Boolean)
                             .join(" · ")
                         : "Choose an event to start collecting attendance."}
@@ -1602,7 +1610,7 @@ function AdminPageContent() {
                         <div className="flex flex-wrap gap-2.5 pt-2">
                           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
                             <Calendar className="w-3.5 h-3.5 text-[#6C63FF]" />
-                            <span>{formatDate(activeEvent.event_date)}</span>
+                            <span>{formatDate(activeEvent.event_date, activeEvent.event_end_date)}</span>
                           </div>
 
                           {activeEvent.event_timing ? (
@@ -1833,7 +1841,7 @@ function AdminPageContent() {
                           <div className="space-y-1.5 text-xs text-[#A1A1AA] pt-2 border-t border-white/[0.04]">
                             <div className="flex items-center gap-2">
                               <Calendar className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
-                              <span className="truncate">{formatDate(event.event_date)}</span>
+                              <span className="truncate">{formatDate(event.event_date, event.event_end_date)}</span>
                             </div>
                             {event.event_timing ? (
                               <div className="flex items-center gap-2">
@@ -1941,7 +1949,7 @@ function AdminPageContent() {
                       >
                         {events.map((ev) => (
                           <option key={ev.id} value={ev.id}>
-                            {ev.name} ({formatDate(ev.event_date)})
+                            {ev.name} ({formatDate(ev.event_date, ev.event_end_date)})
                           </option>
                         ))}
                       </select>
@@ -3119,6 +3127,33 @@ function AdminPageContent() {
                       </div>
                     )}
                   </div>
+
+                  {/* End Date — optional, for multi-day events */}
+                  {!isTBA && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between min-h-[20px]">
+                        <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
+                          End Date
+                        </label>
+                        <span className="text-[11px] text-[#71717A]">Optional — for multi-day events</span>
+                      </div>
+                      <DatePicker
+                        value={formData.eventEndDate}
+                        onChange={(date) => setFormData((prev) => ({ ...prev, eventEndDate: date }))}
+                        placeholder="Select end date (leave empty for a single-day event)"
+                        minDate={formData.eventDate || undefined}
+                      />
+                      {formData.eventEndDate && (
+                        <p className="text-[11px] text-[#71717A]">
+                          Certificates will show{" "}
+                          <span className="font-mono text-[#A78BFA]">
+                            {formatEventDate(formData.eventDate, formData.eventEndDate) || "—"}
+                          </span>
+                          .
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Speaker Name */}
                   <div className="space-y-2">

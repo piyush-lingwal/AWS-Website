@@ -18,6 +18,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
 import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { getEventDisplayDate } from "@/lib/certificates/issue-date";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import type {
   ApiResponse,
@@ -243,12 +244,14 @@ export async function POST(request: NextRequest) {
 
     const verificationUrl = getVerificationUrl(certificateId);
 
-    // Generate PDF in the event's colour theme
+    // Generate PDF in the event's colour theme. displayDate is the single date
+    // or the formatted range; it is stored in the snapshot so it never changes later.
     const theme = await getEventCertificateTheme(supabase, eventId);
+    const displayDate = await getEventDisplayDate(supabase, eventId);
     const pdfResult = await generateCertificatePdf({
       participantName: fullName,
       eventTitle: event.name,
-      eventDate: event.event_date,
+      eventDate: displayDate,
       certificateId,
       verificationUrl,
       theme,
@@ -280,7 +283,7 @@ export async function POST(request: NextRequest) {
         attendance_id: attendance.id,
         recipient_name_snapshot: fullName,
         event_name_snapshot: event.name,
-        event_date_snapshot: event.event_date,
+        event_date_snapshot: displayDate,
         pdf_url: pdfUrl,
         verification_url: verificationUrl,
         pdf_hash: pdfHash,
