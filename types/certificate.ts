@@ -7,7 +7,7 @@
 //
 // ============================================================
 
-import type { CertificateTheme } from "@/lib/certificates/theme";
+import type { CertificateKind, CertificateTheme } from "@/lib/certificates/theme";
 
 // ============================================================
 // Database Models
@@ -108,6 +108,7 @@ export interface CertificateGenerationInput {
   signerName?: string;         // Custom signer name; falls back to default
   signerTitle?: string;        // Custom signer title; falls back to default
   theme?: CertificateTheme;    // Colour theme of the event; falls back to orange
+  kind?: CertificateKind;      // "organiser" = Certificate of Appreciation; ignored with an award title
 }
 
 /**

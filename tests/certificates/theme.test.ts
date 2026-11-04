@@ -2,8 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import {
+  CERTIFICATE_KINDS,
   CERTIFICATE_THEMES,
   CERTIFICATE_THEME_INFO,
+  resolveCertificateKind,
   DEFAULT_CERTIFICATE_THEME,
   isCertificateTheme,
   parseCertificateTheme,
@@ -38,11 +40,39 @@ test("validateCertificateTheme rejects what parse would silently accept", () => 
   assert.equal(validateCertificateTheme(undefined).ok, false);
 });
 
-test("templateFileName picks the pair for the theme", () => {
-  assert.equal(templateFileName("orange", false), "Certificate-Template.svg");
-  assert.equal(templateFileName("orange", true), "Certificate-of-Excellence-Template.svg");
-  assert.equal(templateFileName("purple", false), "Certificate-Template-Purple.svg");
-  assert.equal(templateFileName("purple", true), "Certificate-of-Excellence-Template-Purple.svg");
+test("templateFileName picks the template for the theme and kind", () => {
+  assert.equal(templateFileName("orange", "participation"), "Certificate-Template.svg");
+  assert.equal(templateFileName("orange", "excellence"), "Certificate-of-Excellence-Template.svg");
+  assert.equal(templateFileName("orange", "organiser"), "Certificate-of-Appreciation-Template.svg");
+  assert.equal(templateFileName("purple", "participation"), "Certificate-Template-Purple.svg");
+  assert.equal(templateFileName("purple", "excellence"), "Certificate-of-Excellence-Template-Purple.svg");
+  assert.equal(templateFileName("purple", "organiser"), "Certificate-of-Appreciation-Template-Purple.svg");
+});
+
+test("resolveCertificateKind: an award title always wins, otherwise organiser or participation", () => {
+  assert.equal(resolveCertificateKind(true, "organiser"), "excellence");
+  assert.equal(resolveCertificateKind(true), "excellence");
+  assert.equal(resolveCertificateKind(false, "organiser"), "organiser");
+  assert.equal(resolveCertificateKind(false), "participation");
+  assert.equal(resolveCertificateKind(false, "participation"), "participation");
+  // A caller cannot ask for an Excellence design without an award title.
+  assert.equal(resolveCertificateKind(false, "excellence"), "participation");
+});
+
+test("every kind has a template for every theme, and no two share a file", () => {
+  const files = CERTIFICATE_THEMES.flatMap((t) => CERTIFICATE_KINDS.map((k) => templateFileName(t, k)));
+  assert.equal(new Set(files).size, CERTIFICATE_THEMES.length * CERTIFICATE_KINDS.length);
+});
+
+test("the Appreciation templates are titled for organisers and keep every placeholder", () => {
+  const placeholders = ["PROUDLY_PRESENT", "PARTICIPANT_NAME", "ACHIEVEMENT_TEXT", "EVENT_DETAILS", "SIGNER_NAME", "SIGNER_TITLE", "QR_AND_META"];
+  for (const theme of CERTIFICATE_THEMES) {
+    const file = templateFileName(theme, "organiser");
+    const svg = readFileSync(new URL(`../../public/templates/${file}`, import.meta.url), "utf8");
+    assert.ok(svg.includes('id="certificate-of-appreciation-title"'), `${file} has no Appreciation title`);
+    assert.ok(!svg.includes('id="certificate-of-participation-title"'), `${file} still has the Participation title`);
+    for (const p of placeholders) assert.ok(svg.includes(`<!-- ${p}_PLACEHOLDER -->`), `${file} lost ${p}`);
+  }
 });
 
 // The /verify page draws its own copy of the certificate (CertificatePreview) and the PDF is drawn
@@ -62,7 +92,7 @@ test("certificate renderers take their accent from the theme, never a hard-coded
 test("every theme has both template files on disk, using its own accent colour", () => {
   for (const theme of CERTIFICATE_THEMES) {
     const info = CERTIFICATE_THEME_INFO[theme];
-    for (const file of [info.participationTemplate, info.excellenceTemplate]) {
+    for (const file of Object.values(info.templates)) {
       const path = new URL(`../../public/templates/${file}`, import.meta.url);
       assert.ok(existsSync(path), `${file} is missing`);
       const svg = readFileSync(path, "utf8").toLowerCase();

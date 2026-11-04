@@ -21,27 +21,42 @@ export type CertificateTheme = (typeof CERTIFICATE_THEMES)[number];
 /** Used when an event has no theme, an unknown theme, or the column is missing. */
 export const DEFAULT_CERTIFICATE_THEME: CertificateTheme = "orange";
 
+/**
+ * Which certificate design to draw:
+ *   participation — attendees ("Certificate of Participation")
+ *   excellence    — top performers ("Certificate of Excellence"), chosen by an award title
+ *   organiser     — organising team members ("Certificate of Appreciation")
+ */
+export const CERTIFICATE_KINDS = ["participation", "excellence", "organiser"] as const;
+
+export type CertificateKind = (typeof CERTIFICATE_KINDS)[number];
+
 export interface CertificateThemeInfo {
   label: string;
   /** The coloured panel / accent colour baked into the template files. */
   accent: string;
-  /** File names inside public/templates/. */
-  participationTemplate: string;
-  excellenceTemplate: string;
+  /** File names inside public/templates/, one per certificate kind. */
+  templates: Record<CertificateKind, string>;
 }
 
 export const CERTIFICATE_THEME_INFO: Record<CertificateTheme, CertificateThemeInfo> = {
   orange: {
     label: "Orange",
     accent: "#FF9900",
-    participationTemplate: "Certificate-Template.svg",
-    excellenceTemplate: "Certificate-of-Excellence-Template.svg",
+    templates: {
+      participation: "Certificate-Template.svg",
+      excellence: "Certificate-of-Excellence-Template.svg",
+      organiser: "Certificate-of-Appreciation-Template.svg",
+    },
   },
   purple: {
     label: "Purple",
     accent: "#8B5CF6",
-    participationTemplate: "Certificate-Template-Purple.svg",
-    excellenceTemplate: "Certificate-of-Excellence-Template-Purple.svg",
+    templates: {
+      participation: "Certificate-Template-Purple.svg",
+      excellence: "Certificate-of-Excellence-Template-Purple.svg",
+      organiser: "Certificate-of-Appreciation-Template-Purple.svg",
+    },
   },
 };
 
@@ -67,8 +82,19 @@ export function validateCertificateTheme(value: unknown): ThemeValidation {
   };
 }
 
-/** The template file for a theme; `isAward` selects the Certificate of Excellence design. */
-export function templateFileName(theme: CertificateTheme, isAward: boolean): string {
-  const info = CERTIFICATE_THEME_INFO[theme];
-  return isAward ? info.excellenceTemplate : info.participationTemplate;
+/** The template file for a colour theme and certificate kind. */
+export function templateFileName(theme: CertificateTheme, kind: CertificateKind): string {
+  return CERTIFICATE_THEME_INFO[theme].templates[kind];
+}
+
+/**
+ * An award title always means a Certificate of Excellence. Otherwise the
+ * requested kind is used, defaulting to participation.
+ */
+export function resolveCertificateKind(
+  hasAwardTitle: boolean,
+  kind?: CertificateKind
+): CertificateKind {
+  if (hasAwardTitle) return "excellence";
+  return kind === "organiser" ? "organiser" : "participation";
 }

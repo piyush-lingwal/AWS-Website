@@ -22,10 +22,12 @@ import {
 import {
   CERTIFICATE_THEME_INFO,
   DEFAULT_CERTIFICATE_THEME,
+  resolveCertificateKind,
   templateFileName,
+  type CertificateKind,
   type CertificateTheme,
 } from "./theme";
-import { CERT_TEXT } from "./text-layout";
+import { CERT_TEXT, RECOGNITION_LINE } from "./text-layout";
 
 export interface SvgCertificateInput {
   participantName: string;
@@ -34,6 +36,11 @@ export interface SvgCertificateInput {
   awardTitle?: string;
   /** Colour theme (template pair + accent). Defaults to orange. */
   theme?: CertificateTheme;
+  /**
+   * "organiser" draws the Certificate of Appreciation for organising team members.
+   * Ignored when awardTitle is set (that is always a Certificate of Excellence).
+   */
+  kind?: CertificateKind;
   verificationUrl?: string;
   signerName?: string;
   signerTitle?: string;
@@ -84,14 +91,18 @@ let cachedSignatureDataUri: string | null = null;
 
 /**
  * Loads the selected SVG template from disk for each generation.
- * An award title selects the Certificate of Excellence design; `theme`
- * selects the colour variant of whichever design that is.
+ * An award title selects the Certificate of Excellence design, `kind`
+ * "organiser" the Certificate of Appreciation, and `theme` the colour variant.
  */
 export async function getBaseSvgTemplate(
   awardTitle?: string,
-  theme: CertificateTheme = DEFAULT_CERTIFICATE_THEME
+  theme: CertificateTheme = DEFAULT_CERTIFICATE_THEME,
+  kind?: CertificateKind
 ): Promise<string> {
-  const templateName = templateFileName(theme, Boolean(getAwardTitle(awardTitle)));
+  const templateName = templateFileName(
+    theme,
+    resolveCertificateKind(Boolean(getAwardTitle(awardTitle)), kind)
+  );
   const templatePath = path.join(
     process.cwd(),
     "public",
@@ -282,7 +293,7 @@ export async function generateCertificateSvg(
   const accent = CERTIFICATE_THEME_INFO[theme].accent;
   const [{ boldFont, regFont }, baseSvg, signatureDataUri] = await Promise.all([
     getFonts(),
-    getBaseSvgTemplate(awardTitle, theme),
+    getBaseSvgTemplate(awardTitle, theme, input.kind),
     input.signatureDataUri ? Promise.resolve(input.signatureDataUri) : getSignatureDataUri(),
   ]);
 
@@ -446,8 +457,9 @@ export async function generateCertificateSvg(
   const nameSize = getFittingFontSize(boldFont, participantName, CERT_TEXT.name.size, CERT_TEXT.name.maxWidth);
   const namePath = textToSvgPath(boldFont, participantName, cx, 1460, nameSize, "#161D26");
 
-  // 3. "in recognition of their participation in"
-  const line3 = "in recognition of their participation in";
+  // 3. "in recognition of their participation in" (or the organiser wording)
+  const line3 =
+    input.kind === "organiser" ? RECOGNITION_LINE.organiser : RECOGNITION_LINE.participation;
   const line3Size = getFittingFontSize(regFont, line3, CERT_TEXT.recognition.size, CERT_TEXT.recognition.maxWidth);
   const line3Path = textToSvgPath(regFont, line3, cx, 1568, line3Size, "#555555");
 
