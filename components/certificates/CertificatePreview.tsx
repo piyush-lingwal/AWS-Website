@@ -12,6 +12,7 @@ import {
   templateFileName,
   type CertificateTheme,
 } from "@/lib/certificates/theme";
+import { CERT_TEXT, MONO_ADVANCE_EM, fitMonoSize } from "@/lib/certificates/text-layout";
 
 interface CertificatePreviewProps {
   participantName: string;
@@ -33,15 +34,6 @@ function escapeXml(unsafe: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
-}
-
-function getFittingFontSize(textLength: number, baseFontSize: number, maxCharsBeforeScale: number): number {
-  if (textLength <= maxCharsBeforeScale) return baseFontSize;
-  return Math.max(18, Math.floor((maxCharsBeforeScale / textLength) * baseFontSize));
-}
-
-function getFittingMetaFontSize(text: string, baseFontSize: number): number {
-  return Math.max(1, Math.min(baseFontSize, Math.floor(1850 / (text.length * 0.602))));
 }
 
 export function CertificatePreview({
@@ -121,22 +113,25 @@ export function CertificatePreview({
     // ── Right panel center X ────────────────────────────────────
     const cx = 2475;
 
-    // Font sizes (approximated via character length)
-    const nameSize = getFittingFontSize(name.length, 96, 14);
-    const eventSize = getFittingFontSize(event.length, 52, 20);
-    const line5Size = getFittingFontSize(58, 28, 58); // fixed long string
-    const line6Size = getFittingFontSize(`on ${date}`.length, 32, 28);
-    const signerNameSize = getFittingFontSize(signer.length, 38, 18);
-    const signerTitleSize = getFittingFontSize(title.length, 26, 28);
+    // Font sizes: the same table and fitting rule the PDF uses (lib/certificates/text-layout.ts).
+    // Fixed wording (e.g. "conducted by ...") always fits at full size, which the tests assert.
+    const nameSize = fitMonoSize(name.length, CERT_TEXT.name);
+    const eventSize = fitMonoSize(event.length, CERT_TEXT.eventName);
+    const line5Size = CERT_TEXT.conductedBy.size;
+    const line6Size = fitMonoSize(`on ${date}`.length, CERT_TEXT.date);
+    const signerTitleSize = fitMonoSize(title.length, CERT_TEXT.signer);
+    const signerOrgSize = CERT_TEXT.signer.size;
+    const certIdSize = fitMonoSize(certIdText.length, CERT_TEXT.certId);
+    const verifyUrlSize = fitMonoSize(verifyUrlText.length, CERT_TEXT.verifyUrl);
 
     // ── Line 1: "This certificate is proudly presented to" ─────
-    const line1Xml = `<text x="${cx}" y="1295" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="34" font-weight="400" fill="#555555">This certificate is proudly presented to</text>`;
+    const line1Xml = `<text x="${cx}" y="1295" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${CERT_TEXT.presentedTo.size}" font-weight="400" fill="#555555">This certificate is proudly presented to</text>`;
 
     // ── Line 2: Participant Name ─────────────────────────────────
     const nameXml = `<text x="${cx}" y="1460" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${nameSize}" font-weight="700" fill="#161D26">${escapeXml(name)}</text>`;
 
     // ── Line 3: "in recognition of their participation in" ──────
-    const line3Xml = `<text x="${cx}" y="1568" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="34" font-weight="400" fill="#555555">in recognition of their participation in</text>`;
+    const line3Xml = `<text x="${cx}" y="1568" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${CERT_TEXT.recognition.size}" font-weight="400" fill="#555555">in recognition of their participation in</text>`;
 
     // ── Line 4: Event Name ───────────────────────────────────────
     const eventXml = `<text x="${cx}" y="1668" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${eventSize}" font-weight="700" fill="${accent}">${escapeXml(event)}</text>`;
@@ -153,14 +148,14 @@ export function CertificatePreview({
         ${qrDataUrl
           ? `<image href="${qrDataUrl}" x="220" y="2010" width="230" height="230" preserveAspectRatio="xMidYMid meet"/>`
           : `<rect x="220" y="2010" width="230" height="230" fill="#F4F4F6" stroke="#DEDEE3" stroke-width="2" rx="8"/><text x="335" y="2135" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="24" fill="#888888">[QR CODE]</text>`}
-        <text x="220" y="2285" font-family="'IBM Plex Mono', monospace" font-size="${getFittingMetaFontSize(certIdText, 26)}" font-weight="400" fill="#444444">${escapeXml(certIdText)}</text>
-        <text x="220" y="2330" font-family="'IBM Plex Mono', monospace" font-size="${getFittingMetaFontSize(verifyUrlText, 24)}" font-weight="400" fill="#444444">${escapeXml(verifyUrlText)}</text>
+        <text x="220" y="2285" font-family="'IBM Plex Mono', monospace" font-size="${certIdSize}" font-weight="400" fill="#444444">${escapeXml(certIdText)}</text>
+        <text x="220" y="2330" font-family="'IBM Plex Mono', monospace" font-size="${verifyUrlSize}" font-weight="400" fill="#444444">${escapeXml(verifyUrlText)}</text>
       </g>
     `;
 
     // ── Signer block: signature centered, name removed, titles centered ──
     const signerSigXml = `<image href="/Lingwal_Sign.png" x="2295" y="2005" width="360" height="130" preserveAspectRatio="xMidYMid meet" />`;
-    const signerTitlesXml = `<text x="${cx}" y="2210" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${signerTitleSize}" font-weight="400" fill="#555555">${escapeXml(title)}</text><text x="${cx}" y="2258" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${signerTitleSize}" font-weight="400" fill="#555555">AWS Student Builder Group</text>`;
+    const signerTitlesXml = `<text x="${cx}" y="2210" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${signerTitleSize}" font-weight="400" fill="#555555">${escapeXml(title)}</text><text x="${cx}" y="2258" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${signerOrgSize}" font-weight="400" fill="#555555">AWS Student Builder Group</text>`;
 
     const fontStyle = `
       <style>
@@ -184,30 +179,26 @@ export function CertificatePreview({
     if (normalizedAwardTitle) {
       const { rankText, contextText, isRunnerUp } =
         getCertificateAwardLayout(normalizedAwardTitle);
-      const nameSize = getFittingFontSize(name.length, 96, 20);
-      const rankSize = getFittingFontSize(
-        rankText.length,
-        112,
-        850 / (112 * 0.602)
-      );
-      const rankWidth = rankText.length * rankSize * 0.602;
-      const eventSize = Math.min(62, Math.floor(1240 / (event.length * 0.602)));
+      const nameSize = fitMonoSize(name.length, CERT_TEXT.name);
+      const rankSize = fitMonoSize(rankText.length, CERT_TEXT.award.rank);
+      const rankWidth = rankText.length * rankSize * MONO_ADVANCE_EM;
+      const eventSize = fitMonoSize(event.length, CERT_TEXT.award.eventName);
       const dateLine = `on ${date}`;
-      const dateSize = getFittingFontSize(dateLine.length, 32, 57);
+      const dateSize = fitMonoSize(dateLine.length, CERT_TEXT.date);
       const rankBaseline = isRunnerUp ? 1660 : 1682;
       const rankLineY = rankBaseline - rankSize * 0.38;
       const eventPrefixBaseline = isRunnerUp ? 1738 : 1760;
       const eventBaseline = isRunnerUp ? 1818 : 1840;
       const detailsBaseline = eventBaseline + 80;
-      const detailsXml = `<text x="${cx}" y="${detailsBaseline}" text-anchor="middle" font-size="28" font-weight="400" fill="#444444">conducted by AWS Student Builder Group at Tulas University</text><text x="${cx}" y="${detailsBaseline + 60}" text-anchor="middle" font-size="${dateSize}" font-weight="700" fill="#444444">${escapeXml(dateLine)}</text>`;
+      const detailsXml = `<text x="${cx}" y="${detailsBaseline}" text-anchor="middle" font-size="${CERT_TEXT.award.conductedBy.size}" font-weight="400" fill="#444444">conducted by AWS Student Builder Group at Tulas University</text><text x="${cx}" y="${detailsBaseline + 60}" text-anchor="middle" font-size="${dateSize}" font-weight="700" fill="#444444">${escapeXml(dateLine)}</text>`;
       const excellenceTextXml = `
-        <text x="${cx}" y="1347" text-anchor="middle" font-size="34" font-weight="400" fill="#555555">This certificate is proudly presented to</text>
+        <text x="${cx}" y="1347" text-anchor="middle" font-size="${CERT_TEXT.presentedTo.size}" font-weight="400" fill="#555555">This certificate is proudly presented to</text>
         <text x="${cx}" y="1497" text-anchor="middle" font-size="${nameSize}" font-weight="700" fill="#161D26">${escapeXml(name)}</text>
-        <text x="${cx}" y="1562" text-anchor="middle" font-size="32" font-weight="400" fill="#555555">for securing</text>
+        <text x="${cx}" y="1562" text-anchor="middle" font-size="${CERT_TEXT.award.securing.size}" font-weight="400" fill="#555555">for securing</text>
         <rect x="${cx - rankWidth / 2 - 195}" y="${rankLineY}" width="140" height="5" fill="${accent}"/>
         <rect x="${cx + rankWidth / 2 + 55}" y="${rankLineY}" width="140" height="5" fill="${accent}"/>
         <text x="${cx}" y="${rankBaseline}" text-anchor="middle" font-size="${rankSize}" font-weight="700" fill="${accent}">${escapeXml(rankText)}</text>
-        <text x="${cx}" y="${eventPrefixBaseline}" text-anchor="middle" font-size="32" font-weight="400" fill="#555555">${escapeXml(contextText)}</text>
+        <text x="${cx}" y="${eventPrefixBaseline}" text-anchor="middle" font-size="${CERT_TEXT.award.context.size}" font-weight="400" fill="#555555">${escapeXml(contextText)}</text>
         <text x="${cx}" y="${eventBaseline}" text-anchor="middle" font-size="${eventSize}" font-weight="700" fill="${accent}">${escapeXml(event)}</text>
       `;
       const qrAndMetaXml = `
@@ -215,12 +206,12 @@ export function CertificatePreview({
           ${qrDataUrl
             ? `<image href="${qrDataUrl}" x="220" y="2010" width="230" height="230" preserveAspectRatio="xMidYMid meet"/>`
             : `<rect x="220" y="2010" width="230" height="230" fill="#F4F4F6" stroke="#DEDEE3" stroke-width="2" rx="8"/><text x="335" y="2135" text-anchor="middle" font-size="24" fill="#888888">[QR CODE]</text>`}
-        <text x="220" y="2285" font-size="${getFittingMetaFontSize(certIdText, 26)}" font-weight="400" fill="#444444">${escapeXml(certIdText)}</text>
-        <text x="220" y="2330" font-size="${getFittingMetaFontSize(verifyUrlText, 24)}" font-weight="400" fill="#444444">${escapeXml(verifyUrlText)}</text>
+        <text x="220" y="2285" font-size="${certIdSize}" font-weight="400" fill="#444444">${escapeXml(certIdText)}</text>
+        <text x="220" y="2330" font-size="${verifyUrlSize}" font-weight="400" fill="#444444">${escapeXml(verifyUrlText)}</text>
         </g>
       `;
       const signerSigXml = `${detailsXml}<image href="/Lingwal_Sign.png" x="2295" y="2077" width="360" height="130" preserveAspectRatio="xMidYMid meet" />`;
-      const signerTitlesXml = `<text x="${cx}" y="2282" text-anchor="middle" font-size="28" font-weight="400" fill="#555555">${escapeXml(title)}</text><text x="${cx}" y="2330" text-anchor="middle" font-size="28" font-weight="400" fill="#555555">AWS Student Builder Group</text>`;
+      const signerTitlesXml = `<text x="${cx}" y="2282" text-anchor="middle" font-size="${signerTitleSize}" font-weight="400" fill="#555555">${escapeXml(title)}</text><text x="${cx}" y="2330" text-anchor="middle" font-size="${signerOrgSize}" font-weight="400" fill="#555555">AWS Student Builder Group</text>`;
 
       return baseSvg
         .replace('width="3300" height="2550"', 'width="100%" height="100%"')

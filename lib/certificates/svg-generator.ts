@@ -25,6 +25,7 @@ import {
   templateFileName,
   type CertificateTheme,
 } from "./theme";
+import { CERT_TEXT } from "./text-layout";
 
 export interface SvgCertificateInput {
   participantName: string;
@@ -52,15 +53,15 @@ export const SVG_CANVAS = { width: 3300, height: 2550 } as const;
  * x=220 (left-aligned), y=2285 (baseline).
  */
 export const CERT_ID_SVG_POSITION = { x: 220, y: 2285 } as const;
-export const CERT_ID_FONT_SIZE = 26;
+export const CERT_ID_FONT_SIZE: number = CERT_TEXT.certId.size;
 
 /**
  * The raw SVG-space position of the verification URL text line.
  * x=220 (left-aligned, same as certId block), y=2330 (baseline).
  */
 export const VERIFY_URL_SVG_POSITION = { x: 220, y: 2330 } as const;
-export const VERIFY_URL_FONT_SIZE = 24;
-export const CERTIFICATE_META_MAX_WIDTH = 1850;
+export const VERIFY_URL_FONT_SIZE: number = CERT_TEXT.verifyUrl.size;
+export const CERTIFICATE_META_MAX_WIDTH: number = CERT_TEXT.certId.maxWidth;
 
 /** Returns the Certificate ID text as it appears on the certificate. */
 export function buildCertIdText(certificateId: string): string {
@@ -318,14 +319,14 @@ export async function generateCertificateSvg(
     const { rankText, contextText, isRunnerUp } =
       getCertificateAwardLayout(awardTitle);
     const line1 = "This certificate is proudly presented to";
-    const line1Size = getFittingFontSize(regFont, line1, 34, 1180);
+    const line1Size = getFittingFontSize(regFont, line1, CERT_TEXT.presentedTo.size, CERT_TEXT.presentedTo.maxWidth);
     const line1Path = textToSvgPath(regFont, line1, cx, 1347, line1Size, "#555555");
 
-    const nameSize = getFittingFontSize(boldFont, participantName, 96, 1200);
+    const nameSize = getFittingFontSize(boldFont, participantName, CERT_TEXT.name.size, CERT_TEXT.name.maxWidth);
     const namePath = textToSvgPath(boldFont, participantName, cx, 1497, nameSize, "#161D26");
 
     const securingText = "for securing";
-    const securingSize = getFittingFontSize(regFont, securingText, 32, 1180);
+    const securingSize = getFittingFontSize(regFont, securingText, CERT_TEXT.award.securing.size, CERT_TEXT.award.securing.maxWidth);
     const securingPath = textToSvgPath(
       regFont,
       securingText,
@@ -335,7 +336,7 @@ export async function generateCertificateSvg(
       "#555555"
     );
 
-    const rankSize = getFittingFontSize(boldFont, rankText, 112, 850);
+    const rankSize = getFittingFontSize(boldFont, rankText, CERT_TEXT.award.rank.size, CERT_TEXT.award.rank.maxWidth);
     const rankWidth = boldFont.getAdvanceWidth(rankText, rankSize);
     const rankBaseline = isRunnerUp ? 1660 : 1682;
     const rankPath = textToSvgPath(
@@ -359,10 +360,10 @@ export async function generateCertificateSvg(
       eventPrefix,
       cx,
       eventPrefixBaseline,
-      getFittingFontSize(regFont, eventPrefix, 32, 1240),
+      getFittingFontSize(regFont, eventPrefix, CERT_TEXT.award.context.size, CERT_TEXT.award.context.maxWidth),
       "#555555"
     );
-    const eventSize = getFittingFontSize(boldFont, eventTitle, 62, 1240);
+    const eventSize = getFittingFontSize(boldFont, eventTitle, CERT_TEXT.award.eventName.size, CERT_TEXT.award.eventName.maxWidth);
     const eventBaseline = isRunnerUp ? 1818 : 1840;
     const eventNamePath = textToSvgPath(
       boldFont,
@@ -374,7 +375,7 @@ export async function generateCertificateSvg(
     );
 
     const details = "conducted by AWS Student Builder Group at Tulas University";
-    const detailsSize = getFittingFontSize(regFont, details, 28, 1240);
+    const detailsSize = getFittingFontSize(regFont, details, CERT_TEXT.award.conductedBy.size, CERT_TEXT.award.conductedBy.maxWidth);
     const detailsBaseline = eventBaseline + 80;
     const detailsPath = textToSvgPath(
       regFont,
@@ -390,7 +391,7 @@ export async function generateCertificateSvg(
       dateText,
       cx,
       detailsBaseline + 60,
-      getFittingFontSize(boldFont, dateText, 32, 1180),
+      getFittingFontSize(boldFont, dateText, CERT_TEXT.date.size, CERT_TEXT.date.maxWidth),
       "#444444"
     );
 
@@ -408,9 +409,9 @@ export async function generateCertificateSvg(
     const sigImgXml = signatureDataUri
       ? `<image href="${signatureDataUri}" x="2295" y="2077" width="360" height="130" preserveAspectRatio="xMidYMid meet" />`
       : "";
-    const signerTitleSize = getFittingFontSize(regFont, signerTitle, 28, 580);
+    const signerTitleSize = getFittingFontSize(regFont, signerTitle, CERT_TEXT.signer.size, CERT_TEXT.signer.maxWidth);
     const signerTitlePath = textToSvgPath(regFont, signerTitle, cx, 2282, signerTitleSize, "#555555");
-    const signerOrgSize = getFittingFontSize(regFont, signerOrg, 28, 580);
+    const signerOrgSize = getFittingFontSize(regFont, signerOrg, CERT_TEXT.signer.size, CERT_TEXT.signer.maxWidth);
     const signerOrgPath = textToSvgPath(regFont, signerOrg, cx, 2330, signerOrgSize, "#555555");
 
     return baseSvg
@@ -438,30 +439,30 @@ export async function generateCertificateSvg(
 
   // 1. "This certificate is proudly presented to"
   const line1 = "This certificate is proudly presented to";
-  const line1Size = getFittingFontSize(regFont, line1, 34, 1180);
+  const line1Size = getFittingFontSize(regFont, line1, CERT_TEXT.presentedTo.size, CERT_TEXT.presentedTo.maxWidth);
   const line1Path = textToSvgPath(regFont, line1, cx, 1295, line1Size, "#555555");
 
   // 2. Participant Name (bold, large)
-  const nameSize = getFittingFontSize(boldFont, participantName, 96, 1200);
+  const nameSize = getFittingFontSize(boldFont, participantName, CERT_TEXT.name.size, CERT_TEXT.name.maxWidth);
   const namePath = textToSvgPath(boldFont, participantName, cx, 1460, nameSize, "#161D26");
 
   // 3. "in recognition of their participation in"
   const line3 = "in recognition of their participation in";
-  const line3Size = getFittingFontSize(regFont, line3, 34, 1180);
+  const line3Size = getFittingFontSize(regFont, line3, CERT_TEXT.recognition.size, CERT_TEXT.recognition.maxWidth);
   const line3Path = textToSvgPath(regFont, line3, cx, 1568, line3Size, "#555555");
 
   // 4. Event Name (bold, theme accent)
-  const eventSize = getFittingFontSize(boldFont, eventTitle, 52, 1200);
+  const eventSize = getFittingFontSize(boldFont, eventTitle, CERT_TEXT.eventName.size, CERT_TEXT.eventName.maxWidth);
   const eventPath = textToSvgPath(boldFont, eventTitle, cx, 1668, eventSize, accent);
 
   // 5. "conducted by AWS Student Builder Group at Tulas University"
   const line5 = "conducted by AWS Student Builder Group at Tulas University";
-  const line5Size = getFittingFontSize(regFont, line5, 28, 1200);
+  const line5Size = getFittingFontSize(regFont, line5, CERT_TEXT.conductedBy.size, CERT_TEXT.conductedBy.maxWidth);
   const line5Path = textToSvgPath(regFont, line5, cx, 1762, line5Size, "#444444");
 
   // 6. "on {{DATE}}"
   const line6 = `on ${eventDate}`;
-  const line6Size = getFittingFontSize(boldFont, line6, 32, 1180);
+  const line6Size = getFittingFontSize(boldFont, line6, CERT_TEXT.date.size, CERT_TEXT.date.maxWidth);
   const line6Path = textToSvgPath(boldFont, line6, cx, 1840, line6Size, "#444444");
 
   // ── Bottom-left: QR code + Certificate ID + Verify block ────────
@@ -485,10 +486,10 @@ export async function generateCertificateSvg(
     : "";
 
   // Signer name removed per user request: "Remove the name Piyush Lingwal from there only keep the signature."
-  const signerTitleSize = getFittingFontSize(regFont, signerTitle, 28, 580);
+  const signerTitleSize = getFittingFontSize(regFont, signerTitle, CERT_TEXT.signer.size, CERT_TEXT.signer.maxWidth);
   const signerTitlePath = textToSvgPath(regFont, signerTitle, cx, 2210, signerTitleSize, "#555555");
 
-  const signerOrgSize = getFittingFontSize(regFont, signerOrg, 28, 580);
+  const signerOrgSize = getFittingFontSize(regFont, signerOrg, CERT_TEXT.signer.size, CERT_TEXT.signer.maxWidth);
   const signerOrgPath = textToSvgPath(regFont, signerOrg, cx, 2258, signerOrgSize, "#555555");
 
   // Replace placeholders in baseSvg with pure vector glyph paths
