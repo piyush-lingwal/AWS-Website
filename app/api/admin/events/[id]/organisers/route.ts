@@ -1,4 +1,5 @@
 // ============================================================
+// GET  /api/admin/events/[id]/organisers — list issued appreciation certificates
 // POST /api/admin/events/[id]/organisers — issue Certificates of Appreciation
 // ============================================================
 //
@@ -20,6 +21,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import { getEventIssueDate, insertCertificateWithDisplayDate } from "@/lib/certificates/issue-date";
+import { isMissingColumnError } from "@/lib/certificates/event-theme";
 import { mapLimit } from "@/lib/media/concurrency";
 import { isUuid } from "@/lib/auth/roles";
 import { validateOrganiser } from "@/lib/certificates/organiser";
@@ -136,6 +138,51 @@ async function issueOne(db: Db, event: EventInfo, rowNumber: number, raw: unknow
   }
 }
 
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
+
+  const { id } = await params;
+  if (!isUuid(id)) return fail("Invalid event id.", 400);
+
+  const db = getAdminClient();
+  if (!db) return fail("Database not configured.", 500);
+
+  // Organiser certificates for this event, newest first, with the recipient's email.
+  const res = await db
+    .from("certificates")
+    .select("certificate_id, recipient_name_snapshot, role_snapshot, issue_date, participant:participants(email)")
+    .eq("event_id", id.toLowerCase())
+    .eq("certificate_kind", "organiser")
+    .order("issue_date", { ascending: false });
+
+  if (res.error) {
+    // Before the migration there is no certificate_kind column: no organisers yet.
+    if (isMissingColumnError(res.error, "certificate_kind")) {
+      return NextResponse.json({ success: true, data: { organisers: [] } } satisfies ApiResponse, {
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
+    console.error("[API/admin/organisers] List error:", res.error.message);
+    return fail("Failed to load organising team certificates.", 500);
+  }
+
+  const organisers = (res.data ?? []).map((row) => {
+    const p = Array.isArray(row.participant) ? row.participant[0] : row.participant;
+    return {
+      certificateId: row.certificate_id as string,
+      fullName: row.recipient_name_snapshot as string,
+      role: (row.role_snapshot as string | null) ?? "",
+      email: (p?.email as string | undefined) ?? "",
+      issueDate: row.issue_date as string,
+    };
+  });
+
+  return NextResponse.json({ success: true, data: { organisers } } satisfies ApiResponse, {
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.response;
@@ -199,4 +246,39 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({ success: true, data: { results, summary } } satisfies ApiResponse, {
     headers: { "Cache-Control": "no-store" },
   });
+}
+
+// DELETE /api/admin/events/[id]/organisers?certificateId=... — revoke one appreciation certificate
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
+
+  const { id } = await params;
+  if (!isUuid(id)) return fail("Invalid event id.", 400);
+
+  const certificateId = new URL(request.url).searchParams.get("certificateId")?.trim();
+  if (!certificateId) return fail("A certificate id is required.", 400);
+
+  const db = getAdminClient();
+  if (!db) return fail("Database not configured.", 500);
+
+  // Scope the delete to this event and to organiser certificates only, so this
+  // endpoint can never remove a participation or excellence certificate.
+  const del = await db
+    .from("certificates")
+    .delete()
+    .eq("certificate_id", certificateId)
+    .eq("event_id", id.toLowerCase())
+    .eq("certificate_kind", "organiser")
+    .select("certificate_id");
+
+  if (del.error) {
+    console.error("[API/admin/organisers] Delete error:", del.error.message);
+    return fail("Failed to remove the certificate.", 500);
+  }
+  if (!del.data || del.data.length === 0) {
+    return fail("No matching organising-team certificate found for this event.", 404);
+  }
+
+  return NextResponse.json({ success: true } satisfies ApiResponse, { headers: { "Cache-Control": "no-store" } });
 }

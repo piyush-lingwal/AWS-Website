@@ -112,6 +112,14 @@ function getInitials(name: string): string {
     .toUpperCase() || "ST";
 }
 
+interface OrganiserCertRow {
+  certificateId: string;
+  fullName: string;
+  role: string;
+  email: string;
+  issueDate: string;
+}
+
 interface TopPerformerRow {
   id: string;
   participantId: string;
@@ -220,6 +228,10 @@ function AdminPageContent() {
   const [topPerformersError, setTopPerformersError] = useState("");
   const [addingTopPerformer, setAddingTopPerformer] = useState(false);
   const [deletingTopPerformerId, setDeletingTopPerformerId] = useState<string | null>(null);
+  // Organising-team (Certificate of Appreciation) list for the viewed event.
+  const [organisers, setOrganisers] = useState<OrganiserCertRow[]>([]);
+  const [loadingOrganisers, setLoadingOrganisers] = useState(false);
+  const [deletingOrganiserId, setDeletingOrganiserId] = useState<string | null>(null);
   const [issuingTopPerformerId, setIssuingTopPerformerId] = useState<string | null>(null);
   const [issuingAllTopPerformers, setIssuingAllTopPerformers] = useState(false);
   const [sendingTopPerformerId, setSendingTopPerformerId] = useState<string | null>(null);
@@ -315,6 +327,51 @@ function AdminPageContent() {
   }, [confirmModal.isOpen, closeConfirm]);
 
   // ── Data Fetching ─────────────────────────────────────────
+  // ── Fetch Organising-Team (Appreciation) certificates ─────
+  const fetchOrganisers = useCallback(async (eventId: string) => {
+    if (!eventId) return;
+    setLoadingOrganisers(true);
+    try {
+      const res = await fetch(`/api/admin/events/${eventId}/organisers`, { cache: "no-store" });
+      const json = await res.json();
+      setOrganisers(json.success && Array.isArray(json.data?.organisers) ? json.data.organisers : []);
+    } catch (err) {
+      console.error("Failed to load organising team certificates:", err);
+      setOrganisers([]);
+    } finally {
+      setLoadingOrganisers(false);
+    }
+  }, []);
+
+  const handleRevokeOrganiser = useCallback(
+    (eventId: string, cert: OrganiserCertRow) => {
+      showConfirm({
+        title: "Remove certificate",
+        message: `Remove the Certificate of Appreciation issued to "${cert.fullName}"? The certificate and its verification link will stop working.`,
+        confirmLabel: "Remove",
+        variant: "danger",
+        onConfirm: async () => {
+          setDeletingOrganiserId(cert.certificateId);
+          try {
+            const res = await fetch(
+              `/api/admin/events/${eventId}/organisers?certificateId=${encodeURIComponent(cert.certificateId)}`,
+              { method: "DELETE" }
+            );
+            const json = await res.json();
+            if (!res.ok || !json.success) throw new Error(json.error || "Could not remove the certificate.");
+            toast.success(`Removed ${cert.fullName}'s certificate.`);
+            await fetchOrganisers(eventId);
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Could not remove the certificate.");
+          } finally {
+            setDeletingOrganiserId(null);
+          }
+        },
+      });
+    },
+    [fetchOrganisers, showConfirm]
+  );
+
   // ── Fetch Team Members ─────────────────────────────────────
   const fetchTeamMembers = useCallback(async () => {
     setLoadingTeamMembers(true);
@@ -388,8 +445,9 @@ function AdminPageContent() {
   useEffect(() => {
     if (selectedEventId) {
       fetchParticipants(selectedEventId);
+      fetchOrganisers(selectedEventId);
     }
-  }, [selectedEventId, fetchParticipants]);
+  }, [selectedEventId, fetchParticipants, fetchOrganisers]);
 
   useEffect(() => {
     if (portalConfig?.active_event_id) {
@@ -1975,7 +2033,7 @@ function AdminPageContent() {
                       eventId={currentViewEvent.id}
                       eventName={currentViewEvent.name}
                       eventHasDate={Boolean(currentViewEvent.event_date?.trim())}
-                      onIssued={() => fetchParticipants(currentViewEvent.id)}
+                      onIssued={() => fetchOrganisers(currentViewEvent.id)}
                     />
 
                     {/* Export CSV Button */}
@@ -2488,6 +2546,102 @@ function AdminPageContent() {
                   </div>
                 </>
               )}
+            </section>
+
+            {/* ══════════════════════════════════════════════════ */}
+            {/* ── ORGANISING TEAM (CERTIFICATES OF APPRECIATION) ─ */}
+            {/* ══════════════════════════════════════════════════ */}
+            <section className="space-y-5 pt-8 border-t border-white/[0.08]">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[10px] font-mono uppercase tracking-wider text-[#C4B5FD] mb-2">
+                    <Users className="w-3 h-3" />
+                    <span>Organising Team</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    Certificates of Appreciation
+                  </h2>
+                  <p className="text-xs text-[#71717A] mt-1">
+                    Appreciation certificates issued to the organising team of{" "}
+                    <span className="text-[#A78BFA]">{currentViewEvent.name}</span>. Use the Organising Team button above to issue more.
+                  </p>
+                </div>
+                <span className="text-xs font-mono text-[#C4B5FD] px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] self-start whitespace-nowrap">
+                  {organisers.length} issued
+                </span>
+              </div>
+
+              <div className="max-w-full overflow-x-auto rounded-2xl border border-white/[0.08]">
+                <table className="w-full min-w-[640px] text-left text-xs">
+                  <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-[#71717A]">
+                    <tr>
+                      <th className="px-4 py-3">Member</th>
+                      <th className="px-4 py-3">Role</th>
+                      <th className="px-4 py-3">Certificate ID</th>
+                      <th className="px-4 py-3">Issued</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.05]">
+                    {loadingOrganisers ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-[#71717A]">
+                          <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Loading certificates…</span>
+                        </td>
+                      </tr>
+                    ) : organisers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-[#71717A]">
+                          No appreciation certificates issued for this event yet.
+                        </td>
+                      </tr>
+                    ) : organisers.map((org) => (
+                      <tr key={org.certificateId} className="text-[#D4D4D8] hover:bg-white/[0.02]">
+                        <td className="px-4 py-3">
+                          <span className="block font-semibold text-white">{org.fullName}</span>
+                          {org.email && <span className="text-[10px] text-[#71717A] font-mono">{org.email}</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="inline-block px-2.5 py-1 rounded-lg bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[#C4B5FD] font-medium text-[11px]">
+                            {org.role || "Organising Team"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Link href={`/verify/${org.certificateId}`} target="_blank" className="font-mono text-[11px] text-[#A78BFA] hover:underline">
+                            {org.certificateId}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 font-mono text-[11px] text-[#71717A] whitespace-nowrap">{formatDate(org.issueDate)}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <a
+                              href={`/api/certificates/${org.certificateId}`}
+                              download={`${org.certificateId}.pdf`}
+                              className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center justify-center transition-colors"
+                              title="Download PDF"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleRevokeOrganiser(currentViewEvent.id, org)}
+                              disabled={deletingOrganiserId === org.certificateId}
+                              className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-red-500/20 text-[#71717A] hover:text-red-400 border border-white/[0.06] hover:border-red-500/30 flex items-center justify-center transition-colors disabled:opacity-40"
+                              title="Remove certificate"
+                            >
+                              {deletingOrganiserId === org.certificateId ? (
+                                <div className="w-3 h-3 rounded-full border border-red-400/30 border-t-red-400 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
                 </>
               ) : (
