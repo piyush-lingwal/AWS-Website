@@ -18,5 +18,12 @@ ALTER TABLE public.events
     ADD CONSTRAINT events_end_date_after_start_check
     CHECK (event_end_date IS NULL OR event_date IS NULL OR event_end_date >= event_date);
 
--- Make PostgREST (the Supabase API) see the new column straight away.
+-- Certificates snapshot the DATE (event_date_snapshot) and now also the human
+-- display string, which may be a range ("29 Oct - 05 Nov 2026") and so cannot
+-- live in a DATE column. Null for certificates issued before this migration;
+-- readers fall back to formatting event_date_snapshot in that case.
+ALTER TABLE public.certificates
+    ADD COLUMN IF NOT EXISTS event_date_display_snapshot TEXT;
+
+-- Make PostgREST (the Supabase API) see the new columns straight away.
 NOTIFY pgrst, 'reload schema';

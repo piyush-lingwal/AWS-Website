@@ -11,7 +11,7 @@ import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
 import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
-import { getEventDisplayDate } from "@/lib/certificates/issue-date";
+import { getEventIssueDate, insertCertificateWithDisplayDate } from "@/lib/certificates/issue-date";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import type { ApiResponse } from "@/types/certificate";
 import { cleanFullName } from "@/lib/utils";
@@ -179,11 +179,11 @@ export async function POST(request: NextRequest) {
     const verificationUrl = getVerificationUrl(certificateId);
     const participantName = cleanFullName(participant.full_name);
     const theme = await getEventCertificateTheme(supabase, event.id);
-    const displayDate = await getEventDisplayDate(supabase, event.id);
+    const issueDate = await getEventIssueDate(supabase, event.id);
     const pdfResult = await generateCertificatePdf({
       participantName,
       eventTitle: event.name,
-      eventDate: displayDate,
+      eventDate: issueDate.display,
       certificateId,
       awardTitle,
       verificationUrl,
@@ -200,22 +200,21 @@ export async function POST(request: NextRequest) {
 
     const pdfUrl = `/api/certificates/${certificateId}`;
     const pdfHash = createHash("sha256").update(pdfResult.pdfBuffer).digest("hex");
-    const { error: insertError } = await supabase
-      .from("certificates")
-      .insert({
-        certificate_id: certificateId,
-        event_id: event.id,
-        participant_id: participant.id,
-        attendance_id: attendance.id,
-        recipient_name_snapshot: participantName,
-        event_name_snapshot: event.name,
-        event_date_snapshot: displayDate,
-        pdf_url: pdfUrl,
-        verification_url: verificationUrl,
-        pdf_hash: pdfHash,
-        issue_date: new Date().toISOString().split("T")[0],
-        award_title: awardTitle,
-      });
+    const { error: insertError } = await insertCertificateWithDisplayDate(supabase, {
+      certificate_id: certificateId,
+      event_id: event.id,
+      participant_id: participant.id,
+      attendance_id: attendance.id,
+      recipient_name_snapshot: participantName,
+      event_name_snapshot: event.name,
+      event_date_snapshot: issueDate.start,
+      event_date_display_snapshot: issueDate.display,
+      pdf_url: pdfUrl,
+      verification_url: verificationUrl,
+      pdf_hash: pdfHash,
+      issue_date: new Date().toISOString().split("T")[0],
+      award_title: awardTitle,
+    });
 
     if (insertError) {
       console.error("[API/admin/certificates/excellence] Certificate insert failed:", insertError);

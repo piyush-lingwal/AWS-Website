@@ -53,7 +53,9 @@ export interface DbCertificate {
   attendance_id: string;
   recipient_name_snapshot: string;
   event_name_snapshot: string;
-  event_date_snapshot: string;   // ISO date string
+  event_date_snapshot: string;   // ISO date string (the event start date)
+  /** Human display date, possibly a range ("29 Oct - 05 Nov 2026"). Null for old certificates. */
+  event_date_display_snapshot?: string | null;
   pdf_url: string | null;
   verification_url: string;
   pdf_hash: string | null;

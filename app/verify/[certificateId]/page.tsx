@@ -4,7 +4,8 @@ import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { CertificatePreview } from "@/components/certificates/CertificatePreview";
-import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { getEventCertificateTheme, isMissingColumnError } from "@/lib/certificates/event-theme";
+import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import {
   ShieldCheck,
   Award,
@@ -53,9 +54,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
   if (isFormatValid) {
     const supabase = getAdminClient();
     if (supabase) {
-      const { data } = await supabase
-        .from("certificates")
-        .select(`
+      const baseColumns = `
           certificate_id,
           recipient_name_snapshot,
           event_name_snapshot,
@@ -69,10 +68,17 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           participant:participants (
             course,
             roll_no
-          )
-        `)
+          )`;
+      let dataRes = await supabase
+        .from("certificates")
+        .select(baseColumns + ", event_date_display_snapshot")
         .eq("certificate_id", cleanId)
         .maybeSingle();
+      // Fall back for a database without the display column yet.
+      if (dataRes.error && isMissingColumnError(dataRes.error, "event_date_display_snapshot")) {
+        dataRes = await supabase.from("certificates").select(baseColumns).eq("certificate_id", cleanId).maybeSingle();
+      }
+      const data = dataRes.data as (Record<string, any>) | null;
 
       if (data) {
         const part = Array.isArray(data.participant)
@@ -110,8 +116,8 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           verificationUrl: data.verification_url,
           // Same lookup the PDF uses, so the preview and the download always match.
           theme: await getEventCertificateTheme(supabase, data.event_id),
-          // Already formatted when the certificate was issued (single day or range); show it verbatim.
-          eventDateDisplay: data.event_date_snapshot,
+          // Stored display string (single day or range), or the start date for old certificates.
+          eventDateDisplay: certificateDisplayDate(data),
         };
       }
     }

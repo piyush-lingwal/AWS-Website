@@ -17,8 +17,27 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
-import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { getEventCertificateTheme, isMissingColumnError } from "@/lib/certificates/event-theme";
+import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import { sendCertificateEmail } from "@/lib/email";
+
+const SINGLE_CERT_COLUMNS =
+  "id, certificate_id, event_id, recipient_name_snapshot, event_name_snapshot, event_date_snapshot, award_title, verification_url, participant:participants(email, full_name)";
+const BULK_CERT_COLUMNS =
+  "id, certificate_id, recipient_name_snapshot, event_name_snapshot, event_date_snapshot, award_title, verification_url, participant:participants(email, full_name)";
+
+interface CertRow {
+  id: string;
+  certificate_id: string;
+  event_id?: string;
+  recipient_name_snapshot: string;
+  event_name_snapshot: string;
+  event_date_snapshot: string | null;
+  event_date_display_snapshot?: string | null;
+  award_title: string | null;
+  verification_url: string | null;
+  participant: { email: string | null; full_name: string | null } | { email: string | null; full_name: string | null }[] | null;
+}
 import type { ApiResponse } from "@/types/certificate";
 
 export const dynamic = "force-dynamic";
@@ -68,24 +87,17 @@ export async function POST(request: NextRequest) {
     if (certificateId) {
       const cleanId = certificateId.trim();
 
-      const { data: cert, error: certError } = await supabase
+      const withDisplay = await supabase
         .from("certificates")
-        .select(`
-          id,
-          certificate_id,
-          event_id,
-          recipient_name_snapshot,
-          event_name_snapshot,
-          event_date_snapshot,
-          award_title,
-          verification_url,
-          participant:participants (
-            email,
-            full_name
-          )
-        `)
+        .select(SINGLE_CERT_COLUMNS + ", event_date_display_snapshot")
         .eq("certificate_id", cleanId)
         .maybeSingle();
+      const fallback =
+        withDisplay.error && isMissingColumnError(withDisplay.error, "event_date_display_snapshot")
+          ? await supabase.from("certificates").select(SINGLE_CERT_COLUMNS).eq("certificate_id", cleanId).maybeSingle()
+          : null;
+      const cert = (fallback?.data ?? withDisplay.data) as CertRow | null;
+      const certError = fallback?.error ?? withDisplay.error;
 
       if (certError || !cert) {
         return NextResponse.json(
@@ -110,12 +122,12 @@ export async function POST(request: NextRequest) {
       }
 
       // Generate the PDF in the event's colour theme
-      const theme = await getEventCertificateTheme(supabase, cert.event_id);
+      const theme = await getEventCertificateTheme(supabase, cert.event_id ?? "");
       const pdfResult = await generateCertificatePdf({
         certificateId: cert.certificate_id,
         participantName: cert.recipient_name_snapshot,
         eventTitle: cert.event_name_snapshot,
-        eventDate: cert.event_date_snapshot,
+        eventDate: certificateDisplayDate(cert),
         awardTitle: cert.award_title || undefined,
         verificationUrl: cert.verification_url || undefined,
         theme,
@@ -136,9 +148,9 @@ export async function POST(request: NextRequest) {
         to: recipientEmail,
         recipientName: cert.recipient_name_snapshot,
         eventName: cert.event_name_snapshot,
-        eventDate: cert.event_date_snapshot,
+        eventDate: certificateDisplayDate(cert),
         certificateId: cert.certificate_id,
-        verificationUrl: cert.verification_url,
+        verificationUrl: cert.verification_url ?? "",
         awardTitle: cert.award_title || undefined,
         pdfBuffer: pdfResult.pdfBuffer,
       });
@@ -172,23 +184,17 @@ export async function POST(request: NextRequest) {
     // CASE B: Bulk Send for an Entire Event
     // ─────────────────────────────────────────────────────────────
     if (eventId) {
-      const { data: certs, error: fetchErr } = await supabase
+      const withDisplay = await supabase
         .from("certificates")
-        .select(`
-          id,
-          certificate_id,
-          recipient_name_snapshot,
-          event_name_snapshot,
-          event_date_snapshot,
-          award_title,
-          verification_url,
-          participant:participants (
-            email,
-            full_name
-          )
-        `)
+        .select(BULK_CERT_COLUMNS + ", event_date_display_snapshot")
         .eq("event_id", eventId)
         .is("award_title", null);
+      const fallback =
+        withDisplay.error && isMissingColumnError(withDisplay.error, "event_date_display_snapshot")
+          ? await supabase.from("certificates").select(BULK_CERT_COLUMNS).eq("event_id", eventId).is("award_title", null)
+          : null;
+      const certs = (fallback?.data ?? withDisplay.data) as CertRow[] | null;
+      const fetchErr = fallback?.error ?? withDisplay.error;
 
       if (fetchErr) {
         return NextResponse.json(
@@ -232,7 +238,7 @@ export async function POST(request: NextRequest) {
             certificateId: cert.certificate_id,
             participantName: cert.recipient_name_snapshot,
             eventTitle: cert.event_name_snapshot,
-            eventDate: cert.event_date_snapshot,
+            eventDate: certificateDisplayDate(cert),
             awardTitle: cert.award_title || undefined,
             verificationUrl: cert.verification_url || undefined,
             theme,
@@ -248,9 +254,9 @@ export async function POST(request: NextRequest) {
             to: recipientEmail,
             recipientName: cert.recipient_name_snapshot,
             eventName: cert.event_name_snapshot,
-            eventDate: cert.event_date_snapshot,
+            eventDate: certificateDisplayDate(cert),
             certificateId: cert.certificate_id,
-            verificationUrl: cert.verification_url,
+            verificationUrl: cert.verification_url ?? "",
             awardTitle: cert.award_title || undefined,
             pdfBuffer: pdfResult.pdfBuffer,
           });

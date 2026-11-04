@@ -14,7 +14,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
-import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { getEventCertificateTheme, isMissingColumnError } from "@/lib/certificates/event-theme";
+import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
 import type { ApiResponse } from "@/types/certificate";
 
@@ -43,14 +44,20 @@ export async function GET(
       );
     }
 
-    // 1. Fetch certificate record from DB
-    const { data: cert, error: certError } = await supabase
+    // 1. Fetch certificate record from DB. event_date_display_snapshot is
+    //    selected when available; fall back for a DB without the column yet.
+    const columns = "id, certificate_id, event_id, recipient_name_snapshot, event_name_snapshot, event_date_snapshot, award_title, verification_url";
+    let certRes = await supabase
       .from("certificates")
-      .select("id, certificate_id, event_id, recipient_name_snapshot, event_name_snapshot, event_date_snapshot, award_title, verification_url")
+      .select(columns + ", event_date_display_snapshot")
       .eq("certificate_id", cleanId)
       .maybeSingle();
+    if (certRes.error && isMissingColumnError(certRes.error, "event_date_display_snapshot")) {
+      certRes = await supabase.from("certificates").select(columns).eq("certificate_id", cleanId).maybeSingle();
+    }
+    const cert = certRes.data as (Record<string, string | null>) | null;
 
-    if (certError || !cert) {
+    if (certRes.error || !cert) {
       return NextResponse.json(
         { success: false, error: "Certificate not found." } satisfies ApiResponse,
         { status: 404 }
@@ -58,13 +65,14 @@ export async function GET(
     }
 
     // 2. Generate PDF using immutable snapshot fields. The colour follows the
-    //    event's current theme (orange when none is set).
-    const theme = await getEventCertificateTheme(supabase, cert.event_id);
+    //    event's current theme (orange when none is set). The date is the stored
+    //    display string (single day or range), or the start date for old certificates.
+    const theme = await getEventCertificateTheme(supabase, cert.event_id as string);
     const pdfResult = await generateCertificatePdf({
-      certificateId: cert.certificate_id,
-      participantName: cert.recipient_name_snapshot,
-      eventTitle: cert.event_name_snapshot,
-      eventDate: cert.event_date_snapshot,
+      certificateId: cert.certificate_id as string,
+      participantName: cert.recipient_name_snapshot as string,
+      eventTitle: cert.event_name_snapshot as string,
+      eventDate: certificateDisplayDate(cert),
       awardTitle: cert.award_title || undefined,
       verificationUrl: cert.verification_url || undefined,
       theme,
@@ -80,7 +88,7 @@ export async function GET(
 
     // 3. Determine inline vs attachment disposition
     const isInline = request.nextUrl.searchParams.get("inline") === "true";
-    const filename = `${cert.certificate_id}.pdf`;
+    const filename = `${cert.certificate_id ?? cleanId}.pdf`;
     const dispositionType = isInline ? "inline" : "attachment";
 
     return new NextResponse(new Uint8Array(pdfResult.pdfBuffer), {
@@ -90,7 +98,7 @@ export async function GET(
         "Content-Disposition": `${dispositionType}; filename="${filename}"`,
         "Content-Length": pdfResult.pdfBuffer.length.toString(),
         "Cache-Control": "no-store, max-age=0",
-        "X-Certificate-Id": cert.certificate_id,
+        "X-Certificate-Id": cert.certificate_id ?? cleanId,
       },
     });
   } catch (error: any) {

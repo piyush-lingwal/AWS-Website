@@ -26,11 +26,49 @@ export function eventDisplayDate(event: {
 }
 
 /**
- * Loads an event's dates and returns its display string. `event_end_date` is
+ * Inserts a certificate row that includes event_date_display_snapshot, retrying
+ * without that column if the event_end_date migration has not been applied yet.
+ * Returns the insert error (or null on success), mirroring supabase-js.
+ */
+export async function insertCertificateWithDisplayDate(
+  db: SupabaseClient,
+  row: Record<string, unknown> & { event_date_display_snapshot?: string }
+): Promise<{ error: { message: string; code?: string } | null }> {
+  const first = await db.from("certificates").insert(row);
+  if (first.error && isMissingColumnError(first.error, "event_date_display_snapshot")) {
+    const { event_date_display_snapshot: _drop, ...withoutDisplay } = row;
+    return db.from("certificates").insert(withoutDisplay);
+  }
+  return first;
+}
+
+/**
+ * The date string to show for an issued certificate: the stored display
+ * snapshot when present, otherwise the start-date snapshot formatted as a
+ * single day (certificates issued before the display column existed).
+ */
+export function certificateDisplayDate(cert: {
+  event_date_display_snapshot?: string | null;
+  event_date_snapshot?: string | null;
+}): string {
+  const display = cert.event_date_display_snapshot?.trim();
+  if (display) return display;
+  return formatEventDate(cert.event_date_snapshot ?? null) || (cert.event_date_snapshot ?? "");
+}
+
+export interface EventIssueDate {
+  /** The event's start date (YYYY-MM-DD) or null — goes in certificates.event_date_snapshot (a DATE). */
+  start: string | null;
+  /** The human string, single day or range — goes in certificates.event_date_display_snapshot (text). */
+  display: string;
+}
+
+/**
+ * Loads an event's dates for stamping onto a certificate. `event_end_date` is
  * selected separately so a missing column degrades to the start date instead
  * of failing the whole certificate.
  */
-export async function getEventDisplayDate(db: SupabaseClient, eventId: string): Promise<string> {
+export async function getEventIssueDate(db: SupabaseClient, eventId: string): Promise<EventIssueDate> {
   const withEnd = await db
     .from("events")
     .select("event_date, event_end_date")
@@ -38,14 +76,18 @@ export async function getEventDisplayDate(db: SupabaseClient, eventId: string): 
     .maybeSingle();
 
   if (!withEnd.error) {
-    return eventDisplayDate(withEnd.data ?? { event_date: null });
+    const row = (withEnd.data ?? { event_date: null }) as { event_date: string | null; event_end_date?: string | null };
+    return { start: row.event_date, display: eventDisplayDate(row) };
   }
 
   if (isMissingColumnError(withEnd.error, "event_end_date")) {
     const startOnly = await db.from("events").select("event_date").eq("id", eventId).maybeSingle();
-    if (!startOnly.error) return formatEventDate(startOnly.data?.event_date ?? null);
+    if (!startOnly.error) {
+      const start = (startOnly.data?.event_date ?? null) as string | null;
+      return { start, display: formatEventDate(start) };
+    }
   }
 
   console.error("[certificates] Event date lookup failed:", withEnd.error.message);
-  return "";
+  return { start: null, display: "" };
 }

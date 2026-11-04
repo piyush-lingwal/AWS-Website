@@ -7,7 +7,7 @@ import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
 import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
-import { getEventDisplayDate } from "@/lib/certificates/issue-date";
+import { getEventIssueDate, insertCertificateWithDisplayDate } from "@/lib/certificates/issue-date";
 import { getVerificationUrl } from "@/lib/certificates/qr-generator";
 import type { ApiResponse } from "@/types/certificate";
 
@@ -124,12 +124,12 @@ export async function POST(
     const verificationUrl = getVerificationUrl(certificateId);
 
     const theme = await getEventCertificateTheme(admin, event.id);
-    const displayDate = await getEventDisplayDate(admin, event.id);
+    const issueDate = await getEventIssueDate(admin, event.id);
     const pdfResult = await generateCertificatePdf({
       certificateId,
       participantName: topPerformer.full_name,
       eventTitle: event.name,
-      eventDate: displayDate,
+      eventDate: issueDate.display,
       awardTitle,
       verificationUrl,
       theme,
@@ -146,22 +146,21 @@ export async function POST(
     }
 
     const pdfHash = createHash("sha256").update(pdfResult.pdfBuffer).digest("hex");
-    const { error: insertError } = await admin
-      .from("certificates")
-      .insert({
-        certificate_id: certificateId,
-        event_id: event.id,
-        participant_id: participant.id,
-        attendance_id: null,
-        recipient_name_snapshot: topPerformer.full_name,
-        event_name_snapshot: event.name,
-        event_date_snapshot: displayDate,
-        pdf_url: `/api/certificates/${certificateId}`,
-        verification_url: verificationUrl,
-        pdf_hash: pdfHash,
-        issue_date: new Date().toISOString().split("T")[0],
-        award_title: awardTitle,
-      });
+    const { error: insertError } = await insertCertificateWithDisplayDate(admin, {
+      certificate_id: certificateId,
+      event_id: event.id,
+      participant_id: participant.id,
+      attendance_id: null,
+      recipient_name_snapshot: topPerformer.full_name,
+      event_name_snapshot: event.name,
+      event_date_snapshot: issueDate.start,
+      event_date_display_snapshot: issueDate.display,
+      pdf_url: `/api/certificates/${certificateId}`,
+      verification_url: verificationUrl,
+      pdf_hash: pdfHash,
+      issue_date: new Date().toISOString().split("T")[0],
+      award_title: awardTitle,
+    });
 
     if (insertError) {
       console.error("[API/admin/top-performers/issue] Certificate insert failed:", insertError);
