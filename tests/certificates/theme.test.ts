@@ -11,6 +11,8 @@ import {
   parseCertificateTheme,
   templateFileName,
   validateCertificateTheme,
+  THEME_CONSTRAINT_HINT,
+  isThemeConstraintError,
 } from "../../lib/certificates/theme.ts";
 
 test("orange stays the default theme", () => {
@@ -47,6 +49,9 @@ test("templateFileName picks the template for the theme and kind", () => {
   assert.equal(templateFileName("purple", "participation"), "Certificate-Template-Purple.svg");
   assert.equal(templateFileName("purple", "excellence"), "Certificate-of-Excellence-Template-Purple.svg");
   assert.equal(templateFileName("purple", "organiser"), "Certificate-of-Appreciation-Template-Purple.svg");
+  assert.equal(templateFileName("kiro", "participation"), "Certificate-Template-Kiro-Sponsored.svg");
+  assert.equal(templateFileName("kiro", "excellence"), "Certificate-of-Excellence-Template-Kiro-Sponsored.svg");
+  assert.equal(templateFileName("kiro", "organiser"), "Certificate-of-Appreciation-Template-Kiro-Sponsored.svg");
 });
 
 test("resolveCertificateKind: an award title always wins, otherwise organiser or participation", () => {
@@ -98,8 +103,10 @@ test("every theme has both template files on disk, using its own accent colour",
       const svg = readFileSync(path, "utf8").toLowerCase();
       assert.ok(svg.includes(info.accent.toLowerCase()), `${file} does not use ${info.accent}`);
       // A purple template must not still contain the orange brand colour (and vice versa).
+      // Themes that deliberately share an accent (orange and Kiro Sponsored) are not compared.
       for (const other of CERTIFICATE_THEMES) {
         if (other === theme) continue;
+        if (CERTIFICATE_THEME_INFO[other].accent.toLowerCase() === info.accent.toLowerCase()) continue;
         assert.ok(
           !svg.includes(CERTIFICATE_THEME_INFO[other].accent.toLowerCase()),
           `${file} still contains the ${other} accent ${CERTIFICATE_THEME_INFO[other].accent}`
@@ -107,4 +114,55 @@ test("every theme has both template files on disk, using its own accent colour",
       }
     }
   }
+});
+
+// ── Kiro Sponsored ──────────────────────────────────────────────
+
+const KIRO_MASK_RECT = '<rect x="2806" y="511" width="329" height="339" fill="black"/>';
+const KIRO_TILE = /<rect data-bleed-extend="filled-logo"[^>]*x="2806" y="511" width="329" height="339" fill="#161d26"\/><image id="kiro-sponsor-logo"[^>]*\/>\n {4}/;
+
+function template(file: string): string {
+  return readFileSync(new URL(`../../public/templates/${file}`, import.meta.url), "utf8");
+}
+
+test("Kiro Sponsored is the orange design: same accent, own label", () => {
+  assert.equal(CERTIFICATE_THEME_INFO.kiro.accent, CERTIFICATE_THEME_INFO.orange.accent);
+  assert.equal(CERTIFICATE_THEME_INFO.kiro.label, "Kiro Sponsored");
+  assert.equal(isCertificateTheme("kiro"), true);
+  assert.deepEqual(validateCertificateTheme("kiro"), { ok: true, value: "kiro" });
+  assert.equal(parseCertificateTheme("Kiro"), "orange");
+});
+
+test("each Kiro Sponsored template is its orange twin plus the Kiro logo tile, nothing else changed", () => {
+  for (const kind of CERTIFICATE_KINDS) {
+    const orange = template(templateFileName("orange", kind));
+    const kiro = template(templateFileName("kiro", kind));
+    assert.ok(kiro.includes('id="kiro-sponsor-logo"'), `${kind}: no Kiro logo`);
+    assert.ok(KIRO_TILE.test(kiro), `${kind}: the Kiro tile is missing or moved`);
+    assert.ok(kiro.includes(KIRO_MASK_RECT), `${kind}: grid mask does not cover the Kiro tile`);
+    const withoutKiro = kiro.replace(KIRO_MASK_RECT, "").replace(KIRO_TILE, "");
+    assert.equal(withoutKiro, orange, `${kind}: Kiro template differs from the orange one beyond the logo`);
+  }
+});
+
+test("the Kiro logo is an embedded PNG on the same navy as the AWS and SBG tiles, and only Kiro templates have it", () => {
+  for (const kind of CERTIFICATE_KINDS) {
+    const kiro = template(templateFileName("kiro", kind));
+    const tile = kiro.match(/<rect data-bleed-extend="filled-logo"[^>]*x="2806" y="511"[^>]*\/>/)?.[0] ?? "";
+    assert.ok(tile.includes('fill="#161d26"'), `${kind}: Kiro tile is not the logo navy`);
+    assert.ok(/<image id="kiro-sponsor-logo"[^>]* href="data:image\/png;base64,[A-Za-z0-9+/=]{1000,}"/.test(kiro), `${kind}: Kiro logo is not an embedded PNG`);
+    // The AWS tile is still where it was.
+    assert.ok(kiro.includes('data-pdf-target-x="2805" data-pdf-target-y="170"'), `${kind}: AWS tile moved`);
+    for (const theme of ["orange", "purple"] as const) {
+      assert.ok(!template(templateFileName(theme, kind)).includes("kiro-sponsor-logo"), `${theme}/${kind} has the Kiro logo`);
+    }
+  }
+});
+
+test("the theme constraint helper recognises only that check violation", () => {
+  assert.equal(isThemeConstraintError({ code: "23514", message: 'new row for relation "events" violates check constraint "events_certificate_theme_check"' }), true);
+  assert.equal(isThemeConstraintError({ code: "23514", message: 'violates check constraint "some_other_check"' }), false);
+  assert.equal(isThemeConstraintError({ code: "42703", message: "events_certificate_theme_check" }), false);
+  assert.equal(isThemeConstraintError(null), false);
+  assert.match(THEME_CONSTRAINT_HINT, /20261107000001_kiro_sponsored_theme\.sql/);
 });
