@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
+import sharp from "sharp";
 import {
   CERTIFICATE_KINDS,
   CERTIFICATE_THEMES,
@@ -52,6 +53,9 @@ test("templateFileName picks the template for the theme and kind", () => {
   assert.equal(templateFileName("kiro", "participation"), "Certificate-Template-Kiro-Sponsored.svg");
   assert.equal(templateFileName("kiro", "excellence"), "Certificate-of-Excellence-Template-Kiro-Sponsored.svg");
   assert.equal(templateFileName("kiro", "organiser"), "Certificate-of-Appreciation-Template-Kiro-Sponsored.svg");
+  assert.equal(templateFileName("kiro-purple", "participation"), "Certificate-Template-Purple-Kiro-Sponsored.svg");
+  assert.equal(templateFileName("kiro-purple", "excellence"), "Certificate-of-Excellence-Template-Purple-Kiro-Sponsored.svg");
+  assert.equal(templateFileName("kiro-purple", "organiser"), "Certificate-of-Appreciation-Template-Purple-Kiro-Sponsored.svg");
 });
 
 test("resolveCertificateKind: an award title always wins, otherwise organiser or participation", () => {
@@ -118,44 +122,80 @@ test("every theme has both template files on disk, using its own accent colour",
 
 // ── Kiro Sponsored ──────────────────────────────────────────────
 
-const KIRO_MASK_RECT = '<rect x="2806" y="511" width="329" height="339" fill="black"/>';
-const KIRO_TILE = /<rect data-bleed-extend="filled-logo"[^>]*x="2806" y="511" width="329" height="339" fill="#161d26"\/><image id="kiro-sponsor-logo"[^>]*\/>\n {4}/;
+// Each Kiro theme is its base theme plus one logo tile.
+const KIRO_BASE = { kiro: "orange", "kiro-purple": "purple" } as const;
+const KIRO_MASK_RECT = '<rect x="2806" y="851" width="329" height="339" fill="black"/>';
+const KIRO_TILE = /<rect data-bleed-extend="filled-logo" data-pdf-target-x="2805" data-pdf-target-y="850" data-pdf-target-width="330" data-pdf-target-height="340" x="2806" y="851" width="329" height="339" fill="#161d26"\/><image id="kiro-sponsor-logo"[^>]*\/>\n {4}/;
 
 function template(file: string): string {
   return readFileSync(new URL(`../../public/templates/${file}`, import.meta.url), "utf8");
 }
 
-test("Kiro Sponsored is the orange design: same accent, own label", () => {
-  assert.equal(CERTIFICATE_THEME_INFO.kiro.accent, CERTIFICATE_THEME_INFO.orange.accent);
-  assert.equal(CERTIFICATE_THEME_INFO.kiro.label, "Kiro Sponsored");
-  assert.equal(isCertificateTheme("kiro"), true);
-  assert.deepEqual(validateCertificateTheme("kiro"), { ok: true, value: "kiro" });
+function cell(svg: string, attrs: RegExp): { x: number; y: number; w: number; h: number } {
+  const rect = svg.match(attrs)?.[0] ?? "";
+  const num = (name: string) => Number(rect.match(new RegExp(`data-pdf-target-${name}="([\\d.]+)"`))?.[1]);
+  return { x: num("x"), y: num("y"), w: num("width"), h: num("height") };
+}
+
+/** Counts strongly purple, opaque pixels in the embedded Kiro logo. */
+async function purplePixels(svg: string): Promise<number> {
+  const b64 = svg.match(/<image id="kiro-sponsor-logo"[^>]* href="data:image\/png;base64,([A-Za-z0-9+/=]+)"/)?.[1];
+  assert.ok(b64, "no embedded Kiro logo PNG");
+  const { data, info } = await sharp(Buffer.from(b64, "base64")).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let count = 0;
+  for (let i = 0; i < info.width * info.height * 4; i += 4) {
+    const [r, g, b, a] = [data[i], data[i + 1], data[i + 2], data[i + 3]];
+    if (a > 200 && b > 180 && g < 90 && r < 170 && b - g > 120) count += 1;
+  }
+  return count;
+}
+
+test("each Kiro theme keeps its base theme's accent and has its own label", () => {
+  for (const [kiro, base] of Object.entries(KIRO_BASE) as [keyof typeof KIRO_BASE, "orange" | "purple"][]) {
+    assert.equal(CERTIFICATE_THEME_INFO[kiro].accent, CERTIFICATE_THEME_INFO[base].accent);
+    assert.equal(CERTIFICATE_THEME_INFO[kiro].kiroLogo, true);
+    assert.equal(isCertificateTheme(kiro), true);
+    assert.deepEqual(validateCertificateTheme(kiro), { ok: true, value: kiro });
+  }
+  assert.equal(CERTIFICATE_THEME_INFO.kiro.label, "Kiro Sponsored (Orange)");
+  assert.equal(CERTIFICATE_THEME_INFO["kiro-purple"].label, "Kiro Sponsored (Purple)");
   assert.equal(parseCertificateTheme("Kiro"), "orange");
+  assert.equal(parseCertificateTheme("kiro_purple"), "orange");
 });
 
-test("each Kiro Sponsored template is its orange twin plus the Kiro logo tile, nothing else changed", () => {
-  for (const kind of CERTIFICATE_KINDS) {
-    const orange = template(templateFileName("orange", kind));
-    const kiro = template(templateFileName("kiro", kind));
-    assert.ok(kiro.includes('id="kiro-sponsor-logo"'), `${kind}: no Kiro logo`);
-    assert.ok(KIRO_TILE.test(kiro), `${kind}: the Kiro tile is missing or moved`);
-    assert.ok(kiro.includes(KIRO_MASK_RECT), `${kind}: grid mask does not cover the Kiro tile`);
-    const withoutKiro = kiro.replace(KIRO_MASK_RECT, "").replace(KIRO_TILE, "");
-    assert.equal(withoutKiro, orange, `${kind}: Kiro template differs from the orange one beyond the logo`);
+test("each Kiro template is its base template plus the Kiro logo tile, nothing else changed", () => {
+  for (const [kiro, base] of Object.entries(KIRO_BASE) as [keyof typeof KIRO_BASE, "orange" | "purple"][]) {
+    for (const kind of CERTIFICATE_KINDS) {
+      const plain = template(templateFileName(base, kind));
+      const withLogo = template(templateFileName(kiro, kind));
+      assert.ok(KIRO_TILE.test(withLogo), `${kiro}/${kind}: the Kiro tile is missing or moved`);
+      assert.ok(withLogo.includes(KIRO_MASK_RECT), `${kiro}/${kind}: grid mask does not cover the Kiro tile`);
+      const stripped = withLogo.replace(KIRO_MASK_RECT, "").replace(KIRO_TILE, "");
+      assert.equal(stripped, plain, `${kiro}/${kind}: differs from the ${base} template beyond the Kiro tile`);
+      assert.ok(!plain.includes("kiro-sponsor-logo"), `${base}/${kind} has the Kiro logo`);
+    }
   }
 });
 
-test("the Kiro logo is an embedded PNG on the same navy as the AWS and SBG tiles, and only Kiro templates have it", () => {
-  for (const kind of CERTIFICATE_KINDS) {
-    const kiro = template(templateFileName("kiro", kind));
-    const tile = kiro.match(/<rect data-bleed-extend="filled-logo"[^>]*x="2806" y="511"[^>]*\/>/)?.[0] ?? "";
-    assert.ok(tile.includes('fill="#161d26"'), `${kind}: Kiro tile is not the logo navy`);
-    assert.ok(/<image id="kiro-sponsor-logo"[^>]* href="data:image\/png;base64,[A-Za-z0-9+/=]{1000,}"/.test(kiro), `${kind}: Kiro logo is not an embedded PNG`);
-    // The AWS tile is still where it was.
-    assert.ok(kiro.includes('data-pdf-target-x="2805" data-pdf-target-y="170"'), `${kind}: AWS tile moved`);
-    for (const theme of ["orange", "purple"] as const) {
-      assert.ok(!template(templateFileName(theme, kind)).includes("kiro-sponsor-logo"), `${theme}/${kind} has the Kiro logo`);
+test("the Kiro tile starts on the row below the SBG tile, where the SBG tile ends, on the logo navy", () => {
+  for (const kiro of Object.keys(KIRO_BASE) as (keyof typeof KIRO_BASE)[]) {
+    for (const kind of CERTIFICATE_KINDS) {
+      const svg = template(templateFileName(kiro, kind));
+      const sbg = cell(svg, /<rect data-bleed-extend="icon-layer" data-pdf-target-x="2475" data-pdf-target-y="510"[^>]*\/>/);
+      const tile = cell(svg, /<rect data-bleed-extend="filled-logo"[^>]*x="2806" y="851"[^>]*\/>/);
+      assert.deepEqual({ x: tile.x, y: tile.y }, { x: sbg.x + sbg.w, y: sbg.y + sbg.h }, `${kiro}/${kind}: tile is not at the SBG tile's bottom-right corner`);
+      assert.deepEqual({ w: tile.w, h: tile.h }, { w: sbg.w, h: sbg.h }, `${kiro}/${kind}: tile is not the SBG tile's size`);
+      assert.ok(tile.y + tile.h <= 1190, `${kiro}/${kind}: tile runs into the text panel`);
+      // The AWS tile is still where it was.
+      assert.ok(svg.includes('data-pdf-target-x="2805" data-pdf-target-y="170"'), `${kiro}/${kind}: AWS tile moved`);
     }
+  }
+});
+
+test("orange Kiro templates use the white Kiro logo, purple ones the purple logo", async () => {
+  for (const kind of CERTIFICATE_KINDS) {
+    assert.equal(await purplePixels(template(templateFileName("kiro", kind))), 0, `kiro/${kind}: logo is not the white one`);
+    assert.ok(await purplePixels(template(templateFileName("kiro-purple", kind))) > 1000, `kiro-purple/${kind}: logo is not the purple one`);
   }
 });
 

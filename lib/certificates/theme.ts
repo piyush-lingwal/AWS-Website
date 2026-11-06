@@ -8,8 +8,10 @@
 //   - the accent colour the generator draws dynamic text in (event name,
 //     rank lines), so it matches the template's coloured panel.
 //
-// "kiro" is the orange design with the Kiro logo added to the logo tiles in the
-// top right. It shares orange's accent colour, so only its template files differ.
+// "kiro" and "kiro-purple" are the orange and purple designs with a Kiro logo
+// tile added below the SBG tile in the top right (white logo on orange, purple
+// logo on purple). Each shares its base theme's accent, so only the template
+// files differ.
 //
 // Kept dependency-free so the admin form (browser), the generator (server)
 // and the tests (node --test) can all share it.
@@ -18,7 +20,7 @@
 // and update the events_certificate_theme_check constraint in a new migration.
 // ============================================================
 
-export const CERTIFICATE_THEMES = ["orange", "purple", "kiro"] as const;
+export const CERTIFICATE_THEMES = ["orange", "purple", "kiro", "kiro-purple"] as const;
 
 export type CertificateTheme = (typeof CERTIFICATE_THEMES)[number];
 
@@ -39,8 +41,8 @@ export interface CertificateThemeInfo {
   label: string;
   /** The coloured panel / accent colour baked into the template files. */
   accent: string;
-  /** Short extra line for the picker, for themes that differ by more than colour. */
-  note?: string;
+  /** Kiro-sponsored designs carry the Kiro logo tile (the picker thumbnail shows it). */
+  kiroLogo?: boolean;
   /** File names inside public/templates/, one per certificate kind. */
   templates: Record<CertificateKind, string>;
 }
@@ -65,13 +67,23 @@ export const CERTIFICATE_THEME_INFO: Record<CertificateTheme, CertificateThemeIn
     },
   },
   kiro: {
-    label: "Kiro Sponsored",
+    label: "Kiro Sponsored (Orange)",
     accent: "#FF9900",
-    note: "Orange + Kiro logo",
+    kiroLogo: true,
     templates: {
       participation: "Certificate-Template-Kiro-Sponsored.svg",
       excellence: "Certificate-of-Excellence-Template-Kiro-Sponsored.svg",
       organiser: "Certificate-of-Appreciation-Template-Kiro-Sponsored.svg",
+    },
+  },
+  "kiro-purple": {
+    label: "Kiro Sponsored (Purple)",
+    accent: "#8B5CF6",
+    kiroLogo: true,
+    templates: {
+      participation: "Certificate-Template-Purple-Kiro-Sponsored.svg",
+      excellence: "Certificate-of-Excellence-Template-Purple-Kiro-Sponsored.svg",
+      organiser: "Certificate-of-Appreciation-Template-Purple-Kiro-Sponsored.svg",
     },
   },
 };

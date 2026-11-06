@@ -23,7 +23,7 @@ function ThemePreview({ accent, withKiro = false }: { accent: string; withKiro?:
       <span className="absolute left-1 top-1 h-6 w-9" style={{ backgroundColor: accent }} />
       <span className="absolute right-1 top-1 h-3 w-3 bg-[#161d26]" />
       <span className="absolute right-4 top-4 h-3 w-3 bg-[#161d26]" />
-      {withKiro && <span className="absolute right-1 top-4 h-3 w-3 bg-[#161d26]" />}
+      {withKiro && <span className="absolute right-1 top-7 h-3 w-3 bg-[#161d26]" />}
       <span className="absolute bottom-1.5 left-2 h-2 w-3" style={{ backgroundColor: accent }} />
       <span className="absolute bottom-1.5 right-1.5 h-px w-7 bg-[#161d26]/60" />
     </span>
@@ -58,11 +58,11 @@ export function CertificateThemePicker({ value, onChange, disabled = false }: Ce
                 onChange={() => onChange(theme)}
                 className="sr-only"
               />
-              <ThemePreview accent={info.accent} withKiro={theme === "kiro"} />
+              <ThemePreview accent={info.accent} withKiro={info.kiroLogo === true} />
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-white">{info.label}</span>
                 <span className="block font-mono text-[10px] uppercase tracking-wider text-[#71717A]">
-                  {info.note ?? info.accent}
+                  {info.accent}
                 </span>
               </span>
               {selected && (
