@@ -9,6 +9,8 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { isMissingColumnError, THEME_MIGRATION_HINT } from "@/lib/certificates/event-theme";
 import {
   DEFAULT_CERTIFICATE_THEME,
+  THEME_CONSTRAINT_HINT,
+  isThemeConstraintError,
   validateCertificateTheme,
   type CertificateTheme,
 } from "@/lib/certificates/theme";
@@ -134,6 +136,14 @@ export async function POST(request: NextRequest) {
     const retry = await supabase.from("events").insert(insertPayload).select("*").single();
     newEvent = retry.data;
     insertError = retry.error;
+  }
+
+  // The database's theme constraint does not list this template yet (newer migration not applied).
+  if (isThemeConstraintError(insertError)) {
+    return NextResponse.json(
+      { success: false, error: THEME_CONSTRAINT_HINT } satisfies ApiResponse,
+      { status: 409 }
+    );
   }
 
   // The event_end_date migration may not be applied yet. The field is optional,

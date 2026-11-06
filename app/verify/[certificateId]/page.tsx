@@ -4,7 +4,8 @@ import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { CertificatePreview } from "@/components/certificates/CertificatePreview";
-import { getEventCertificateTheme, isMissingColumnError } from "@/lib/certificates/event-theme";
+import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { CERTIFICATE_OPTIONAL_COLUMNS, selectWithOptionalColumns } from "@/lib/certificates/optional-columns";
 import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import {
   ShieldCheck,
@@ -69,20 +70,14 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
             course,
             roll_no
           )`;
-      // These columns come from separate migrations and may be applied out of
-      // order, so add each optional one independently and drop only the ones a
-      // given database is missing (rather than falling back to bare columns).
-      const optionalColumns = ["event_date_display_snapshot", "certificate_kind", "role_snapshot"];
-      let present = [...optionalColumns];
-      let data: Record<string, any> | null = null;
-      for (;;) {
-        const select = present.length ? baseColumns + ", " + present.join(", ") : baseColumns;
-        const res = await supabase.from("certificates").select(select).eq("certificate_id", cleanId).maybeSingle();
-        if (!res.error) { data = res.data as Record<string, any> | null; break; }
-        const missing = present.find((c) => isMissingColumnError(res.error, c));
-        if (!missing) { data = null; break; } // a real error, not a missing optional column
-        present = present.filter((c) => c !== missing);
-      }
+      // The display date, kind, role and wing columns come from separate
+      // migrations that may be applied out of order; drop only the ones this
+      // database is missing rather than falling back to bare columns.
+      const { data } = await selectWithOptionalColumns<Record<string, any>>(
+        baseColumns,
+        CERTIFICATE_OPTIONAL_COLUMNS,
+        (select) => supabase.from("certificates").select(select).eq("certificate_id", cleanId).maybeSingle()
+      );
 
       if (data) {
         const part = Array.isArray(data.participant)
@@ -124,6 +119,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           eventDateDisplay: certificateDisplayDate(data),
           kind: data.certificate_kind === "organiser" ? "organiser" : null,
           role: data.role_snapshot ?? null,
+          wing: data.wing_snapshot ?? null,
         };
       }
     }
@@ -170,7 +166,8 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                   {cert.kind === "organiser" && (
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 text-[#C4B5FD] text-xs font-semibold self-start">
                       <Award className="w-3.5 h-3.5" />
-                      Certificate of Appreciation{cert.role ? ` - ${cert.role}` : ""}
+                      Certificate of Appreciation
+                      {cert.role ? ` - ${cert.role}` : cert.wing ? ` - ${cert.wing} Wing` : ""}
                     </div>
                   )}
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold self-start sm:self-center">
@@ -281,6 +278,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                     theme={cert.theme}
                     kind={cert.kind || undefined}
                     role={cert.role || undefined}
+                    wing={cert.wing || undefined}
                   />
                 </div>
               </div>

@@ -7,7 +7,12 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { isMissingColumnError, THEME_MIGRATION_HINT } from "@/lib/certificates/event-theme";
-import { DEFAULT_CERTIFICATE_THEME, validateCertificateTheme } from "@/lib/certificates/theme";
+import {
+  DEFAULT_CERTIFICATE_THEME,
+  THEME_CONSTRAINT_HINT,
+  isThemeConstraintError,
+  validateCertificateTheme,
+} from "@/lib/certificates/theme";
 import { validateEventEndDate } from "@/lib/certificates/event-date";
 import type { ApiResponse, DbEvent, AdminEventRequest } from "@/types/certificate";
 
@@ -162,6 +167,14 @@ export async function PUT(
       } else {
         updateError = null;
       }
+    }
+
+    // The database's theme constraint does not list this template yet (newer migration not applied).
+    if (isThemeConstraintError(updateError)) {
+      return NextResponse.json(
+        { success: false, error: THEME_CONSTRAINT_HINT } satisfies ApiResponse,
+        { status: 409 }
+      );
     }
 
     // The event_end_date migration may not be applied yet. The field is optional,

@@ -14,7 +14,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
-import { getEventCertificateTheme, isMissingColumnError } from "@/lib/certificates/event-theme";
+import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { CERTIFICATE_OPTIONAL_COLUMNS, selectWithOptionalColumns } from "@/lib/certificates/optional-columns";
 import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
 import type { ApiResponse } from "@/types/certificate";
@@ -44,22 +45,16 @@ export async function GET(
       );
     }
 
-    // 1. Fetch certificate record from DB. event_date_display_snapshot is
-    //    selected when available; fall back for a DB without the column yet.
+    // 1. Fetch certificate record from DB. The display date, kind, role and wing
+    //    columns come from separate migrations; each is requested and dropped
+    //    independently when this database does not have it yet.
     const columns = "id, certificate_id, event_id, recipient_name_snapshot, event_name_snapshot, event_date_snapshot, award_title, verification_url";
-    // event_date_display_snapshot, certificate_kind and role_snapshot come from
-    // separate migrations; request each optional column and drop only the ones
-    // this database is missing, so a missing display column never hides the kind/role.
-    let present = ["event_date_display_snapshot", "certificate_kind", "role_snapshot"];
-    let cert: Record<string, string | null> | null = null;
-    for (;;) {
-      const select = present.length ? columns + ", " + present.join(", ") : columns;
-      const res = await supabase.from("certificates").select(select).eq("certificate_id", cleanId).maybeSingle();
-      if (!res.error) { cert = res.data as Record<string, string | null> | null; break; }
-      const missing = present.find((c) => isMissingColumnError(res.error, c));
-      if (!missing) { cert = null; break; }
-      present = present.filter((c) => c !== missing);
-    }
+    const found = await selectWithOptionalColumns<Record<string, string | null>>(
+      columns,
+      CERTIFICATE_OPTIONAL_COLUMNS,
+      (select) => supabase.from("certificates").select(select).eq("certificate_id", cleanId).maybeSingle()
+    );
+    const cert = found.data;
 
     if (!cert) {
       return NextResponse.json(
@@ -82,6 +77,7 @@ export async function GET(
       theme,
       kind: cert.certificate_kind === "organiser" ? "organiser" : undefined,
       role: cert.role_snapshot || undefined,
+      wing: cert.wing_snapshot || undefined,
     });
 
     if (!pdfResult.success || !pdfResult.pdfBuffer) {

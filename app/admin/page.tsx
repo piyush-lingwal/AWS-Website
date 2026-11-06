@@ -18,6 +18,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { TopPerformerImportDialog } from "@/components/features/TopPerformerImportDialog";
 import { AttendeeImportDialog } from "@/components/features/AttendeeImportDialog";
 import { OrganiserIssueDialog } from "@/components/features/OrganiserIssueDialog";
+import { DeleteAllButton } from "@/components/admin/DeleteAllButton";
 import { CertificateThemePicker } from "@/components/features/CertificateThemePicker";
 import {
   DEFAULT_CERTIFICATE_THEME,
@@ -116,6 +117,8 @@ interface OrganiserCertRow {
   certificateId: string;
   fullName: string;
   role: string;
+  /** Media, Event, PR or Tech; empty when none was stored. */
+  wing?: string;
   email: string;
   issueDate: string;
 }
@@ -213,6 +216,15 @@ function AdminPageContent() {
   const [participantSearch, setParticipantSearch] = useState("");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("ALL");
   const [participantPage, setParticipantPage] = useState(1);
+  // Phones get shorter pages (20 cards) than desktop (50 table rows); a 50-card list is a very long scroll.
+  const [isPhone, setIsPhone] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsPhone(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [deletingParticipantKey, setDeletingParticipantKey] = useState<string | null>(null);
   // Inline "assign as Top Performer" modal (from the attendee directory).
@@ -1439,6 +1451,17 @@ function AdminPageContent() {
   const canManageTopPerformers =
     currentViewEvent?.id === portalConfig?.active_event_id;
 
+  // One message for every "no list to show" state of Top Performers (used by the phone layout).
+  const topPerformerStatus = loadingTopPerformers
+    ? "Loading top performers…"
+    : topPerformersEvent?.id !== currentViewEvent?.id
+      ? topPerformersError
+        ? "Top performers are unavailable."
+        : "Loading event details…"
+      : topPerformers.length === 0
+        ? "No top performers added for this event yet."
+        : null;
+
   // Available course filters
   const courseOptions = useMemo(() => {
     const courses = new Set<string>();
@@ -1468,11 +1491,63 @@ function AdminPageContent() {
 
   // Show the list 50 rows at a time. The page is clamped at render time, so a shrinking
   // list (new search, a removed attendee) can never leave the table on an empty page.
-  const PARTICIPANTS_PER_PAGE = 50;
+  const PARTICIPANTS_PER_PAGE = isPhone ? 20 : 50;
   const currentParticipantPage = clampPage(participantPage, filteredParticipants.length, PARTICIPANTS_PER_PAGE);
   const visibleParticipants = pageSlice(filteredParticipants, currentParticipantPage, PARTICIPANTS_PER_PAGE);
   const participantRange = pageRange(currentParticipantPage, filteredParticipants.length, PARTICIPANTS_PER_PAGE);
   const participantPages = pageCount(filteredParticipants.length, PARTICIPANTS_PER_PAGE);
+
+  // Row actions shared by the desktop table and the mobile card list. `size` sets the
+  // button size: compact in the table, a full 40px touch target on phones.
+  const renderParticipantActions = (p: AdminParticipantRow, size: string) => (
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {p.certificateId && (
+                                    <>
+                                      {/* Download PDF button */}
+                                      <a
+                                        href={`/api/certificates/${p.certificateId}`}
+                                        download={`${p.certificateId}.pdf`}
+                                        className={`${size} rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center justify-center transition-colors cursor-pointer`}
+                                        title="Download PDF Certificate"
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                      </a>
+
+                                      {/* Send email button */}
+                                      <button
+                                        onClick={() => handleSendSingleEmail(p.certificateId!, p.email)}
+                                        className={`${size} rounded-lg bg-white/[0.03] hover:bg-[#6C63FF]/20 text-[#A1A1AA] hover:text-[#6C63FF] border border-white/[0.06] hover:border-[#6C63FF]/30 flex items-center justify-center transition-colors cursor-pointer`}
+                                        title="Email Certificate with PDF Attachment"
+                                      >
+                                        <Send className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  )}
+
+                                  {/* Assign as Top Performer */}
+                                  <button
+                                    onClick={() => setRankModal({ participant: p, rank: "" })}
+                                    className={`${size} rounded-lg bg-white/[0.03] hover:bg-amber-500/20 text-[#71717A] hover:text-amber-400 border border-white/[0.06] hover:border-amber-500/30 flex items-center justify-center transition-colors cursor-pointer`}
+                                    title="Assign as Top Performer"
+                                  >
+                                    <Trophy className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* Remove participant button */}
+                                  <button
+                                    onClick={() => handleRemoveParticipant(p)}
+                                    disabled={deletingParticipantKey === (p.attendanceId || p.email)}
+                                    className={`${size} rounded-lg bg-white/[0.03] hover:bg-red-500/20 text-[#71717A] hover:text-red-400 border border-white/[0.06] hover:border-red-500/30 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40`}
+                                    title="Remove Participant & Certificate"
+                                  >
+                                    {deletingParticipantKey === (p.attendanceId || p.email) ? (
+                                      <div className="w-3 h-3 rounded-full border border-red-400/30 border-t-red-400 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+  );
 
   // Stats calculation
   const totalVerifiedCerts = useMemo(() => {
@@ -1606,7 +1681,7 @@ function AdminPageContent() {
                         </span>
                         <button
                           onClick={() => handleCopy(`${window.location.origin}/attendance`, "attendance-link", "Check-in link")}
-                          className="inline-flex cursor-pointer items-center gap-1 text-[#A78BFA] hover:text-white"
+                          className="inline-flex min-h-10 cursor-pointer items-center gap-1 pl-3 text-[#A78BFA] hover:text-white"
                         >
                           <Copy className="h-3 w-3" /> Copy
                         </button>
@@ -1618,7 +1693,7 @@ function AdminPageContent() {
                         <Link
                           href="/verify"
                           target="_blank"
-                          className="inline-flex items-center gap-1 text-[#A78BFA] hover:text-white"
+                          className="inline-flex min-h-10 items-center gap-1 pl-3 text-[#A78BFA] hover:text-white"
                         >
                           <ExternalLink className="h-3 w-3" /> Open
                         </Link>
@@ -1803,6 +1878,18 @@ function AdminPageContent() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2.5">
+                    <DeleteAllButton
+                      section="events"
+                      noun="events"
+                      count={events.length}
+                      consequences="Every event's registrations, certificates (participation, Excellence and Appreciation), top performers and gallery entries go with them, and the attendance portal is switched off. Team members are not affected."
+                      onDeleted={async () => {
+                        setInspectingEventId(null);
+                        setSelectedEventId("");
+                        resetForm();
+                        await fetchData();
+                      }}
+                    />
                     <button
                       onClick={startCreate}
                       className="h-10 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-2 shadow-md shadow-[#6C63FF]/20 active:scale-[0.98]"
@@ -1859,7 +1946,7 @@ function AdminPageContent() {
                                   href={`/media/events/${encodeURIComponent(event.id)}`}
                                   onClick={(e) => e.stopPropagation()}
                                   title="Manage photos & videos in the Media Portal"
-                                  className="h-7 w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-[#A78BFA] hover:bg-[#6C63FF]/10 transition-colors cursor-pointer"
+                                  className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-[#A78BFA] hover:bg-[#6C63FF]/10 transition-colors cursor-pointer"
                                 >
                                   <Camera className="w-3.5 h-3.5" />
                                 </a>
@@ -1869,7 +1956,7 @@ function AdminPageContent() {
                                     startEdit(event);
                                   }}
                                   title="Edit Event Details"
-                                  className="h-7 w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                  className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
                                 </button>
@@ -1879,7 +1966,7 @@ function AdminPageContent() {
                                     handleDeleteEvent(event);
                                   }}
                                   title="Delete Event"
-                                  className="h-7 w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer"
+                                  className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -1980,12 +2067,12 @@ function AdminPageContent() {
               >
                 {/* Header with Title & Event Context Selector */}
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2.5">
                       <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                         Registrations
                       </h2>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-[#6C63FF]/20 border border-[#6C63FF]/40 text-[#A78BFA]">
+                      <span className="max-w-full truncate px-2.5 py-0.5 rounded-full text-xs font-mono bg-[#6C63FF]/20 border border-[#6C63FF]/40 text-[#A78BFA]">
                         {currentViewEvent.name}
                       </span>
                     </div>
@@ -1995,16 +2082,16 @@ function AdminPageContent() {
                   </div>
 
                   {/* Event Selector & Actions */}
-                  <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2.5">
                     {/* Event Select Dropdown */}
-                    <div className="relative">
+                    <div className="relative w-full sm:w-auto">
                       <select
                         value={selectedEventId}
                         onChange={(e) => {
                           setSelectedEventId(e.target.value);
                           setInspectingEventId(e.target.value);
                         }}
-                        className="h-10 pl-3.5 pr-8 rounded-xl text-xs bg-[#111117] border border-white/[0.1] text-white focus:outline-none focus:border-[#6C63FF] transition-colors cursor-pointer appearance-none"
+                        className="h-11 w-full truncate pl-3.5 pr-8 rounded-xl text-xs bg-[#111117] border border-white/[0.1] text-white focus:outline-none focus:border-[#6C63FF] transition-colors cursor-pointer appearance-none sm:h-10 sm:w-auto sm:max-w-xs"
                       >
                         {events.map((ev) => (
                           <option key={ev.id} value={ev.id}>
@@ -2058,6 +2145,19 @@ function AdminPageContent() {
                       <span className="hidden sm:inline">Email Certificates</span>
                     </button>
 
+                    {/* Delete every registration of this event (asks twice) */}
+                    <DeleteAllButton
+                      section="registrations"
+                      noun="registrations"
+                      count={participants.length}
+                      eventId={currentViewEvent.id}
+                      scope={`for "${currentViewEvent.name}"`}
+                      consequences="Their attendance records and the certificates issued through them are deleted, so those certificate links stop verifying. Certificates of Appreciation are kept."
+                      onDeleted={async () => {
+                        await Promise.all([fetchParticipants(currentViewEvent.id), fetchTopPerformers()]);
+                      }}
+                    />
+
                     {/* Close Inspector Button */}
                   </div>
                 </div>
@@ -2075,7 +2175,7 @@ function AdminPageContent() {
                       setParticipantSearch(e.target.value);
                       setParticipantPage(1);
                     }}
-                    placeholder="Search by student name, roll number, email, or certificate ID…"
+                    placeholder="Search name, roll no, email or certificate…"
                     className="w-full h-10 pl-10 pr-9 rounded-xl text-xs bg-[#111117] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
                   />
                   {participantSearch && (
@@ -2138,7 +2238,60 @@ function AdminPageContent() {
                       </p>
                     </div>
                   ) : (
-                    <div className="max-h-[70vh] max-w-full overflow-auto">
+                    <>
+                    {/* Phones: one card per attendee (a 6-column table cannot fit) */}
+                    <ul className="divide-y divide-white/[0.05] md:hidden">
+                      {visibleParticipants.map((p, idx) => (
+                        <li key={`m-${p.email}-${idx}`} className="space-y-3 p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#6C63FF]/30 bg-gradient-to-tr from-[#6C63FF]/20 to-[#A78BFA]/20 font-mono text-xs font-bold text-[#A78BFA]">
+                              {getInitials(p.name)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-white">{p.name}</p>
+                              <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#71717A]">
+                                <span className="font-mono">Roll: {p.rollNo}</span>
+                                {p.course && (
+                                  <span className="rounded-md border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 text-[#D4D4D8]">
+                                    {p.course}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(p.email, `email-${idx}`, "Email")}
+                            className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 text-left font-mono text-[11.5px] text-[#A1A1AA] active:bg-white/[0.08]"
+                            aria-label={`Copy email ${p.email}`}
+                          >
+                            <span className="truncate">{p.email}</span>
+                            {copiedKey === `email-${idx}` ? (
+                              <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5 shrink-0" />
+                            )}
+                          </button>
+                          <div className="flex items-center justify-between gap-3 text-[11px] text-[#71717A]">
+                            <span className="font-mono">{formatDateTime(p.submittedAt)}</span>
+                            {p.certificateId ? (
+                              <Link
+                                href={`/verify/${p.certificateId}`}
+                                target="_blank"
+                                className="flex min-h-10 items-center gap-1 truncate font-mono text-xs font-bold text-[#A78BFA]"
+                              >
+                                <span className="truncate">{p.certificateId}</span>
+                                <ExternalLink className="h-3 w-3 shrink-0 text-[#71717A]" />
+                              </Link>
+                            ) : (
+                              <span className="font-mono text-[#52525B]">No certificate</span>
+                            )}
+                          </div>
+                          {renderParticipantActions(p, "h-10 w-10")}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="hidden max-h-[70vh] max-w-full overflow-auto md:block">
                       <table className="w-full min-w-[760px] text-left text-xs border-collapse">
                         <thead>
                           <tr className="sticky top-0 z-10 border-b border-white/[0.06] bg-[#13131a] text-[#71717A] font-mono text-[10.5px] uppercase tracking-wider">
@@ -2237,59 +2390,14 @@ function AdminPageContent() {
 
                               {/* Action Buttons */}
                               <td className="py-4 px-4 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  {p.certificateId && (
-                                    <>
-                                      {/* Download PDF button */}
-                                      <a
-                                        href={`/api/certificates/${p.certificateId}`}
-                                        download={`${p.certificateId}.pdf`}
-                                        className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center justify-center transition-colors cursor-pointer"
-                                        title="Download PDF Certificate"
-                                      >
-                                        <Download className="w-3.5 h-3.5" />
-                                      </a>
-
-                                      {/* Send email button */}
-                                      <button
-                                        onClick={() => handleSendSingleEmail(p.certificateId!, p.email)}
-                                        className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-[#6C63FF]/20 text-[#A1A1AA] hover:text-[#6C63FF] border border-white/[0.06] hover:border-[#6C63FF]/30 flex items-center justify-center transition-colors cursor-pointer"
-                                        title="Email Certificate with PDF Attachment"
-                                      >
-                                        <Send className="w-3.5 h-3.5" />
-                                      </button>
-                                    </>
-                                  )}
-
-                                  {/* Assign as Top Performer */}
-                                  <button
-                                    onClick={() => setRankModal({ participant: p, rank: "" })}
-                                    className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-amber-500/20 text-[#71717A] hover:text-amber-400 border border-white/[0.06] hover:border-amber-500/30 flex items-center justify-center transition-colors cursor-pointer"
-                                    title="Assign as Top Performer"
-                                  >
-                                    <Trophy className="w-3.5 h-3.5" />
-                                  </button>
-
-                                  {/* Remove participant button */}
-                                  <button
-                                    onClick={() => handleRemoveParticipant(p)}
-                                    disabled={deletingParticipantKey === (p.attendanceId || p.email)}
-                                    className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-red-500/20 text-[#71717A] hover:text-red-400 border border-white/[0.06] hover:border-red-500/30 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40"
-                                    title="Remove Participant & Certificate"
-                                  >
-                                    {deletingParticipantKey === (p.attendanceId || p.email) ? (
-                                      <div className="w-3 h-3 rounded-full border border-red-400/30 border-t-red-400 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    )}
-                                  </button>
-                                </div>
+                                {renderParticipantActions(p, "h-7 w-7")}
                               </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
+                    </>
                   )}
                   {!loadingParticipants && filteredParticipants.length > PARTICIPANTS_PER_PAGE && (
                     <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-3 text-xs text-[#A1A1AA]">
@@ -2301,7 +2409,7 @@ function AdminPageContent() {
                           type="button"
                           onClick={() => setParticipantPage(currentParticipantPage - 1)}
                           disabled={currentParticipantPage <= 1}
-                          className="h-8 cursor-pointer rounded-lg border border-white/10 px-3 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                          className="h-10 cursor-pointer rounded-lg border border-white/10 px-3.5 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:px-3"
                         >
                           Previous
                         </button>
@@ -2312,7 +2420,7 @@ function AdminPageContent() {
                           type="button"
                           onClick={() => setParticipantPage(currentParticipantPage + 1)}
                           disabled={currentParticipantPage >= participantPages}
-                          className="h-8 cursor-pointer rounded-lg border border-white/10 px-3 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                          className="h-10 cursor-pointer rounded-lg border border-white/10 px-3.5 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:px-3"
                         >
                           Next
                         </button>
@@ -2360,7 +2468,17 @@ function AdminPageContent() {
               {canManageTopPerformers && (
                 <>
 
-                  <div className="flex justify-end">
+                  <div className="flex flex-wrap justify-end gap-2.5">
+                    <DeleteAllButton
+                      section="top-performers"
+                      noun="top performers"
+                      count={topPerformers.length}
+                      eventId={currentViewEvent.id}
+                      scope={`for "${currentViewEvent.name}"`}
+                      disabled={loadingTopPerformers || topPerformersEvent?.id !== currentViewEvent.id}
+                      consequences="Their Certificates of Excellence are deleted too, so those certificate links stop verifying."
+                      onDeleted={fetchTopPerformers}
+                    />
                     <TopPerformerImportDialog
                       existingEmails={topPerformers.map((performer) => performer.email)}
                       onImported={fetchTopPerformers}
@@ -2443,7 +2561,80 @@ function AdminPageContent() {
                     <p role="alert" className="text-xs text-red-400">{topPerformersError}</p>
                   )}
 
-                  <div className="max-w-full overflow-x-auto rounded-xl border border-white/[0.07]">
+                  <div className="md:hidden">
+                    {topPerformerStatus ? (
+                      <p className="rounded-xl border border-white/[0.07] px-4 py-8 text-center text-xs text-[#71717A]">
+                        {topPerformerStatus}
+                      </p>
+                    ) : (
+                      <ul className="space-y-3">
+                        {topPerformers.map((performer) => (
+                          <li key={`m-${performer.id}`} className="space-y-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-mono text-xs font-semibold text-amber-400">{getAwardTitle(performer.rank)}</p>
+                                <p className="mt-1 truncate text-sm font-semibold text-white">{performer.fullName}</p>
+                                <p className="text-[11px] text-[#71717A]">Roll: {performer.rollNo} · {performer.course}</p>
+                              </div>
+                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${performer.certificateId ? "bg-emerald-500/10 text-emerald-400" : "bg-white/[0.05] text-[#A1A1AA]"}`}>
+                                {performer.certificateId ? "Issued" : "Not issued"}
+                              </span>
+                            </div>
+                            <p className="truncate font-mono text-[11px] text-[#A1A1AA]">{performer.email}</p>
+                            {performer.certificateId && (
+                              <div className="flex items-center gap-2">
+                                <Link href={`/verify/${performer.certificateId}`} target="_blank" className="flex min-h-10 items-center truncate font-mono text-xs text-[#A78BFA]">
+                                  {performer.certificateId}
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(performer.certificateId!, `top-performer-cert-${performer.id}`, "Certificate ID")}
+                                  aria-label="Copy certificate ID"
+                                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[#71717A] active:bg-white/[0.08]"
+                                >
+                                  {copiedKey === `top-performer-cert-${performer.id}` ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                                </button>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              {performer.certificateId ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSendTopPerformerEmail(performer)}
+                                  disabled={sendingTopPerformerId === performer.id || deletingTopPerformerId === performer.id}
+                                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#6C63FF]/25 bg-[#6C63FF]/10 px-3 text-xs font-medium text-[#C4B5FD] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {sendingTopPerformerId === performer.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                                  Send email
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleIssueTopPerformer(performer)}
+                                  disabled={issuingTopPerformerId !== null || issuingAllTopPerformers || deletingTopPerformerId === performer.id}
+                                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 text-xs font-medium text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {issuingTopPerformerId === performer.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Award className="h-3.5 w-3.5" />}
+                                  Issue certificate
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTopPerformer(performer)}
+                                disabled={deletingTopPerformerId === performer.id || issuingAllTopPerformers || issuingTopPerformerId !== null || sendingTopPerformerId === performer.id}
+                                aria-label={`Remove ${performer.fullName}`}
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/[0.06] text-red-300 disabled:opacity-50"
+                              >
+                                {deletingTopPerformerId === performer.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="hidden max-w-full overflow-x-auto rounded-xl border border-white/[0.07] md:block">
                     <table className="w-full min-w-[900px] text-left text-xs">
                       <thead className="bg-white/[0.03] text-[10px] font-mono uppercase tracking-wider text-[#71717A]">
                         <tr>
@@ -2566,12 +2757,79 @@ function AdminPageContent() {
                     <span className="text-[#A78BFA]">{currentViewEvent.name}</span>. Use the Organising Team button above to issue more.
                   </p>
                 </div>
-                <span className="text-xs font-mono text-[#C4B5FD] px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] self-start whitespace-nowrap">
-                  {organisers.length} issued
-                </span>
+                <div className="flex items-center gap-2.5 self-start">
+                  <span className="text-xs font-mono text-[#C4B5FD] px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] whitespace-nowrap">
+                    {organisers.length} issued
+                  </span>
+                  <DeleteAllButton
+                    section="organisers"
+                    noun="Certificates of Appreciation"
+                    count={organisers.length}
+                    eventId={currentViewEvent.id}
+                    scope={`for "${currentViewEvent.name}"`}
+                    disabled={loadingOrganisers}
+                    compact
+                    consequences="Those certificate links stop verifying. Registrations and other certificates are kept."
+                    onDeleted={() => fetchOrganisers(currentViewEvent.id)}
+                  />
+                </div>
               </div>
 
-              <div className="max-w-full overflow-x-auto rounded-2xl border border-white/[0.08]">
+              {/* Phones: one card per certificate (a 5-column table cannot fit) */}
+              <div className="md:hidden">
+                {loadingOrganisers || organisers.length === 0 ? (
+                  <p className="rounded-2xl border border-white/[0.08] px-4 py-8 text-center text-xs text-[#71717A]">
+                    {loadingOrganisers ? "Loading certificates…" : "No appreciation certificates issued for this event yet."}
+                  </p>
+                ) : (
+                  <ul className="space-y-3">
+                    {organisers.map((org) => (
+                      <li key={`m-${org.certificateId}`} className="space-y-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-white">{org.fullName}</p>
+                          {org.email && <p className="truncate font-mono text-[11px] text-[#71717A]">{org.email}</p>}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                          <span className="rounded-lg border border-[#8B5CF6]/20 bg-[#8B5CF6]/10 px-2.5 py-1 font-medium text-[#C4B5FD]">
+                            {org.role || (org.wing ? `${org.wing} Wing` : "Organising Team")}
+                          </span>
+                          <span className="font-mono text-[#71717A]">{formatDate(org.issueDate)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <Link href={`/verify/${org.certificateId}`} target="_blank" className="flex min-h-10 items-center truncate font-mono text-xs text-[#A78BFA]">
+                            {org.certificateId}
+                          </Link>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <a
+                              href={`/api/certificates/${org.certificateId}`}
+                              download={`${org.certificateId}.pdf`}
+                              aria-label={`Download certificate ${org.certificateId}`}
+                              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-[#A1A1AA]"
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleRevokeOrganiser(currentViewEvent.id, org)}
+                              disabled={deletingOrganiserId === org.certificateId}
+                              aria-label={`Remove certificate ${org.certificateId}`}
+                              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-[#71717A] disabled:opacity-40"
+                            >
+                              {deletingOrganiserId === org.certificateId ? (
+                                <div className="h-3.5 w-3.5 animate-spin rounded-full border border-red-400/30 border-t-red-400" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="hidden max-w-full overflow-x-auto rounded-2xl border border-white/[0.08] md:block">
                 <table className="w-full min-w-[640px] text-left text-xs">
                   <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-[#71717A]">
                     <tr>
@@ -2603,7 +2861,7 @@ function AdminPageContent() {
                         </td>
                         <td className="px-4 py-3">
                           <span className="inline-block px-2.5 py-1 rounded-lg bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[#C4B5FD] font-medium text-[11px]">
-                            {org.role || "Organising Team"}
+                            {org.role || (org.wing ? `${org.wing} Wing` : "Organising Team")}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -2692,6 +2950,20 @@ function AdminPageContent() {
                     <Plus className="w-3.5 h-3.5 text-cyan-400" />
                     <span>New Batch</span>
                   </button>
+                  <DeleteAllButton
+                    section="team"
+                    noun="team members"
+                    count={
+                      selectedTeamBatch === "ALL"
+                        ? teamMembers.length
+                        : teamMembers.filter((m) => (m.batch || "2026-27") === selectedTeamBatch).length
+                    }
+                    batch={selectedTeamBatch}
+                    scope={selectedTeamBatch === "ALL" ? "in every batch" : `in Batch ${selectedTeamBatch}`}
+                    disabled={loadingTeamMembers}
+                    consequences="Their profiles disappear from the public Team page."
+                    onDeleted={fetchTeamMembers}
+                  />
 
                 </div>
               </div>
@@ -2736,14 +3008,14 @@ function AdminPageContent() {
                 </div>
 
                 {/* Search Bar */}
-                <div className="relative min-w-[200px] md:w-64 shrink-0">
+                <div className="relative w-full md:w-64 md:min-w-[200px] shrink-0">
                   <Search className="w-4 h-4 text-[#52525B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     value={teamSearch}
                     onChange={(e) => setTeamSearch(e.target.value)}
                     placeholder="Search by name, role, branch…"
-                    className="w-full h-8.5 pl-9 pr-8 rounded-xl text-xs bg-[#14141C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-cyan-500 transition-colors"
+                    className="w-full h-10 pl-9 pr-8 rounded-xl text-xs bg-[#14141C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-cyan-500 transition-colors"
                   />
                   {teamSearch && (
                     <button
@@ -2888,14 +3160,14 @@ function AdminPageContent() {
                                   setBulkImportMode("append");
                                   setShowBulkImport(true);
                                 }}
-                                className="h-8.5 px-3.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
+                                className="h-9 px-3.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
                               >
                                 <Table2 className="w-3.5 h-3.5" />
                                 <span>Import Excel</span>
                               </button>
                               <button
                                 onClick={() => startCreateTeamMember(group.batch)}
-                                className="h-8.5 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-500/20 active:scale-[0.98]"
+                                className="h-9 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-500/20 active:scale-[0.98]"
                               >
                                 <UserPlus className="w-3.5 h-3.5" />
                                 <span>Add First Member</span>
@@ -2938,7 +3210,7 @@ function AdminPageContent() {
                                       <button
                                         onClick={() => startEditTeamMember(member)}
                                         title="Edit Team Member"
-                                        className="h-7 w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                        className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                                       >
                                         <Edit3 className="w-3.5 h-3.5" />
                                       </button>
@@ -2946,7 +3218,7 @@ function AdminPageContent() {
                                         onClick={() => handleDeleteTeamMember(member)}
                                         disabled={deletingTeamMemberId === member.id}
                                         title="Remove Team Member"
-                                        className="h-7 w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer disabled:opacity-40"
+                                        className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer disabled:opacity-40"
                                       >
                                         {deletingTeamMemberId === member.id ? (
                                           <div className="w-3 h-3 rounded-full border border-red-400/30 border-t-red-400 animate-spin" />
@@ -2971,7 +3243,7 @@ function AdminPageContent() {
                                   </div>
 
                                   {/* Academic Details */}
-                                  <div className="space-y-1 text-xs text-[#A1A1AA] pt-3 mt-3 border-t border-white/[0.04]">
+                                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#A1A1AA] pt-3 mt-3 border-t border-white/[0.04] sm:block sm:space-y-1">
                                     <div className="flex items-center gap-2 min-w-0">
                                       <GraduationCap className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
                                       <span className="truncate text-[11.5px]">
@@ -3019,7 +3291,7 @@ function AdminPageContent() {
           >
             <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden flex flex-col max-h-[85vh]">
               {/* Modal Header */}
-              <div className="px-6 sm:px-7 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+              <div className="px-6 sm:px-7 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0 flex-nowrap gap-3">
                 <div>
                   <h3 className="text-lg font-bold text-white tracking-tight">
                     {editingEvent ? "Edit Event Session" : "Create New Event Session"}
@@ -3041,7 +3313,7 @@ function AdminPageContent() {
               {/* Modal Form */}
               <form onSubmit={handleFormSubmit} className="flex flex-col min-h-0 flex-1 overflow-hidden">
                 <div
-                  className="p-6 sm:p-7 space-y-5.5 overflow-y-auto overscroll-contain flex-1 min-h-0"
+                  className="p-6 sm:p-7 space-y-5 overflow-y-auto overscroll-contain flex-1 min-h-0"
                   style={{
                     scrollbarWidth: "thin",
                     scrollbarColor: "rgba(255, 255, 255, 0.2) transparent",
@@ -3429,13 +3701,13 @@ function AdminPageContent() {
           >
             <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden flex flex-col max-h-[85vh]">
               {/* Modal Header */}
-              <div className="px-6 sm:px-7 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-white tracking-tight">
+              <div className="px-6 sm:px-7 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0 flex-nowrap gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <h3 className="whitespace-nowrap text-lg font-bold text-white tracking-tight">
                       {editingTeamMember ? "Edit Team Member" : "Add Team Member"}
                     </h3>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    <span className="whitespace-nowrap px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                       Batch {teamFormData.batch || selectedTeamBatch || "2026-27"}
                     </span>
                   </div>
@@ -3812,7 +4084,7 @@ function AdminPageContent() {
           >
             <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden flex flex-col max-h-[90vh]">
               {/* Modal Header */}
-              <div className="px-6 sm:px-8 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+              <div className="px-6 sm:px-8 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0 flex-nowrap gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
                     <Table2 className="w-5 h-5" />
@@ -4359,8 +4631,10 @@ function AdminPageContent() {
             min-height: 44px;
           }
 
-          .admin-responsive [class*="justify-between"],
-          .admin-responsive [class*="justify-end"] {
+          /* Rows wrap on small screens unless they opt out with the flex-nowrap class
+             (modal headers must keep the close button on the title row). */
+          .admin-responsive [class*="justify-between"]:not(.flex-nowrap),
+          .admin-responsive [class*="justify-end"]:not(.flex-nowrap) {
             flex-wrap: wrap;
           }
 

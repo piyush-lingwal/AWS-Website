@@ -14,7 +14,19 @@ import {
   type CertificateKind,
   type CertificateTheme,
 } from "@/lib/certificates/theme";
-import { CERT_TEXT, MONO_ADVANCE_EM, RECOGNITION_LINE, fitMonoSize, organiserRecognitionLine } from "@/lib/certificates/text-layout";
+import {
+  CERT_TEXT,
+  MONO_ADVANCE_EM,
+  ORGANISER_COPY,
+  ORGANISER_TEXT,
+  ORGANISER_Y,
+  RECOGNITION_LINE,
+  fitMonoSize,
+  organiserDateText,
+  organiserEventLine,
+  organiserLines,
+  type TextSpec,
+} from "@/lib/certificates/text-layout";
 
 interface CertificatePreviewProps {
   participantName: string;
@@ -29,8 +41,10 @@ interface CertificatePreviewProps {
   theme?: CertificateTheme;
   /** "organiser" shows the Certificate of Appreciation. Ignored when awardTitle is set. */
   kind?: CertificateKind;
-  /** Organiser's role (e.g. "Technical Lead"), woven into the organiser line. */
+  /** Organiser's specific role (e.g. "Technical Co-Lead"). When set it is printed as the role. */
   role?: string;
+  /** Organiser's wing (Media, Event, PR or Tech). Used when there is no role. */
+  wing?: string;
 }
 
 function escapeXml(unsafe: string): string {
@@ -54,6 +68,7 @@ export function CertificatePreview({
   theme = DEFAULT_CERTIFICATE_THEME,
   kind,
   role,
+  wing,
 }: CertificatePreviewProps) {
   const normalizedAwardTitle = getAwardTitle(awardTitle);
   const resolvedKind = resolveCertificateKind(Boolean(normalizedAwardTitle), kind);
@@ -140,7 +155,7 @@ export function CertificatePreview({
     const nameXml = `<text x="${cx}" y="1460" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${nameSize}" font-weight="700" fill="#161D26">${escapeXml(name)}</text>`;
 
     // ── Line 3: "in recognition of their participation in" ──────
-    const line3Xml = `<text x="${cx}" y="1568" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${CERT_TEXT.recognition.size}" font-weight="400" fill="#555555">${escapeXml(resolvedKind === "organiser" ? organiserRecognitionLine(role) : RECOGNITION_LINE.participation)}</text>`;
+    const line3Xml = `<text x="${cx}" y="1568" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${CERT_TEXT.recognition.size}" font-weight="400" fill="#555555">${escapeXml(RECOGNITION_LINE.participation)}</text>`;
 
     // ── Line 4: Event Name ───────────────────────────────────────
     const eventXml = `<text x="${cx}" y="1668" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="${eventSize}" font-weight="700" fill="${accent}">${escapeXml(event)}</text>`;
@@ -238,6 +253,44 @@ export function CertificatePreview({
         .replace("<defs>", `<defs>${fontStyle}`);
     }
 
+    // ── Certificate of Appreciation (organising team) ─────────────
+    // Same wording, sizes and baselines as the PDF (ORGANISER_* in text-layout.ts).
+    if (resolvedKind === "organiser") {
+      const lines = organiserLines(role, wing);
+      const y = lines.roleLine ? ORGANISER_Y.withRole : ORGANISER_Y.withoutRole;
+      const line = (baseline: number, str: string, spec: TextSpec, weight: 400 | 700, fill: string) =>
+        `<text x="${cx}" y="${baseline}" text-anchor="middle" font-size="${fitMonoSize(str.length, spec)}" font-weight="${weight}" fill="${fill}">${escapeXml(str)}</text>`;
+      const T = ORGANISER_TEXT;
+
+      const recognitionXml =
+        line(ORGANISER_Y.recognition, ORGANISER_COPY.recognition, T.recognition, 400, "#555555") +
+        (lines.roleLine ? line(ORGANISER_Y.withRole.role, lines.roleLine, T.role, 700, accent) : "") +
+        line(y.team, lines.teamLine, T.team, 400, "#555555");
+      // Below y=1870 the template has a white box, so these two go in the signer layer.
+      const lowerXml =
+        line(ORGANISER_Y.organisedBy, ORGANISER_COPY.organisedBy, T.organisedBy, 400, "#444444") +
+        line(ORGANISER_Y.date, organiserDateText(date), T.date, 700, "#444444") +
+        `<image href="/Lingwal_Sign.png" x="2295" y="2077" width="360" height="130" preserveAspectRatio="xMidYMid meet" />`;
+      const signerLinesXml =
+        `<text x="${cx}" y="2282" text-anchor="middle" font-size="${signerTitleSize}" font-weight="400" fill="#555555">${escapeXml(title)}</text>` +
+        `<text x="${cx}" y="2330" text-anchor="middle" font-size="${signerOrgSize}" font-weight="400" fill="#555555">AWS Student Builder Group</text>`;
+
+      return baseSvg
+        .replace('width="3300" height="2550"', 'width="100%" height="100%"')
+        .replace(
+          '<rect x="2175" y="2148" width="600" height="2" fill="#161d26"/>',
+          '<rect x="2175" y="2220" width="600" height="2" fill="#161d26"/>'
+        )
+        .replace("<!-- PROUDLY_PRESENT_PLACEHOLDER -->", line(ORGANISER_Y.presentedTo, ORGANISER_COPY.presentedTo, T.presentedTo, 400, "#555555"))
+        .replace("<!-- PARTICIPANT_NAME_PLACEHOLDER -->", line(ORGANISER_Y.name, name, T.name, 700, "#161D26"))
+        .replace("<!-- ACHIEVEMENT_TEXT_PLACEHOLDER -->", recognitionXml)
+        .replace("<!-- EVENT_DETAILS_PLACEHOLDER -->", line(y.event, organiserEventLine(event), T.event, 700, accent))
+        .replace("<!-- SIGNER_NAME_PLACEHOLDER -->", lowerXml)
+        .replace("<!-- SIGNER_TITLE_PLACEHOLDER -->", signerLinesXml)
+        .replace("<!-- QR_AND_META_PLACEHOLDER -->", qrAndMetaXml)
+        .replace("<defs>", `<defs>${fontStyle}`);
+    }
+
     let res = baseSvg
       .replace('width="3300" height="2550"', 'width="100%" height="100%"')
       .replace(/<rect x="2029" y="2148" width="882" height="2" fill="#161d26"\/>/, '<rect x="2175" y="2148" width="600" height="2" fill="#161d26"/>')
@@ -265,6 +318,7 @@ export function CertificatePreview({
     accent,
     resolvedKind,
     role,
+    wing,
   ]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);

@@ -122,7 +122,7 @@ function AdminNavbarContent() {
                   href={link.href}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "h-8 sm:h-8.5 px-2.5 sm:px-3 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0",
+                    "h-8 px-2.5 sm:px-3 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-medium transition-all duration-150 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0",
                     isActive
                       ? "bg-[#6C63FF]/25 text-[#A78BFA] border border-[#6C63FF]/40 font-semibold shadow-sm"
                       : "text-[#A1A1AA] hover:text-white hover:bg-white/[0.05]"

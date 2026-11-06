@@ -14,7 +14,7 @@ interface CertificateThemePickerProps {
 }
 
 /** Tiny stand-in for the certificate layout, drawn in the theme's accent colour. */
-function ThemePreview({ accent }: { accent: string }) {
+function ThemePreview({ accent, withKiro = false }: { accent: string; withKiro?: boolean }) {
   return (
     <span
       aria-hidden="true"
@@ -23,6 +23,7 @@ function ThemePreview({ accent }: { accent: string }) {
       <span className="absolute left-1 top-1 h-6 w-9" style={{ backgroundColor: accent }} />
       <span className="absolute right-1 top-1 h-3 w-3 bg-[#161d26]" />
       <span className="absolute right-4 top-4 h-3 w-3 bg-[#161d26]" />
+      {withKiro && <span className="absolute right-1 top-7 h-3 w-3 bg-[#161d26]" />}
       <span className="absolute bottom-1.5 left-2 h-2 w-3" style={{ backgroundColor: accent }} />
       <span className="absolute bottom-1.5 right-1.5 h-px w-7 bg-[#161d26]/60" />
     </span>
@@ -33,7 +34,7 @@ export function CertificateThemePicker({ value, onChange, disabled = false }: Ce
   return (
     <fieldset className="space-y-2.5" disabled={disabled}>
       <legend className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-        <span>Certificate Color</span>
+        <span>Certificate Template</span>
       </legend>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -57,7 +58,7 @@ export function CertificateThemePicker({ value, onChange, disabled = false }: Ce
                 onChange={() => onChange(theme)}
                 className="sr-only"
               />
-              <ThemePreview accent={info.accent} />
+              <ThemePreview accent={info.accent} withKiro={info.kiroLogo === true} />
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-white">{info.label}</span>
                 <span className="block font-mono text-[10px] uppercase tracking-wider text-[#71717A]">
@@ -78,8 +79,8 @@ export function CertificateThemePicker({ value, onChange, disabled = false }: Ce
       </div>
 
       <p className="text-[11px] leading-relaxed text-[#71717A]">
-        Used for this event&apos;s participation and Certificate of Excellence PDFs. Certificates are drawn
-        in the event&apos;s current color whenever they are downloaded or emailed, including ones already issued.
+        Used for this event&apos;s participation, Excellence and Appreciation certificates. Certificates are drawn
+        with the event&apos;s current template whenever they are downloaded or emailed, including ones already issued.
       </p>
     </fieldset>
   );
