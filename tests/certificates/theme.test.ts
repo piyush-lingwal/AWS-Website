@@ -127,8 +127,9 @@ const KIRO_BASE = { kiro: "orange", "kiro-purple": "purple" } as const;
 const KIRO_MASK_RECT = '<rect x="2806" y="851" width="329" height="339" fill="black"/>';
 const KIRO_TILE = /<rect data-bleed-extend="filled-logo" data-pdf-target-x="2805" data-pdf-target-y="850" data-pdf-target-width="330" data-pdf-target-height="340" x="2806" y="851" width="329" height="339" fill="#161d26"\/><image id="kiro-sponsor-logo"[^>]*\/>\n {4}/;
 
+// Line endings depend on the checkout (core.autocrlf), so compare with LF only.
 function template(file: string): string {
-  return readFileSync(new URL(`../../public/templates/${file}`, import.meta.url), "utf8");
+  return readFileSync(new URL(`../../public/templates/${file}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 }
 
 function cell(svg: string, attrs: RegExp): { x: number; y: number; w: number; h: number } {
@@ -192,10 +193,15 @@ test("the Kiro tile starts on the row below the SBG tile, where the SBG tile end
   }
 });
 
-test("orange Kiro templates use the white Kiro logo, purple ones the purple logo", async () => {
-  for (const kind of CERTIFICATE_KINDS) {
-    assert.equal(await purplePixels(template(templateFileName("kiro", kind))), 0, `kiro/${kind}: logo is not the white one`);
-    assert.ok(await purplePixels(template(templateFileName("kiro-purple", kind))) > 1000, `kiro-purple/${kind}: logo is not the purple one`);
+test("every Kiro template, orange and purple, uses the same white Kiro logo", async () => {
+  const logoOf = (svg: string) => svg.match(/<image id="kiro-sponsor-logo"[^>]* href="([^"]+)"/)?.[1];
+  const white = logoOf(template(templateFileName("kiro", "participation")));
+  assert.ok(white, "no Kiro logo in the orange participation template");
+  assert.equal(await purplePixels(template(templateFileName("kiro", "participation"))), 0, "the orange Kiro logo is not the white one");
+  for (const kiro of Object.keys(KIRO_BASE) as (keyof typeof KIRO_BASE)[]) {
+    for (const kind of CERTIFICATE_KINDS) {
+      assert.equal(logoOf(template(templateFileName(kiro, kind))), white, `${kiro}/${kind}: not the white Kiro logo`);
+    }
   }
 });
 

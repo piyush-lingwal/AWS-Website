@@ -9,9 +9,8 @@
 //     rank lines), so it matches the template's coloured panel.
 //
 // "kiro" and "kiro-purple" are the orange and purple designs with a Kiro logo
-// tile added below the SBG tile in the top right (white logo on orange, purple
-// logo on purple). Each shares its base theme's accent, so only the template
-// files differ.
+// tile added below the SBG tile in the top right (the white Kiro logo on both).
+// Each shares its base theme's accent, so only the template files differ.
 //
 // Kept dependency-free so the admin form (browser), the generator (server)
 // and the tests (node --test) can all share it.
