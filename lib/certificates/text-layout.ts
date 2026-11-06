@@ -61,27 +61,106 @@ export const CERT_TEXT = {
   },
 } as const satisfies Record<string, TextSpec | Record<string, TextSpec>>;
 
-/**
- * The line between the name and the event name. Drawn at CERT_TEXT.recognition.
- * Organising team members get their own wording on the Certificate of Appreciation.
- */
+/** The line between the name and the event name on a participation certificate. */
 export const RECOGNITION_LINE = {
   participation: "in recognition of their participation in",
-  organiser: "as a member of the Organising Team of",
 } as const;
 
-/**
- * The organiser recognition line, with the role woven in when there is one:
- *   role "Technical Lead" -> "as Technical Lead of the Organising Team of"
- *   no role              -> "as a member of the Organising Team of"
- * Overly long roles fall back to the generic line so the certificate never overflows.
- */
-export function organiserRecognitionLine(role?: string | null): string {
-  const clean = (role ?? "").trim().replace(/\s+/g, " ");
-  if (!clean) return RECOGNITION_LINE.organiser;
-  const withRole = `as ${clean} of the Organising Team for`;
-  return withRole.length <= 48 ? withRole : RECOGNITION_LINE.organiser;
+// ------------------------------------------------------------
+// Certificate of Appreciation (organising team)
+// ------------------------------------------------------------
+//
+// Two wordings, depending on whether the person has a specific role:
+//
+//   With a role                              Without a role (their wing)
+//   ------------------------------------     ------------------------------------
+//   This certificate is proudly presented to This certificate is proudly presented to
+//   Vivek Dharmwan                           Vivek Dharmwan
+//   In recognition of your valuable          In recognition of your valuable
+//     contribution as                          contribution as
+//   TECHNICAL CO-LEAD                        Media member of the Organising Team for
+//   of the Organising Team for               BUILD-VERSE 2026
+//   BUILD-VERSE 2026                         Organised by AWS Student Builder Group ...
+//   Organised by AWS Student Builder Group   29-30 October 2026
+//   29-30 October 2026
+// ------------------------------------------------------------
+
+export const ORGANISER_COPY = {
+  presentedTo: "This certificate is proudly presented to",
+  recognition: "In recognition of your valuable contribution as",
+  /** Follows the role line. */
+  teamAfterRole: "of the Organising Team for",
+  organisedBy: "Organised by AWS Student Builder Group at Tulas University",
+} as const;
+
+export interface OrganiserLines {
+  /** The big accent line holding the role (UPPERCASE), or null when the person has no role. */
+  roleLine: string | null;
+  /** The plain line saying which team: "of the Organising Team for", or "Media member of ...". */
+  teamLine: string;
 }
+
+/**
+ * The role/team lines for an organiser certificate.
+ *   role "Technical Co-Lead" -> roleLine "TECHNICAL CO-LEAD", teamLine "of the Organising Team for"
+ *   no role, wing "Media"    -> roleLine null, teamLine "Media member of the Organising Team for"
+ *   no role, no wing         -> roleLine null, teamLine "a member of the Organising Team for"
+ */
+export function organiserLines(role?: string | null, wing?: string | null): OrganiserLines {
+  const cleanRole = (role ?? "").trim().replace(/\s+/g, " ");
+  if (cleanRole) {
+    return { roleLine: cleanRole.toUpperCase(), teamLine: ORGANISER_COPY.teamAfterRole };
+  }
+  const cleanWing = (wing ?? "").trim().replace(/\s+/g, " ");
+  return {
+    roleLine: null,
+    teamLine: `${cleanWing ? `${cleanWing} member` : "a member"} of the Organising Team for`,
+  };
+}
+
+/** The event name as printed on an organiser certificate (UPPERCASE). */
+export function organiserEventLine(eventTitle: string): string {
+  return eventTitle.trim().toUpperCase();
+}
+
+/**
+ * The date as printed on an organiser certificate. Ranges use an en dash:
+ * "29-30 October 2026" -> "29–30 October 2026", "29 Oct - 05 Nov 2026" -> "29 Oct – 05 Nov 2026".
+ * A single day is unchanged.
+ */
+export function organiserDateText(display: string): string {
+  return display.trim().replace(/(\d)-(\d)/g, "$1\u2013$2").replace(/ - /g, " \u2013 ");
+}
+
+/** Font sizes for the organiser layout (same fitting rule as every other line). */
+export const ORGANISER_TEXT = {
+  presentedTo: { size: 42, maxWidth: 1180 },
+  name: { size: 96, maxWidth: 1200 },
+  recognition: { size: 38, maxWidth: 1200 },
+  /** The role (bold, accent colour). */
+  role: { size: 84, maxWidth: 1200 },
+  team: { size: 38, maxWidth: 1200 },
+  event: { size: 62, maxWidth: 1240 },
+  organisedBy: { size: 32, maxWidth: 1240 },
+  date: { size: 38, maxWidth: 1180 },
+} as const satisfies Record<string, TextSpec>;
+
+/**
+ * Baselines (canvas y) for the organiser layout. `organisedBy` and `date` sit
+ * below y=1870, where the template's lower white box starts, so both renderers
+ * draw them in the signer layer (as the Certificate of Excellence does).
+ */
+export const ORGANISER_Y = {
+  presentedTo: 1330,
+  name: 1475,
+  recognition: 1550,
+  /** With a role: ROLE line, then the team line below it. */
+  withRole: { role: 1655, team: 1730, event: 1832 },
+  /** Without a role: one team line ("Media member of ..."), then the event. */
+  withoutRole: { team: 1655, event: 1790 },
+  organisedBy: 1912,
+  date: 1976,
+} as const;
 
 /**
  * Largest font size, up to `spec.size`, at which `charCount` monospaced

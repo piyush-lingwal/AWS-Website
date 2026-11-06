@@ -1,7 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { CERT_TEXT, MONO_ADVANCE_EM, RECOGNITION_LINE, fitMonoSize } from "../../lib/certificates/text-layout.ts";
+import {
+  CERT_TEXT,
+  MONO_ADVANCE_EM,
+  ORGANISER_COPY,
+  ORGANISER_TEXT,
+  ORGANISER_Y,
+  RECOGNITION_LINE,
+  fitMonoSize,
+  organiserLines,
+} from "../../lib/certificates/text-layout.ts";
 
 test("fitMonoSize keeps the base size when the line fits and shrinks it when it does not", () => {
   const spec = { size: 40, maxWidth: 600 };
@@ -22,7 +31,13 @@ test("the fixed wording on every certificate fits at its full size", () => {
   const fixed: [string, string, { size: number; maxWidth: number }][] = [
     ["presented to", "This certificate is proudly presented to", CERT_TEXT.presentedTo],
     ["recognition", RECOGNITION_LINE.participation, CERT_TEXT.recognition],
-    ["organiser recognition", RECOGNITION_LINE.organiser, CERT_TEXT.recognition],
+    ["organiser presented to", ORGANISER_COPY.presentedTo, ORGANISER_TEXT.presentedTo],
+    ["organiser recognition", ORGANISER_COPY.recognition, ORGANISER_TEXT.recognition],
+    ["organiser organised by", ORGANISER_COPY.organisedBy, ORGANISER_TEXT.organisedBy],
+    ["organiser team after role", organiserLines("Lead").teamLine, ORGANISER_TEXT.team],
+    // The longest wing line: "Media member of ..." / "Event member of ..." (5 letters).
+    ["organiser wing line", organiserLines("", "Media").teamLine, ORGANISER_TEXT.team],
+    ["organiser date", "29\u201330 October 2026", ORGANISER_TEXT.date],
     ["conducted by", "conducted by AWS Student Builder Group at Tulas University", CERT_TEXT.conductedBy],
     ["award conducted by", "conducted by AWS Student Builder Group at Tulas University", CERT_TEXT.award.conductedBy],
     ["securing", "for securing", CERT_TEXT.award.securing],
@@ -67,4 +82,26 @@ test("both renderers read their sizes from text-layout.ts", () => {
   const preview = readFileSync(new URL("../../components/certificates/CertificatePreview.tsx", import.meta.url), "utf8");
   // The old preview-only size literals (26/24 meta, 34 lines, 28 details) must be gone.
   assert.ok(!/font-size="(34|32|28)"/.test(preview), "CertificatePreview still hard-codes a font-size");
+});
+
+test("organiser lines stay inside the text panel and are stacked top to bottom without overlap", () => {
+  for (const [name, spec] of Object.entries(ORGANISER_TEXT)) {
+    assert.ok(spec.maxWidth <= 1240, `${name}: maxWidth ${spec.maxWidth} leaves too little margin`);
+  }
+  for (const y of [ORGANISER_Y.withRole, ORGANISER_Y.withoutRole]) {
+    const order = "role" in y
+      ? [ORGANISER_Y.presentedTo, ORGANISER_Y.name, ORGANISER_Y.recognition, y.role, y.team, y.event, ORGANISER_Y.organisedBy, ORGANISER_Y.date]
+      : [ORGANISER_Y.presentedTo, ORGANISER_Y.name, ORGANISER_Y.recognition, y.team, y.event, ORGANISER_Y.organisedBy, ORGANISER_Y.date];
+    for (let i = 1; i < order.length; i += 1) {
+      assert.ok(order[i] > order[i - 1] + 40, `line ${i} (y=${order[i]}) is too close to the line above (y=${order[i - 1]})`);
+    }
+  }
+  // The template's white box starts at y=1870, so these two are drawn in the signer layer.
+  assert.ok(ORGANISER_Y.organisedBy > 1870 && ORGANISER_Y.date > ORGANISER_Y.organisedBy);
+  assert.ok(ORGANISER_Y.withRole.event < 1870 && ORGANISER_Y.withoutRole.event < 1870);
+});
+
+test("a role line is the biggest accent line, below the name", () => {
+  assert.ok(ORGANISER_TEXT.name.size > ORGANISER_TEXT.role.size);
+  assert.ok(ORGANISER_TEXT.role.size > ORGANISER_TEXT.event.size);
 });

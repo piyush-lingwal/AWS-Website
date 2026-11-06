@@ -116,6 +116,8 @@ interface OrganiserCertRow {
   certificateId: string;
   fullName: string;
   role: string;
+  /** Media, Event, PR or Tech; empty when none was stored. */
+  wing?: string;
   email: string;
   issueDate: string;
 }
@@ -2603,7 +2605,7 @@ function AdminPageContent() {
                         </td>
                         <td className="px-4 py-3">
                           <span className="inline-block px-2.5 py-1 rounded-lg bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[#C4B5FD] font-medium text-[11px]">
-                            {org.role || "Organising Team"}
+                            {org.role || (org.wing ? `${org.wing} Wing` : "Organising Team")}
                           </span>
                         </td>
                         <td className="px-4 py-3">

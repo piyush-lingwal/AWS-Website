@@ -27,7 +27,16 @@ import {
   type CertificateKind,
   type CertificateTheme,
 } from "./theme";
-import { CERT_TEXT, RECOGNITION_LINE, organiserRecognitionLine } from "./text-layout";
+import {
+  CERT_TEXT,
+  ORGANISER_COPY,
+  ORGANISER_TEXT,
+  ORGANISER_Y,
+  RECOGNITION_LINE,
+  organiserDateText,
+  organiserEventLine,
+  organiserLines,
+} from "./text-layout";
 
 export interface SvgCertificateInput {
   participantName: string;
@@ -41,8 +50,10 @@ export interface SvgCertificateInput {
    * Ignored when awardTitle is set (that is always a Certificate of Excellence).
    */
   kind?: CertificateKind;
-  /** Organiser's role (e.g. "Technical Lead"), woven into the organiser line. */
+  /** Organiser's specific role (e.g. "Technical Co-Lead"). When set it is printed as the role. */
   role?: string | null;
+  /** Organiser's wing (Media, Event, PR or Tech). Used when there is no role. */
+  wing?: string | null;
   verificationUrl?: string;
   signerName?: string;
   signerTitle?: string;
@@ -450,6 +461,61 @@ export async function generateCertificateSvg(
       .replace("<!-- QR_AND_META_PLACEHOLDER -->", qrAndMetaXml);
   }
 
+  // ── Certificate of Appreciation (organising team) ─────────────
+  // Own wording and layout; see ORGANISER_COPY / ORGANISER_Y in text-layout.ts.
+  if (resolveCertificateKind(false, input.kind) === "organiser") {
+    const T = ORGANISER_TEXT;
+    const lines = organiserLines(input.role, input.wing);
+    const y = lines.roleLine ? ORGANISER_Y.withRole : ORGANISER_Y.withoutRole;
+    const fit = (font: Font, text: string, spec: { size: number; maxWidth: number }) =>
+      getFittingFontSize(font, text, spec.size, spec.maxWidth);
+    const centred = (font: Font, text: string, baseline: number, spec: { size: number; maxWidth: number }, fill: string) =>
+      textToSvgPath(font, text, cx, baseline, fit(font, text, spec), fill);
+
+    const presentedPath = centred(regFont, ORGANISER_COPY.presentedTo, ORGANISER_Y.presentedTo, T.presentedTo, "#555555");
+    const namePath = centred(boldFont, participantName, ORGANISER_Y.name, T.name, "#161D26");
+    const recognitionPath = centred(regFont, ORGANISER_COPY.recognition, ORGANISER_Y.recognition, T.recognition, "#555555");
+    const rolePath = lines.roleLine
+      ? centred(boldFont, lines.roleLine, ORGANISER_Y.withRole.role, T.role, accent)
+      : "";
+    const teamPath = centred(regFont, lines.teamLine, y.team, T.team, "#555555");
+    const eventPath = centred(boldFont, organiserEventLine(eventTitle), y.event, T.event, accent);
+
+    // These two sit below y=1870, so they go in the signer layer (above the lower white box).
+    const organisedByPath = centred(regFont, ORGANISER_COPY.organisedBy, ORGANISER_Y.organisedBy, T.organisedBy, "#444444");
+    const datePath = centred(boldFont, organiserDateText(eventDate), ORGANISER_Y.date, T.date, "#444444");
+
+    const qrImage = input.qrDataUri
+      ? `<image href="${input.qrDataUri}" x="220" y="2010" width="230" height="230" />`
+      : `<rect x="220" y="2010" width="230" height="230" fill="#F4F4F6" stroke="#DEDEE3" stroke-width="2" rx="8"/><text x="335" y="2135" text-anchor="middle" font-family="monospace" font-size="24" fill="#888">[QR]</text>`;
+    const qrMeta = `
+      <g id="dynamic-verification-meta">
+        ${qrImage}
+        ${certIdPath}
+        ${verifyUrlPath}
+      </g>
+    `;
+
+    const sigImg = signatureDataUri
+      ? `<image href="${signatureDataUri}" x="2295" y="2077" width="360" height="130" preserveAspectRatio="xMidYMid meet" />`
+      : "";
+    const signerTitlePath = centred(regFont, signerTitle, 2282, CERT_TEXT.signer, "#555555");
+    const signerOrgPath = centred(regFont, signerOrg, 2330, CERT_TEXT.signer, "#555555");
+
+    return baseSvg
+      .replace(
+        '<rect x="2175" y="2148" width="600" height="2" fill="#161d26"/>',
+        '<rect x="2175" y="2220" width="600" height="2" fill="#161d26"/>'
+      )
+      .replace("<!-- PROUDLY_PRESENT_PLACEHOLDER -->", presentedPath)
+      .replace("<!-- PARTICIPANT_NAME_PLACEHOLDER -->", namePath)
+      .replace("<!-- ACHIEVEMENT_TEXT_PLACEHOLDER -->", `${recognitionPath}${rolePath}${teamPath}`)
+      .replace("<!-- EVENT_DETAILS_PLACEHOLDER -->", eventPath)
+      .replace("<!-- SIGNER_NAME_PLACEHOLDER -->", `${organisedByPath}${datePath}${sigImg}`)
+      .replace("<!-- SIGNER_TITLE_PLACEHOLDER -->", `${signerTitlePath}${signerOrgPath}`)
+      .replace("<!-- QR_AND_META_PLACEHOLDER -->", qrMeta);
+  }
+
   // 1. "This certificate is proudly presented to"
   const line1 = "This certificate is proudly presented to";
   const line1Size = getFittingFontSize(regFont, line1, CERT_TEXT.presentedTo.size, CERT_TEXT.presentedTo.maxWidth);
@@ -459,11 +525,8 @@ export async function generateCertificateSvg(
   const nameSize = getFittingFontSize(boldFont, participantName, CERT_TEXT.name.size, CERT_TEXT.name.maxWidth);
   const namePath = textToSvgPath(boldFont, participantName, cx, 1460, nameSize, "#161D26");
 
-  // 3. "in recognition of their participation in" (or the organiser wording, with role)
-  const line3 =
-    input.kind === "organiser"
-      ? organiserRecognitionLine(input.role)
-      : RECOGNITION_LINE.participation;
+  // 3. "in recognition of their participation in"
+  const line3 = RECOGNITION_LINE.participation;
   const line3Size = getFittingFontSize(regFont, line3, CERT_TEXT.recognition.size, CERT_TEXT.recognition.maxWidth);
   const line3Path = textToSvgPath(regFont, line3, cx, 1568, line3Size, "#555555");
 

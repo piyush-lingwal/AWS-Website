@@ -166,6 +166,7 @@ export async function generateCertificatePdf(
       theme: input.theme,
       kind: input.kind,
       role: input.role,
+      wing: input.wing,
       signerName: input.signerName?.trim(),
       signerTitle: input.signerTitle?.trim(),
       certificateId,

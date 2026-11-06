@@ -17,7 +17,8 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
-import { getEventCertificateTheme, isMissingColumnError } from "@/lib/certificates/event-theme";
+import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { CERTIFICATE_OPTIONAL_COLUMNS, selectWithOptionalColumns } from "@/lib/certificates/optional-columns";
 import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import { sendCertificateEmail } from "@/lib/email";
 
@@ -34,6 +35,9 @@ interface CertRow {
   event_name_snapshot: string;
   event_date_snapshot: string | null;
   event_date_display_snapshot?: string | null;
+  certificate_kind?: string | null;
+  role_snapshot?: string | null;
+  wing_snapshot?: string | null;
   award_title: string | null;
   verification_url: string | null;
   participant: { email: string | null; full_name: string | null } | { email: string | null; full_name: string | null }[] | null;
@@ -87,19 +91,16 @@ export async function POST(request: NextRequest) {
     if (certificateId) {
       const cleanId = certificateId.trim();
 
-      const withDisplay = await supabase
-        .from("certificates")
-        .select(SINGLE_CERT_COLUMNS + ", event_date_display_snapshot")
-        .eq("certificate_id", cleanId)
-        .maybeSingle();
-      const fallback =
-        withDisplay.error && isMissingColumnError(withDisplay.error, "event_date_display_snapshot")
-          ? await supabase.from("certificates").select(SINGLE_CERT_COLUMNS).eq("certificate_id", cleanId).maybeSingle()
-          : null;
-      const cert = (fallback?.data ?? withDisplay.data) as CertRow | null;
-      const certError = fallback?.error ?? withDisplay.error;
+      // The display date, kind, role and wing columns are optional: a database
+      // missing any of them still returns the rest.
+      const found = await selectWithOptionalColumns<CertRow>(
+        SINGLE_CERT_COLUMNS,
+        CERTIFICATE_OPTIONAL_COLUMNS,
+        (select) => supabase.from("certificates").select(select).eq("certificate_id", cleanId).maybeSingle()
+      );
+      const cert = found.data;
 
-      if (certError || !cert) {
+      if (found.error || !cert) {
         return NextResponse.json(
           { success: false, error: "Certificate record not found." } satisfies ApiResponse,
           { status: 404 }
@@ -131,6 +132,9 @@ export async function POST(request: NextRequest) {
         awardTitle: cert.award_title || undefined,
         verificationUrl: cert.verification_url || undefined,
         theme,
+        kind: cert.certificate_kind === "organiser" ? "organiser" : undefined,
+        role: cert.role_snapshot || undefined,
+        wing: cert.wing_snapshot || undefined,
       });
 
       if (!pdfResult.success || !pdfResult.pdfBuffer) {
@@ -184,17 +188,17 @@ export async function POST(request: NextRequest) {
     // CASE B: Bulk Send for an Entire Event
     // ─────────────────────────────────────────────────────────────
     if (eventId) {
-      const withDisplay = await supabase
-        .from("certificates")
-        .select(BULK_CERT_COLUMNS + ", event_date_display_snapshot")
-        .eq("event_id", eventId)
-        .is("award_title", null);
-      const fallback =
-        withDisplay.error && isMissingColumnError(withDisplay.error, "event_date_display_snapshot")
-          ? await supabase.from("certificates").select(BULK_CERT_COLUMNS).eq("event_id", eventId).is("award_title", null)
-          : null;
-      const certs = (fallback?.data ?? withDisplay.data) as CertRow[] | null;
-      const fetchErr = fallback?.error ?? withDisplay.error;
+      const fetched = await selectWithOptionalColumns<CertRow[]>(
+        BULK_CERT_COLUMNS,
+        CERTIFICATE_OPTIONAL_COLUMNS,
+        (select) => supabase.from("certificates").select(select).eq("event_id", eventId).is("award_title", null)
+      );
+      const fetchErr = fetched.error;
+      // Bulk send is for attendees. Organising-team certificates use their own
+      // template and wording, and have no award_title, so they must be filtered
+      // out here (in JS: a SQL "<> 'organiser'" would also drop rows where the
+      // kind is NULL, i.e. every older certificate).
+      const certs = (fetched.data ?? []).filter((c) => c.certificate_kind !== "organiser");
 
       if (fetchErr) {
         return NextResponse.json(
@@ -203,7 +207,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (!certs || certs.length === 0) {
+      if (certs.length === 0) {
         return NextResponse.json(
           {
             success: true,

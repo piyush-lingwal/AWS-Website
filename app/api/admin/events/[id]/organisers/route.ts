@@ -3,13 +3,15 @@
 // POST /api/admin/events/[id]/organisers — issue Certificates of Appreciation
 // ============================================================
 //
-// Body: { rows: [{ rowNumber?, fullName, email, role }] } (max 100 per request)
+// Body: { rows: [{ rowNumber?, fullName, email, role?, wing? }] } (max 100 per request)
 //
 // For each organising-team member: validate, find-or-create the participant,
-// then issue one Certificate of Appreciation for the event in the URL. The
-// role (e.g. "Technical Lead") is stamped onto the certificate and stored in
-// role_snapshot; certificate_kind = 'organiser' keeps these distinct from
-// participation and excellence certificates (unique per event + participant).
+// then issue one Certificate of Appreciation for the event in the URL. A
+// specific role (e.g. "Technical Co-Lead") is stamped onto the certificate and
+// stored in role_snapshot. Without a role the member's wing (Media, Event, PR or
+// Tech) is printed instead and stored in wing_snapshot. certificate_kind =
+// 'organiser' keeps these distinct from participation and excellence
+// certificates (unique per event + participant).
 //
 // The PDF is rendered on demand by /api/certificates/[id] like every other
 // certificate, so this route only stores the snapshots.
@@ -24,7 +26,8 @@ import { getEventIssueDate, insertCertificateWithDisplayDate } from "@/lib/certi
 import { isMissingColumnError } from "@/lib/certificates/event-theme";
 import { mapLimit } from "@/lib/media/concurrency";
 import { isUuid } from "@/lib/auth/roles";
-import { validateOrganiser } from "@/lib/certificates/organiser";
+import { WING_MIGRATION_HINT, validateOrganiser } from "@/lib/certificates/organiser";
+import { selectWithOptionalColumns } from "@/lib/certificates/optional-columns";
 import type { ApiResponse } from "@/types/certificate";
 
 export const dynamic = "force-dynamic";
@@ -86,7 +89,7 @@ async function issueOne(db: Db, event: EventInfo, rowNumber: number, raw: unknow
       email: typeof r.email === "string" ? r.email : "",
     };
   }
-  const { fullName, email, role } = parsed.value;
+  const { fullName, email, role, wing } = parsed.value;
 
   try {
     const participantId = await findOrCreateParticipant(db, fullName, email);
@@ -121,13 +124,20 @@ async function issueOne(db: Db, event: EventInfo, rowNumber: number, raw: unknow
       event_date_snapshot: event.startDate,
       event_date_display_snapshot: event.displayDate,
       certificate_kind: "organiser",
-      role_snapshot: role,
+      role_snapshot: role || null,
+      // Only sent when there is a wing, so a database without wing_snapshot still
+      // accepts role-only certificates. A wing is never dropped silently: without
+      // the column the wing-only wording would print as "a member of".
+      ...(wing ? { wing_snapshot: wing } : {}),
       pdf_url: `/api/certificates/${certificateId}`,
       verification_url: getVerificationUrl(certificateId),
       issue_date: new Date().toISOString().split("T")[0],
     });
     if (insert.error?.code === "23505") {
       return { rowNumber, status: "already_issued", message: "Already issued (just now by someone else).", fullName, email };
+    }
+    if (wing && isMissingColumnError(insert.error, "wing_snapshot")) {
+      return { rowNumber, status: "error", message: WING_MIGRATION_HINT, fullName, email };
     }
     if (insert.error) throw new Error(`certificate insert: ${insert.error.message}`);
 
@@ -149,12 +159,18 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!db) return fail("Database not configured.", 500);
 
   // Organiser certificates for this event, newest first, with the recipient's email.
-  const res = await db
-    .from("certificates")
-    .select("certificate_id, recipient_name_snapshot, role_snapshot, issue_date, participant:participants(email)")
-    .eq("event_id", id.toLowerCase())
-    .eq("certificate_kind", "organiser")
-    .order("issue_date", { ascending: false });
+  // wing_snapshot is optional: a database without it just lists no wings.
+  const res = await selectWithOptionalColumns<Array<Record<string, unknown>>>(
+    "certificate_id, recipient_name_snapshot, role_snapshot, issue_date, participant:participants(email)",
+    ["wing_snapshot"],
+    (select) =>
+      db
+        .from("certificates")
+        .select(select)
+        .eq("event_id", id.toLowerCase())
+        .eq("certificate_kind", "organiser")
+        .order("issue_date", { ascending: false })
+  );
 
   if (res.error) {
     // Before the migration there is no certificate_kind column: no organisers yet.
@@ -168,12 +184,13 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   }
 
   const organisers = (res.data ?? []).map((row) => {
-    const p = Array.isArray(row.participant) ? row.participant[0] : row.participant;
+    const p = (Array.isArray(row.participant) ? row.participant[0] : row.participant) as { email?: string } | null | undefined;
     return {
       certificateId: row.certificate_id as string,
       fullName: row.recipient_name_snapshot as string,
       role: (row.role_snapshot as string | null) ?? "",
-      email: (p?.email as string | undefined) ?? "",
+      wing: (row.wing_snapshot as string | null | undefined) ?? "",
+      email: p?.email ?? "",
       issueDate: row.issue_date as string,
     };
   });
