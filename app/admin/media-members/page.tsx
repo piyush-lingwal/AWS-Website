@@ -245,13 +245,13 @@ export default function MediaMembersPage() {
                     </span>
                     <button
                       onClick={() => patchMember(m, { resetPassword: true })}
-                      className="flex items-center gap-1.5 rounded-lg border border-white/[0.1] px-2.5 py-1.5 text-xs hover:bg-white/[0.06] cursor-pointer"
+                      className="flex min-h-10 items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 py-1.5 text-xs hover:bg-white/[0.06] cursor-pointer sm:min-h-0 sm:px-2.5"
                     >
                       <KeyRound className="h-3 w-3" /> Reset password
                     </button>
                     <button
                       onClick={() => patchMember(m, { active: !m.active })}
-                      className="rounded-lg border border-white/[0.1] px-2.5 py-1.5 text-xs hover:bg-white/[0.06] cursor-pointer"
+                      className="min-h-10 rounded-lg border border-white/[0.1] px-3 py-1.5 text-xs hover:bg-white/[0.06] cursor-pointer sm:min-h-0 sm:px-2.5"
                     >
                       {m.active ? "Disable" : "Enable"}
                     </button>

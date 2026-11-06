@@ -80,7 +80,7 @@ export function AttendanceStatus({ align = "right", className }: { align?: "righ
         aria-haspopup="dialog"
         aria-expanded={open}
         title={activeEvent ? `${LABEL[state]}: ${activeEvent.name}` : LABEL[state]}
-        className="flex h-8 max-w-full items-center gap-2 rounded-lg border border-white/[0.1] bg-white/[0.04] px-2.5 text-[11px] font-medium text-white transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF] sm:text-xs"
+        className="flex h-10 max-w-full items-center gap-2 rounded-lg lg:h-8 border border-white/[0.1] bg-white/[0.04] px-2.5 text-[11px] font-medium text-white transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF] sm:text-xs"
       >
         <span className="relative flex h-2 w-2 shrink-0">
           {state === "open" && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />}
