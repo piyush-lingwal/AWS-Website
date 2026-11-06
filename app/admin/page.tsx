@@ -18,6 +18,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { TopPerformerImportDialog } from "@/components/features/TopPerformerImportDialog";
 import { AttendeeImportDialog } from "@/components/features/AttendeeImportDialog";
 import { OrganiserIssueDialog } from "@/components/features/OrganiserIssueDialog";
+import { DeleteAllButton } from "@/components/admin/DeleteAllButton";
 import { CertificateThemePicker } from "@/components/features/CertificateThemePicker";
 import {
   DEFAULT_CERTIFICATE_THEME,
@@ -1805,6 +1806,18 @@ function AdminPageContent() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2.5">
+                    <DeleteAllButton
+                      section="events"
+                      noun="events"
+                      count={events.length}
+                      consequences="Every event's registrations, certificates (participation, Excellence and Appreciation), top performers and gallery entries go with them, and the attendance portal is switched off. Team members are not affected."
+                      onDeleted={async () => {
+                        setInspectingEventId(null);
+                        setSelectedEventId("");
+                        resetForm();
+                        await fetchData();
+                      }}
+                    />
                     <button
                       onClick={startCreate}
                       className="h-10 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-2 shadow-md shadow-[#6C63FF]/20 active:scale-[0.98]"
@@ -2059,6 +2072,19 @@ function AdminPageContent() {
                       <Send className="w-4 h-4 text-[#A78BFA]" />
                       <span className="hidden sm:inline">Email Certificates</span>
                     </button>
+
+                    {/* Delete every registration of this event (asks twice) */}
+                    <DeleteAllButton
+                      section="registrations"
+                      noun="registrations"
+                      count={participants.length}
+                      eventId={currentViewEvent.id}
+                      scope={`for "${currentViewEvent.name}"`}
+                      consequences="Their attendance records and the certificates issued through them are deleted, so those certificate links stop verifying. Certificates of Appreciation are kept."
+                      onDeleted={async () => {
+                        await Promise.all([fetchParticipants(currentViewEvent.id), fetchTopPerformers()]);
+                      }}
+                    />
 
                     {/* Close Inspector Button */}
                   </div>
@@ -2362,7 +2388,17 @@ function AdminPageContent() {
               {canManageTopPerformers && (
                 <>
 
-                  <div className="flex justify-end">
+                  <div className="flex flex-wrap justify-end gap-2.5">
+                    <DeleteAllButton
+                      section="top-performers"
+                      noun="top performers"
+                      count={topPerformers.length}
+                      eventId={currentViewEvent.id}
+                      scope={`for "${currentViewEvent.name}"`}
+                      disabled={loadingTopPerformers || topPerformersEvent?.id !== currentViewEvent.id}
+                      consequences="Their Certificates of Excellence are deleted too, so those certificate links stop verifying."
+                      onDeleted={fetchTopPerformers}
+                    />
                     <TopPerformerImportDialog
                       existingEmails={topPerformers.map((performer) => performer.email)}
                       onImported={fetchTopPerformers}
@@ -2568,9 +2604,22 @@ function AdminPageContent() {
                     <span className="text-[#A78BFA]">{currentViewEvent.name}</span>. Use the Organising Team button above to issue more.
                   </p>
                 </div>
-                <span className="text-xs font-mono text-[#C4B5FD] px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] self-start whitespace-nowrap">
-                  {organisers.length} issued
-                </span>
+                <div className="flex items-center gap-2.5 self-start">
+                  <span className="text-xs font-mono text-[#C4B5FD] px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] whitespace-nowrap">
+                    {organisers.length} issued
+                  </span>
+                  <DeleteAllButton
+                    section="organisers"
+                    noun="Certificates of Appreciation"
+                    count={organisers.length}
+                    eventId={currentViewEvent.id}
+                    scope={`for "${currentViewEvent.name}"`}
+                    disabled={loadingOrganisers}
+                    compact
+                    consequences="Those certificate links stop verifying. Registrations and other certificates are kept."
+                    onDeleted={() => fetchOrganisers(currentViewEvent.id)}
+                  />
+                </div>
               </div>
 
               <div className="max-w-full overflow-x-auto rounded-2xl border border-white/[0.08]">
@@ -2694,6 +2743,20 @@ function AdminPageContent() {
                     <Plus className="w-3.5 h-3.5 text-cyan-400" />
                     <span>New Batch</span>
                   </button>
+                  <DeleteAllButton
+                    section="team"
+                    noun="team members"
+                    count={
+                      selectedTeamBatch === "ALL"
+                        ? teamMembers.length
+                        : teamMembers.filter((m) => (m.batch || "2026-27") === selectedTeamBatch).length
+                    }
+                    batch={selectedTeamBatch}
+                    scope={selectedTeamBatch === "ALL" ? "in every batch" : `in Batch ${selectedTeamBatch}`}
+                    disabled={loadingTeamMembers}
+                    consequences="Their profiles disappear from the public Team page."
+                    onDeleted={fetchTeamMembers}
+                  />
 
                 </div>
               </div>

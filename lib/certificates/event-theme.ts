@@ -12,7 +12,7 @@ import {
   DEFAULT_CERTIFICATE_THEME,
   parseCertificateTheme,
   type CertificateTheme,
-} from "./theme";
+} from "./theme.ts";
 
 // PostgreSQL "undefined_column" (what PostgREST reports for a missing column).
 const UNDEFINED_COLUMN = "42703";
