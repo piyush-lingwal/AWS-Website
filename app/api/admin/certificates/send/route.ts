@@ -18,6 +18,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
 import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { certificateKindFromColumn } from "@/lib/certificates/theme";
 import { CERTIFICATE_OPTIONAL_COLUMNS, selectWithOptionalColumns } from "@/lib/certificates/optional-columns";
 import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import { sendCertificateEmail } from "@/lib/email";
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
         awardTitle: cert.award_title || undefined,
         verificationUrl: cert.verification_url || undefined,
         theme,
-        kind: cert.certificate_kind === "organiser" ? "organiser" : undefined,
+        kind: certificateKindFromColumn(cert.certificate_kind),
         role: cert.role_snapshot || undefined,
         wing: cert.wing_snapshot || undefined,
       });
@@ -194,11 +195,11 @@ export async function POST(request: NextRequest) {
         (select) => supabase.from("certificates").select(select).eq("event_id", eventId).is("award_title", null)
       );
       const fetchErr = fetched.error;
-      // Bulk send is for attendees. Organising-team certificates use their own
-      // template and wording, and have no award_title, so they must be filtered
-      // out here (in JS: a SQL "<> 'organiser'" would also drop rows where the
-      // kind is NULL, i.e. every older certificate).
-      const certs = (fetched.data ?? []).filter((c) => c.certificate_kind !== "organiser");
+      // Bulk send is for attendees. Organising-team and volunteer certificates use
+      // their own templates and wording, and have no award_title, so they must be
+      // filtered out here (in JS: a SQL "<> 'organiser'" would also drop rows where
+      // the kind is NULL, i.e. every older certificate).
+      const certs = (fetched.data ?? []).filter((c) => certificateKindFromColumn(c.certificate_kind) === undefined);
 
       if (fetchErr) {
         return NextResponse.json(

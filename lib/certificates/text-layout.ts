@@ -132,6 +132,49 @@ export function organiserDateText(display: string): string {
   return display.trim().replace(/(\d)-(\d)/g, "$1\u2013$2").replace(/ - /g, " \u2013 ");
 }
 
+// ------------------------------------------------------------
+// Certificate of Volunteering (event volunteers)
+// ------------------------------------------------------------
+//
+//   This certificate is proudly presented to
+//   Vivek Dharmwan
+//   In recognition of your dedication, enthusiasm,
+//   and valuable contribution as a volunteer during
+//   BUILD-VERSE 2026
+//   Organised by AWS Student Builder Group at Tulas University.
+//   29–30 October 2026
+//
+// The recognition sentence is two lines so it stays at a readable size. The event
+// name (UPPERCASE, accent colour) and the date use the same helpers as the
+// organiser certificate (organiserEventLine, organiserDateText).
+// ------------------------------------------------------------
+
+export const VOLUNTEER_COPY = {
+  presentedTo: "This certificate is proudly presented to",
+  /** One sentence, split so each line fits the panel at full size. */
+  recognition: ["In recognition of your dedication, enthusiasm,", "and valuable contribution as a volunteer during"],
+  organisedBy: "Organised by AWS Student Builder Group at Tulas University.",
+} as const;
+
+export const VOLUNTEER_TEXT = {
+  presentedTo: { size: 42, maxWidth: 1180 },
+  name: { size: 96, maxWidth: 1200 },
+  recognition: { size: 38, maxWidth: 1200 },
+  event: { size: 62, maxWidth: 1240 },
+  organisedBy: { size: 32, maxWidth: 1240 },
+  date: { size: 38, maxWidth: 1180 },
+} as const satisfies Record<string, TextSpec>;
+
+/** Baselines (canvas y). As for organisers, organisedBy and date sit below the y=1870 white box. */
+export const VOLUNTEER_Y = {
+  presentedTo: 1330,
+  name: 1475,
+  recognition: [1565, 1613],
+  event: 1760,
+  organisedBy: 1912,
+  date: 1976,
+} as const;
+
 /** Font sizes for the organiser layout (same fitting rule as every other line). */
 export const ORGANISER_TEXT = {
   presentedTo: { size: 42, maxWidth: 1180 },

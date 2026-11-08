@@ -33,7 +33,7 @@ export const ATTENDEE_FIELD_LABELS: Record<AttendeeField, string> = {
 
 // Header text is matched after normalizeHeader(): lower case, anything that is
 // not a letter or digit becomes one space. "Roll No." -> "roll no".
-const HEADER_ALIASES: Record<string, AttendeeField> = {
+export const HEADER_ALIASES: Record<string, AttendeeField> = {
   "full name": "fullName",
   name: "fullName",
   "student name": "fullName",

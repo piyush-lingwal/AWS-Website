@@ -19,6 +19,8 @@ import { TopPerformerImportDialog } from "@/components/features/TopPerformerImpo
 import { AttendeeImportDialog } from "@/components/features/AttendeeImportDialog";
 import { OrganiserIssueDialog } from "@/components/features/OrganiserIssueDialog";
 import { DeleteAllButton } from "@/components/admin/DeleteAllButton";
+import { VolunteerSection } from "@/components/admin/VolunteerSection";
+import { exportFileName, organiserExportRows, topPerformerExportRows } from "@/lib/admin/export-rows";
 import { CertificateThemePicker } from "@/components/features/CertificateThemePicker";
 import {
   DEFAULT_CERTIFICATE_THEME,
@@ -1386,6 +1388,38 @@ function AdminPageContent() {
     toast.success("Attendee list exported to CSV");
   };
 
+  // ── Export Organising Team / Top Performers to CSV ────────
+  const downloadCsv = async (rows: Record<string, string>[], kind: string, label: string) => {
+    const currentEvent = events.find((e) => e.id === selectedEventId);
+    const Papa = (await import("papaparse")).default;
+    const blob = new Blob([Papa.unparse(rows)], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", exportFileName(currentEvent?.name || "", kind));
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(`${label} exported to CSV`);
+  };
+
+  const handleExportOrganisersCSV = async () => {
+    if (organisers.length === 0) {
+      toast.error("No Certificates of Appreciation to export");
+      return;
+    }
+    await downloadCsv(organiserExportRows(organisers, window.location.origin), "Appreciation", "Certificates of Appreciation");
+  };
+
+  const handleExportTopPerformersCSV = async () => {
+    if (topPerformers.length === 0) {
+      toast.error("No top performers to export");
+      return;
+    }
+    await downloadCsv(topPerformerExportRows(topPerformers, window.location.origin), "Top_Performers", "Top performers");
+  };
+
   // ── Single Certificate Email Send ─────────────────────────
   const handleSendSingleEmail = async (certificateId: string, email: string) => {
     toast.loading(`Dispatching credential to ${email}…`, { id: "email-send" });
@@ -2469,6 +2503,16 @@ function AdminPageContent() {
                 <>
 
                   <div className="flex flex-wrap justify-end gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handleExportTopPerformersCSV}
+                      disabled={loadingTopPerformers || topPerformersEvent?.id !== currentViewEvent.id || topPerformers.length === 0}
+                      className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-semibold text-white transition-all hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                      title="Export Top Performers to CSV"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
+                      <span>Export CSV</span>
+                    </button>
                     <DeleteAllButton
                       section="top-performers"
                       noun="top performers"
@@ -2761,6 +2805,16 @@ function AdminPageContent() {
                   <span className="text-xs font-mono text-[#C4B5FD] px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] whitespace-nowrap">
                     {organisers.length} issued
                   </span>
+                  <button
+                    type="button"
+                    onClick={handleExportOrganisersCSV}
+                    disabled={loadingOrganisers || organisers.length === 0}
+                    className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-semibold text-white transition-all hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    title="Export Certificates of Appreciation to CSV"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
+                    <span className="hidden sm:inline">Export CSV</span>
+                  </button>
                   <DeleteAllButton
                     section="organisers"
                     noun="Certificates of Appreciation"
@@ -2901,6 +2955,17 @@ function AdminPageContent() {
                 </table>
               </div>
             </section>
+
+            {/* ══════════════════════════════════════════════════ */}
+            {/* ── VOLUNTEERS (CERTIFICATES OF VOLUNTEERING) ───── */}
+            {/* ══════════════════════════════════════════════════ */}
+            <VolunteerSection
+              key={`vol-${currentViewEvent.id}`}
+              eventId={currentViewEvent.id}
+              eventName={currentViewEvent.name}
+              eventHasDate={Boolean(currentViewEvent.event_date?.trim())}
+              confirm={showConfirm}
+            />
                 </>
               ) : (
                 <div className="p-12 text-center rounded-[2rem] bg-white/[0.02] border border-white/10 space-y-4">

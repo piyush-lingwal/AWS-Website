@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificatePdf } from "@/lib/certificates/pdf-generator";
 import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { certificateKindFromColumn } from "@/lib/certificates/theme";
 import { CERTIFICATE_OPTIONAL_COLUMNS, selectWithOptionalColumns } from "@/lib/certificates/optional-columns";
 import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
@@ -75,7 +76,7 @@ export async function GET(
       awardTitle: cert.award_title || undefined,
       verificationUrl: cert.verification_url || undefined,
       theme,
-      kind: cert.certificate_kind === "organiser" ? "organiser" : undefined,
+      kind: certificateKindFromColumn(cert.certificate_kind),
       role: cert.role_snapshot || undefined,
       wing: cert.wing_snapshot || undefined,
     });

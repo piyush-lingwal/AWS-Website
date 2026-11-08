@@ -12,6 +12,7 @@ import {
   parseCertificateTheme,
   templateFileName,
   validateCertificateTheme,
+  certificateKindFromColumn,
   THEME_CONSTRAINT_HINT,
   isThemeConstraintError,
 } from "../../lib/certificates/theme.ts";
@@ -62,6 +63,8 @@ test("resolveCertificateKind: an award title always wins, otherwise organiser or
   assert.equal(resolveCertificateKind(true, "organiser"), "excellence");
   assert.equal(resolveCertificateKind(true), "excellence");
   assert.equal(resolveCertificateKind(false, "organiser"), "organiser");
+  assert.equal(resolveCertificateKind(false, "volunteer"), "volunteer");
+  assert.equal(resolveCertificateKind(true, "volunteer"), "excellence");
   assert.equal(resolveCertificateKind(false), "participation");
   assert.equal(resolveCertificateKind(false, "participation"), "participation");
   // A caller cannot ask for an Excellence design without an award title.
@@ -211,4 +214,38 @@ test("the theme constraint helper recognises only that check violation", () => {
   assert.equal(isThemeConstraintError({ code: "42703", message: "events_certificate_theme_check" }), false);
   assert.equal(isThemeConstraintError(null), false);
   assert.match(THEME_CONSTRAINT_HINT, /20261107000001_kiro_sponsored_theme\.sql/);
+});
+
+// ── Certificate of Volunteering ─────────────────────────────────
+
+test("volunteer templates exist for every theme and are titled 'Certificate of Volunteering'", () => {
+  const placeholders = ["PROUDLY_PRESENT", "PARTICIPANT_NAME", "ACHIEVEMENT_TEXT", "EVENT_DETAILS", "SIGNER_NAME", "SIGNER_TITLE", "QR_AND_META"];
+  for (const theme of CERTIFICATE_THEMES) {
+    const file = templateFileName(theme, "volunteer");
+    assert.match(file, /^Certificate-of-Volunteering-Template/);
+    const svg = readFileSync(new URL(`../../public/templates/${file}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+    assert.ok(svg.includes('id="certificate-of-volunteering-title"'), `${file} has no Volunteering title`);
+    assert.ok(!svg.includes("certificate-of-appreciation-title"), `${file} still has the Appreciation title`);
+    for (const p of placeholders) assert.ok(svg.includes(`<!-- ${p}_PLACEHOLDER -->`), `${file} lost ${p}`);
+  }
+});
+
+test("a volunteer template is its Appreciation twin with only the second title line replaced", () => {
+  const read = (file: string) => readFileSync(new URL(`../../public/templates/${file}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+  // Drops the title group's second plain path ("Appreciation" / "Volunteering") and the group's name,
+  // leaving everything else to be compared.
+  const withoutSecondTitleLine = (svg: string) =>
+    svg.replace(/(<g id="certificate-of-)(appreciation|volunteering)(-title">\s*<path[^>]*\/>)\s*<path d="[^"]*" fill="#161d26"\/>/, "$1TITLE$3");
+  for (const theme of CERTIFICATE_THEMES) {
+    const appreciation = withoutSecondTitleLine(read(templateFileName(theme, "organiser")));
+    const volunteer = withoutSecondTitleLine(read(templateFileName(theme, "volunteer")));
+    assert.ok(appreciation.includes("certificate-of-TITLE-title") && volunteer.includes("certificate-of-TITLE-title"), `${theme}: title group not found`);
+    assert.equal(volunteer, appreciation, `${theme}: volunteer template differs from the Appreciation one beyond the title`);
+  }
+});
+
+test("certificateKindFromColumn only recognises the team kinds", () => {
+  assert.equal(certificateKindFromColumn("organiser"), "organiser");
+  assert.equal(certificateKindFromColumn("volunteer"), "volunteer");
+  for (const v of ["participation", "excellence", "", null, undefined, "Volunteer", 3]) assert.equal(certificateKindFromColumn(v), undefined);
 });

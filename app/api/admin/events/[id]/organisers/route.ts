@@ -28,6 +28,7 @@ import { mapLimit } from "@/lib/media/concurrency";
 import { isUuid } from "@/lib/auth/roles";
 import { WING_MIGRATION_HINT, validateOrganiser } from "@/lib/certificates/organiser";
 import { selectWithOptionalColumns } from "@/lib/certificates/optional-columns";
+import { findOrCreateParticipant } from "@/lib/certificates/participants";
 import type { ApiResponse } from "@/types/certificate";
 
 export const dynamic = "force-dynamic";
@@ -49,25 +50,6 @@ type Db = NonNullable<ReturnType<typeof getAdminClient>>;
 
 function fail(error: string, status: number) {
   return NextResponse.json({ success: false, error } satisfies ApiResponse, { status });
-}
-
-async function findOrCreateParticipant(db: Db, fullName: string, email: string): Promise<string> {
-  const existing = await db.from("participants").select("id").eq("email", email).maybeSingle();
-  if (existing.error) throw new Error(`participant lookup: ${existing.error.message}`);
-  if (existing.data) return existing.data.id as string;
-
-  const created = await db
-    .from("participants")
-    // Organisers may not have a course/roll; store placeholders the schema accepts.
-    .insert({ email, full_name: fullName, course: "N/A", roll_no: "N/A" })
-    .select("id")
-    .single();
-  if (!created.error && created.data) return created.data.id as string;
-  if (created.error?.code === "23505") {
-    const raced = await db.from("participants").select("id").eq("email", email).maybeSingle();
-    if (raced.data) return raced.data.id as string;
-  }
-  throw new Error(`participant insert: ${created.error?.message ?? "no row returned"}`);
 }
 
 interface EventInfo {

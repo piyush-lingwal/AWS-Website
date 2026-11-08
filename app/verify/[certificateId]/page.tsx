@@ -5,6 +5,7 @@ import { getAwardTitle } from "@/lib/certificates/award-title";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { CertificatePreview } from "@/components/certificates/CertificatePreview";
 import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
+import { certificateKindFromColumn } from "@/lib/certificates/theme";
 import { CERTIFICATE_OPTIONAL_COLUMNS, selectWithOptionalColumns } from "@/lib/certificates/optional-columns";
 import { certificateDisplayDate } from "@/lib/certificates/issue-date";
 import {
@@ -117,7 +118,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           theme: await getEventCertificateTheme(supabase, data.event_id),
           // Stored display string (single day or range), or the start date for old certificates.
           eventDateDisplay: certificateDisplayDate(data),
-          kind: data.certificate_kind === "organiser" ? "organiser" : null,
+          kind: certificateKindFromColumn(data.certificate_kind) ?? null,
           role: data.role_snapshot ?? null,
           wing: data.wing_snapshot ?? null,
         };
@@ -161,6 +162,12 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold self-start">
                       <Award className="w-3.5 h-3.5" />
                       Certificate of Excellence - {cert.awardTitle}
+                    </div>
+                  )}
+                  {cert.kind === "volunteer" && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 text-[#C4B5FD] text-xs font-semibold self-start">
+                      <Award className="w-3.5 h-3.5" />
+                      Certificate of Volunteering
                     </div>
                   )}
                   {cert.kind === "organiser" && (

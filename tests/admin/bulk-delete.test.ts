@@ -24,7 +24,7 @@ const bad = (body: unknown, pattern?: RegExp) => {
 };
 
 test("the sections are the five admin lists", () => {
-  assert.deepEqual([...BULK_DELETE_SECTIONS], ["events", "registrations", "top-performers", "organisers", "team"]);
+  assert.deepEqual([...BULK_DELETE_SECTIONS], ["events", "registrations", "top-performers", "organisers", "volunteers", "team"]);
   assert.equal(isBulkDeleteSection("events"), true);
   assert.equal(isBulkDeleteSection("Events"), false);
   assert.equal(isBulkDeleteSection("participants"), false);
@@ -42,7 +42,7 @@ test("events needs nothing else", () => {
 });
 
 test("event sections need a valid event id, which is trimmed and lower-cased", () => {
-  for (const section of ["registrations", "top-performers", "organisers"]) {
+  for (const section of ["registrations", "top-performers", "organisers", "volunteers"]) {
     assert.deepEqual(ok({ section, eventId: ` ${EVENT} `, confirm: "DELETE" }), { section, eventId: EVENT.toLowerCase() });
     bad({ section, confirm: "DELETE" }, /event id/);
     bad({ section, eventId: "not-a-uuid", confirm: "DELETE" }, /event id/);

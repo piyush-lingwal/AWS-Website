@@ -12,12 +12,13 @@
 //   registrations   every attendee of one event, with their participation certificates
 //   top-performers  every top performer of one event, with their Excellence certificates
 //   organisers      every Certificate of Appreciation of one event
+//   volunteers      every Certificate of Volunteering of one event
 //   team            every team member of one batch, or of all batches
 // ============================================================
 
 import { isUuid } from "../auth/roles.ts";
 
-export const BULK_DELETE_SECTIONS = ["events", "registrations", "top-performers", "organisers", "team"] as const;
+export const BULK_DELETE_SECTIONS = ["events", "registrations", "top-performers", "organisers", "volunteers", "team"] as const;
 
 export type BulkDeleteSection = (typeof BULK_DELETE_SECTIONS)[number];
 
@@ -30,13 +31,13 @@ export const ALL_TEAM_BATCHES = "ALL";
 /** Team members saved without a batch are shown (and deleted) as this batch. */
 export const DEFAULT_TEAM_BATCH = "2026-27";
 
-const EVENT_SECTIONS: readonly BulkDeleteSection[] = ["registrations", "top-performers", "organisers"];
+const EVENT_SECTIONS: readonly BulkDeleteSection[] = ["registrations", "top-performers", "organisers", "volunteers"];
 
 const BATCH_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}$/;
 
 export type BulkDeleteRequest =
   | { section: "events" }
-  | { section: "registrations" | "top-performers" | "organisers"; eventId: string }
+  | { section: "registrations" | "top-performers" | "organisers" | "volunteers"; eventId: string }
   | { section: "team"; batch: string };
 
 export type BulkDeleteValidation =
@@ -66,7 +67,7 @@ export function validateBulkDelete(body: unknown): BulkDeleteValidation {
     }
     return {
       ok: true,
-      value: { section: section as "registrations" | "top-performers" | "organisers", eventId: eventId.trim().toLowerCase() },
+      value: { section: section as "registrations" | "top-performers" | "organisers" | "volunteers", eventId: eventId.trim().toLowerCase() },
     };
   }
 

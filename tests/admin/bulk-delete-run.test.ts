@@ -91,7 +91,7 @@ test("registrations reads every attendee past the 1000-row page limit", async ()
 });
 
 test("an unknown event deletes nothing", async () => {
-  for (const section of ["registrations", "top-performers", "organisers"] as const) {
+  for (const section of ["registrations", "top-performers", "organisers", "volunteers"] as const) {
     const { db, deletes } = fakeDb(() => ({ data: null }));
     const res = await runBulkDelete(db, { section, eventId: EVENT });
     assert.deepEqual(res, { ok: false, status: 404, error: "Event not found." });
@@ -128,6 +128,17 @@ test("organisers: deletes only the event's organiser certificates", async () => 
 test("organisers before the organiser migration: nothing to delete, not an error", async () => {
   const { db } = fakeDb((c) => eventFound(c) ?? { error: { code: "42703", message: "column certificates.certificate_kind does not exist" } });
   assert.deepEqual(await runBulkDelete(db, { section: "organisers", eventId: EVENT }), { ok: true, deleted: { certificates: 0 } });
+});
+
+test("volunteers: deletes only the event's volunteer certificates", async () => {
+  const { db, deletes } = fakeDb((c) => eventFound(c) ?? { count: 6 });
+  assert.deepEqual(await runBulkDelete(db, { section: "volunteers", eventId: EVENT }), { ok: true, deleted: { certificates: 6 } });
+  assert.deepEqual(deletes(), [`certificates: event_id=eq.${EVENT} & certificate_kind=eq.volunteer`]);
+});
+
+test("volunteers before the organiser migration: nothing to delete, not an error", async () => {
+  const { db } = fakeDb((c) => eventFound(c) ?? { error: { code: "42703", message: "column certificates.certificate_kind does not exist" } });
+  assert.deepEqual(await runBulkDelete(db, { section: "volunteers", eventId: EVENT }), { ok: true, deleted: { certificates: 0 } });
 });
 
 test("team: one batch, the default batch (with unbatched members), or every batch", async () => {

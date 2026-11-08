@@ -33,6 +33,9 @@ import {
   ORGANISER_TEXT,
   ORGANISER_Y,
   RECOGNITION_LINE,
+  VOLUNTEER_COPY,
+  VOLUNTEER_TEXT,
+  VOLUNTEER_Y,
   organiserDateText,
   organiserEventLine,
   organiserLines,
@@ -46,7 +49,8 @@ export interface SvgCertificateInput {
   /** Colour theme (template pair + accent). Defaults to orange. */
   theme?: CertificateTheme;
   /**
-   * "organiser" draws the Certificate of Appreciation for organising team members.
+   * "organiser" draws the Certificate of Appreciation for organising team members and
+   * "volunteer" the Certificate of Volunteering for event volunteers.
    * Ignored when awardTitle is set (that is always a Certificate of Excellence).
    */
   kind?: CertificateKind;
@@ -461,29 +465,49 @@ export async function generateCertificateSvg(
       .replace("<!-- QR_AND_META_PLACEHOLDER -->", qrAndMetaXml);
   }
 
-  // ── Certificate of Appreciation (organising team) ─────────────
-  // Own wording and layout; see ORGANISER_COPY / ORGANISER_Y in text-layout.ts.
-  if (resolveCertificateKind(false, input.kind) === "organiser") {
-    const T = ORGANISER_TEXT;
-    const lines = organiserLines(input.role, input.wing);
-    const y = lines.roleLine ? ORGANISER_Y.withRole : ORGANISER_Y.withoutRole;
+  // ── Certificate of Appreciation (organising team) / of Volunteering (volunteers) ─
+  // Own wording and layout; see ORGANISER_* and VOLUNTEER_* in text-layout.ts.
+  const teamKind = resolveCertificateKind(false, input.kind);
+  if (teamKind === "organiser" || teamKind === "volunteer") {
     const fit = (font: Font, text: string, spec: { size: number; maxWidth: number }) =>
       getFittingFontSize(font, text, spec.size, spec.maxWidth);
     const centred = (font: Font, text: string, baseline: number, spec: { size: number; maxWidth: number }, fill: string) =>
       textToSvgPath(font, text, cx, baseline, fit(font, text, spec), fill);
 
-    const presentedPath = centred(regFont, ORGANISER_COPY.presentedTo, ORGANISER_Y.presentedTo, T.presentedTo, "#555555");
-    const namePath = centred(boldFont, participantName, ORGANISER_Y.name, T.name, "#161D26");
-    const recognitionPath = centred(regFont, ORGANISER_COPY.recognition, ORGANISER_Y.recognition, T.recognition, "#555555");
-    const rolePath = lines.roleLine
-      ? centred(boldFont, lines.roleLine, ORGANISER_Y.withRole.role, T.role, accent)
-      : "";
-    const teamPath = centred(regFont, lines.teamLine, y.team, T.team, "#555555");
-    const eventPath = centred(boldFont, organiserEventLine(eventTitle), y.event, T.event, accent);
+    let presentedPath: string;
+    let namePath: string;
+    let achievementPath: string;
+    let eventPath: string;
+    let organisedByPath: string;
+    let datePath: string;
 
-    // These two sit below y=1870, so they go in the signer layer (above the lower white box).
-    const organisedByPath = centred(regFont, ORGANISER_COPY.organisedBy, ORGANISER_Y.organisedBy, T.organisedBy, "#444444");
-    const datePath = centred(boldFont, organiserDateText(eventDate), ORGANISER_Y.date, T.date, "#444444");
+    if (teamKind === "volunteer") {
+      const T = VOLUNTEER_TEXT;
+      presentedPath = centred(regFont, VOLUNTEER_COPY.presentedTo, VOLUNTEER_Y.presentedTo, T.presentedTo, "#555555");
+      namePath = centred(boldFont, participantName, VOLUNTEER_Y.name, T.name, "#161D26");
+      achievementPath = VOLUNTEER_COPY.recognition
+        .map((line, i) => centred(regFont, line, VOLUNTEER_Y.recognition[i], T.recognition, "#555555"))
+        .join("");
+      eventPath = centred(boldFont, organiserEventLine(eventTitle), VOLUNTEER_Y.event, T.event, accent);
+      // These two sit below y=1870, so they go in the signer layer (above the lower white box).
+      organisedByPath = centred(regFont, VOLUNTEER_COPY.organisedBy, VOLUNTEER_Y.organisedBy, T.organisedBy, "#444444");
+      datePath = centred(boldFont, organiserDateText(eventDate), VOLUNTEER_Y.date, T.date, "#444444");
+    } else {
+      const T = ORGANISER_TEXT;
+      const lines = organiserLines(input.role, input.wing);
+      const y = lines.roleLine ? ORGANISER_Y.withRole : ORGANISER_Y.withoutRole;
+      presentedPath = centred(regFont, ORGANISER_COPY.presentedTo, ORGANISER_Y.presentedTo, T.presentedTo, "#555555");
+      namePath = centred(boldFont, participantName, ORGANISER_Y.name, T.name, "#161D26");
+      const recognitionPath = centred(regFont, ORGANISER_COPY.recognition, ORGANISER_Y.recognition, T.recognition, "#555555");
+      const rolePath = lines.roleLine
+        ? centred(boldFont, lines.roleLine, ORGANISER_Y.withRole.role, T.role, accent)
+        : "";
+      const teamPath = centred(regFont, lines.teamLine, y.team, T.team, "#555555");
+      achievementPath = `${recognitionPath}${rolePath}${teamPath}`;
+      eventPath = centred(boldFont, organiserEventLine(eventTitle), y.event, T.event, accent);
+      organisedByPath = centred(regFont, ORGANISER_COPY.organisedBy, ORGANISER_Y.organisedBy, T.organisedBy, "#444444");
+      datePath = centred(boldFont, organiserDateText(eventDate), ORGANISER_Y.date, T.date, "#444444");
+    }
 
     const qrImage = input.qrDataUri
       ? `<image href="${input.qrDataUri}" x="220" y="2010" width="230" height="230" />`
@@ -509,7 +533,7 @@ export async function generateCertificateSvg(
       )
       .replace("<!-- PROUDLY_PRESENT_PLACEHOLDER -->", presentedPath)
       .replace("<!-- PARTICIPANT_NAME_PLACEHOLDER -->", namePath)
-      .replace("<!-- ACHIEVEMENT_TEXT_PLACEHOLDER -->", `${recognitionPath}${rolePath}${teamPath}`)
+      .replace("<!-- ACHIEVEMENT_TEXT_PLACEHOLDER -->", achievementPath)
       .replace("<!-- EVENT_DETAILS_PLACEHOLDER -->", eventPath)
       .replace("<!-- SIGNER_NAME_PLACEHOLDER -->", `${organisedByPath}${datePath}${sigImg}`)
       .replace("<!-- SIGNER_TITLE_PLACEHOLDER -->", `${signerTitlePath}${signerOrgPath}`)

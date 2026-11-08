@@ -21,6 +21,9 @@ import {
   ORGANISER_TEXT,
   ORGANISER_Y,
   RECOGNITION_LINE,
+  VOLUNTEER_COPY,
+  VOLUNTEER_TEXT,
+  VOLUNTEER_Y,
   fitMonoSize,
   organiserDateText,
   organiserEventLine,
@@ -39,7 +42,7 @@ interface CertificatePreviewProps {
   awardTitle?: string;
   /** Colour theme of the event. Must match what the PDF uses (lib/certificates/svg-generator.ts). */
   theme?: CertificateTheme;
-  /** "organiser" shows the Certificate of Appreciation. Ignored when awardTitle is set. */
+  /** "organiser" shows the Certificate of Appreciation, "volunteer" the Certificate of Volunteering. Ignored when awardTitle is set. */
   kind?: CertificateKind;
   /** Organiser's specific role (e.g. "Technical Co-Lead"). When set it is printed as the role. */
   role?: string;
@@ -255,21 +258,38 @@ export function CertificatePreview({
 
     // ── Certificate of Appreciation (organising team) ─────────────
     // Same wording, sizes and baselines as the PDF (ORGANISER_* in text-layout.ts).
-    if (resolvedKind === "organiser") {
+    if (resolvedKind === "organiser" || resolvedKind === "volunteer") {
+      const volunteer = resolvedKind === "volunteer";
       const lines = organiserLines(role, wing);
       const y = lines.roleLine ? ORGANISER_Y.withRole : ORGANISER_Y.withoutRole;
       const line = (baseline: number, str: string, spec: TextSpec, weight: 400 | 700, fill: string) =>
         `<text x="${cx}" y="${baseline}" text-anchor="middle" font-size="${fitMonoSize(str.length, spec)}" font-weight="${weight}" fill="${fill}">${escapeXml(str)}</text>`;
       const T = ORGANISER_TEXT;
+      const V = VOLUNTEER_TEXT;
 
-      const recognitionXml =
-        line(ORGANISER_Y.recognition, ORGANISER_COPY.recognition, T.recognition, 400, "#555555") +
-        (lines.roleLine ? line(ORGANISER_Y.withRole.role, lines.roleLine, T.role, 700, accent) : "") +
-        line(y.team, lines.teamLine, T.team, 400, "#555555");
+      const presentedXml = volunteer
+        ? line(VOLUNTEER_Y.presentedTo, VOLUNTEER_COPY.presentedTo, V.presentedTo, 400, "#555555")
+        : line(ORGANISER_Y.presentedTo, ORGANISER_COPY.presentedTo, T.presentedTo, 400, "#555555");
+      const nameXml = volunteer
+        ? line(VOLUNTEER_Y.name, name, V.name, 700, "#161D26")
+        : line(ORGANISER_Y.name, name, T.name, 700, "#161D26");
+      const recognitionXml = volunteer
+        ? VOLUNTEER_COPY.recognition
+            .map((text, i) => line(VOLUNTEER_Y.recognition[i], text, V.recognition, 400, "#555555"))
+            .join("")
+        : line(ORGANISER_Y.recognition, ORGANISER_COPY.recognition, T.recognition, 400, "#555555") +
+          (lines.roleLine ? line(ORGANISER_Y.withRole.role, lines.roleLine, T.role, 700, accent) : "") +
+          line(y.team, lines.teamLine, T.team, 400, "#555555");
+      const eventLineXml = volunteer
+        ? line(VOLUNTEER_Y.event, organiserEventLine(event), V.event, 700, accent)
+        : line(y.event, organiserEventLine(event), T.event, 700, accent);
       // Below y=1870 the template has a white box, so these two go in the signer layer.
       const lowerXml =
-        line(ORGANISER_Y.organisedBy, ORGANISER_COPY.organisedBy, T.organisedBy, 400, "#444444") +
-        line(ORGANISER_Y.date, organiserDateText(date), T.date, 700, "#444444") +
+        (volunteer
+          ? line(VOLUNTEER_Y.organisedBy, VOLUNTEER_COPY.organisedBy, V.organisedBy, 400, "#444444") +
+            line(VOLUNTEER_Y.date, organiserDateText(date), V.date, 700, "#444444")
+          : line(ORGANISER_Y.organisedBy, ORGANISER_COPY.organisedBy, T.organisedBy, 400, "#444444") +
+            line(ORGANISER_Y.date, organiserDateText(date), T.date, 700, "#444444")) +
         `<image href="/Lingwal_Sign.png" x="2295" y="2077" width="360" height="130" preserveAspectRatio="xMidYMid meet" />`;
       const signerLinesXml =
         `<text x="${cx}" y="2282" text-anchor="middle" font-size="${signerTitleSize}" font-weight="400" fill="#555555">${escapeXml(title)}</text>` +
@@ -281,10 +301,10 @@ export function CertificatePreview({
           '<rect x="2175" y="2148" width="600" height="2" fill="#161d26"/>',
           '<rect x="2175" y="2220" width="600" height="2" fill="#161d26"/>'
         )
-        .replace("<!-- PROUDLY_PRESENT_PLACEHOLDER -->", line(ORGANISER_Y.presentedTo, ORGANISER_COPY.presentedTo, T.presentedTo, 400, "#555555"))
-        .replace("<!-- PARTICIPANT_NAME_PLACEHOLDER -->", line(ORGANISER_Y.name, name, T.name, 700, "#161D26"))
+        .replace("<!-- PROUDLY_PRESENT_PLACEHOLDER -->", presentedXml)
+        .replace("<!-- PARTICIPANT_NAME_PLACEHOLDER -->", nameXml)
         .replace("<!-- ACHIEVEMENT_TEXT_PLACEHOLDER -->", recognitionXml)
-        .replace("<!-- EVENT_DETAILS_PLACEHOLDER -->", line(y.event, organiserEventLine(event), T.event, 700, accent))
+        .replace("<!-- EVENT_DETAILS_PLACEHOLDER -->", eventLineXml)
         .replace("<!-- SIGNER_NAME_PLACEHOLDER -->", lowerXml)
         .replace("<!-- SIGNER_TITLE_PLACEHOLDER -->", signerLinesXml)
         .replace("<!-- QR_AND_META_PLACEHOLDER -->", qrAndMetaXml)

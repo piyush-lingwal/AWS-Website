@@ -11,6 +11,7 @@
 //                   so they stay. Participants left with no other records go too.
 //   top-performers  all top performers of one event and their Excellence certificates.
 //   organisers      all Certificates of Appreciation of one event.
+//   volunteers      all Certificates of Volunteering of one event.
 //   team            all team members of one batch, or of every batch ("ALL").
 //
 // Takes the Supabase client as a parameter so tests can pass a fake one and
@@ -146,6 +147,19 @@ export async function runBulkDelete(db: Db, req: BulkDeleteRequest): Promise<Bul
       // Before the organiser migration there are no organiser certificates to delete.
       if (del.error && isMissingColumnError(del.error, "certificate_kind")) return { ok: true, deleted: { certificates: 0 } };
       check(del, "organiser certificates delete");
+      return { ok: true, deleted: { certificates: del.count ?? 0 } };
+    }
+
+    case "volunteers": {
+      if (!(await eventExists(db, req.eventId))) return NOT_FOUND;
+      const del = await db
+        .from("certificates")
+        .delete({ count: "exact" })
+        .eq("event_id", req.eventId)
+        .eq("certificate_kind", "volunteer");
+      // Before the organiser migration there are no volunteer certificates to delete.
+      if (del.error && isMissingColumnError(del.error, "certificate_kind")) return { ok: true, deleted: { certificates: 0 } };
+      check(del, "volunteer certificates delete");
       return { ok: true, deleted: { certificates: del.count ?? 0 } };
     }
 

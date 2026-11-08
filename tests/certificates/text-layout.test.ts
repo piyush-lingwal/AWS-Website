@@ -8,6 +8,11 @@ import {
   ORGANISER_TEXT,
   ORGANISER_Y,
   RECOGNITION_LINE,
+  VOLUNTEER_COPY,
+  VOLUNTEER_TEXT,
+  VOLUNTEER_Y,
+  organiserDateText,
+  organiserEventLine,
   fitMonoSize,
   organiserLines,
 } from "../../lib/certificates/text-layout.ts";
@@ -104,4 +109,27 @@ test("organiser lines stay inside the text panel and are stacked top to bottom w
 test("a role line is the biggest accent line, below the name", () => {
   assert.ok(ORGANISER_TEXT.name.size > ORGANISER_TEXT.role.size);
   assert.ok(ORGANISER_TEXT.role.size > ORGANISER_TEXT.event.size);
+});
+
+test("volunteer wording is exactly the approved text and fits at full size", () => {
+  assert.equal(VOLUNTEER_COPY.presentedTo, "This certificate is proudly presented to");
+  assert.deepEqual([...VOLUNTEER_COPY.recognition], ["In recognition of your dedication, enthusiasm,", "and valuable contribution as a volunteer during"]);
+  assert.equal(VOLUNTEER_COPY.organisedBy, "Organised by AWS Student Builder Group at Tulas University.");
+  assert.equal(organiserEventLine("Build-Verse 2026"), "BUILD-VERSE 2026");
+  assert.equal(organiserDateText("29-30 October 2026"), "29\u201330 October 2026");
+  const fixed: [string, string, { size: number; maxWidth: number }][] = [
+    ["presented to", VOLUNTEER_COPY.presentedTo, VOLUNTEER_TEXT.presentedTo],
+    ["recognition 1", VOLUNTEER_COPY.recognition[0], VOLUNTEER_TEXT.recognition],
+    ["recognition 2", VOLUNTEER_COPY.recognition[1], VOLUNTEER_TEXT.recognition],
+    ["organised by", VOLUNTEER_COPY.organisedBy, VOLUNTEER_TEXT.organisedBy],
+    ["date", "29\u201330 October 2026", VOLUNTEER_TEXT.date],
+  ];
+  for (const [label, text, spec] of fixed) assert.equal(fitMonoSize(text.length, spec), spec.size, `${label} would be shrunk`);
+});
+
+test("volunteer lines stack top to bottom without overlap, with the last two below the y=1870 white box", () => {
+  const order = [VOLUNTEER_Y.presentedTo, VOLUNTEER_Y.name, ...VOLUNTEER_Y.recognition, VOLUNTEER_Y.event, VOLUNTEER_Y.organisedBy, VOLUNTEER_Y.date];
+  for (let i = 1; i < order.length; i += 1) assert.ok(order[i] > order[i - 1] + 40, `line ${i} too close to the line above`);
+  assert.ok(VOLUNTEER_Y.event < 1870 && VOLUNTEER_Y.organisedBy > 1870);
+  for (const spec of Object.values(VOLUNTEER_TEXT)) assert.ok(spec.maxWidth <= 1240);
 });

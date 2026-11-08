@@ -31,8 +31,9 @@ export const DEFAULT_CERTIFICATE_THEME: CertificateTheme = "orange";
  *   participation — attendees ("Certificate of Participation")
  *   excellence    — top performers ("Certificate of Excellence"), chosen by an award title
  *   organiser     — organising team members ("Certificate of Appreciation")
+ *   volunteer     — event volunteers ("Certificate of Volunteering")
  */
-export const CERTIFICATE_KINDS = ["participation", "excellence", "organiser"] as const;
+export const CERTIFICATE_KINDS = ["participation", "excellence", "organiser", "volunteer"] as const;
 
 export type CertificateKind = (typeof CERTIFICATE_KINDS)[number];
 
@@ -54,6 +55,7 @@ export const CERTIFICATE_THEME_INFO: Record<CertificateTheme, CertificateThemeIn
       participation: "Certificate-Template.svg",
       excellence: "Certificate-of-Excellence-Template.svg",
       organiser: "Certificate-of-Appreciation-Template.svg",
+      volunteer: "Certificate-of-Volunteering-Template.svg",
     },
   },
   purple: {
@@ -63,6 +65,7 @@ export const CERTIFICATE_THEME_INFO: Record<CertificateTheme, CertificateThemeIn
       participation: "Certificate-Template-Purple.svg",
       excellence: "Certificate-of-Excellence-Template-Purple.svg",
       organiser: "Certificate-of-Appreciation-Template-Purple.svg",
+      volunteer: "Certificate-of-Volunteering-Template-Purple.svg",
     },
   },
   kiro: {
@@ -73,6 +76,7 @@ export const CERTIFICATE_THEME_INFO: Record<CertificateTheme, CertificateThemeIn
       participation: "Certificate-Template-Kiro-Sponsored.svg",
       excellence: "Certificate-of-Excellence-Template-Kiro-Sponsored.svg",
       organiser: "Certificate-of-Appreciation-Template-Kiro-Sponsored.svg",
+      volunteer: "Certificate-of-Volunteering-Template-Kiro-Sponsored.svg",
     },
   },
   "kiro-purple": {
@@ -83,6 +87,7 @@ export const CERTIFICATE_THEME_INFO: Record<CertificateTheme, CertificateThemeIn
       participation: "Certificate-Template-Purple-Kiro-Sponsored.svg",
       excellence: "Certificate-of-Excellence-Template-Purple-Kiro-Sponsored.svg",
       organiser: "Certificate-of-Appreciation-Template-Purple-Kiro-Sponsored.svg",
+      volunteer: "Certificate-of-Volunteering-Template-Purple-Kiro-Sponsored.svg",
     },
   },
 };
@@ -131,13 +136,22 @@ export function templateFileName(theme: CertificateTheme, kind: CertificateKind)
 }
 
 /**
+ * The kind to draw for a stored certificates.certificate_kind value. Only the
+ * team kinds need telling apart: everything else (participation, excellence, an
+ * empty or unknown value) is drawn by the award-title rule in resolveCertificateKind.
+ */
+export function certificateKindFromColumn(value: unknown): CertificateKind | undefined {
+  return value === "organiser" || value === "volunteer" ? value : undefined;
+}
+
+/**
  * An award title always means a Certificate of Excellence. Otherwise the
- * requested kind is used, defaulting to participation.
+ * requested kind is used (organiser, volunteer), defaulting to participation.
  */
 export function resolveCertificateKind(
   hasAwardTitle: boolean,
   kind?: CertificateKind
 ): CertificateKind {
   if (hasAwardTitle) return "excellence";
-  return kind === "organiser" ? "organiser" : "participation";
+  return kind === "organiser" || kind === "volunteer" ? kind : "participation";
 }
