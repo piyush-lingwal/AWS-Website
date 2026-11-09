@@ -8,6 +8,27 @@
 // apostrophe, so a name like "=HYPERLINK(...)" opens as text.
 // ============================================================
 
+export interface ParticipantExportInput {
+  name: string;
+  email: string;
+  course: string;
+  rollNo: string;
+  submittedAt: string;
+  certificateId: string | null;
+}
+
+export function participantExportRows(items: readonly ParticipantExportInput[], origin: string): Record<string, string>[] {
+  return items.map((p) => ({
+    "Full Name": safeCell(p.name),
+    "Email Address": safeCell(p.email),
+    "Course / Branch": safeCell(p.course),
+    "Roll Number": safeCell(p.rollNo),
+    "Submitted At": p.submittedAt,
+    "Certificate ID": p.certificateId || "N/A",
+    "Verification Link": verifyLink(origin, p.certificateId),
+  }));
+}
+
 export interface OrganiserExportInput {
   certificateId: string;
   fullName: string;

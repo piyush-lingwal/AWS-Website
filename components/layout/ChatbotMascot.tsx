@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { isChatbotHidden } from "@/lib/layout/chatbot-visibility";
 
 interface ApiMessage {
   role: "user" | "assistant";
@@ -26,8 +27,9 @@ const SUGGESTIONS = [
 
 export function ChatbotMascot() {
   const pathname = usePathname();
-  // The public-site assistant has no place on the admin screens (it covered the bottom-right corner).
-  if (pathname?.startsWith("/admin")) return null;
+  // The assistant has no place on the admin screens or the certificate verification pages
+  // (it covered the bottom-right corner). See lib/layout/chatbot-visibility.ts.
+  if (isChatbotHidden(pathname)) return null;
   return <ChatbotMascotWidget />;
 }
 

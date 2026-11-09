@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createHash } from "node:crypto";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { generateCertificateId } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
@@ -25,11 +24,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionClient = createClient(await cookies());
-    const { data: { user }, error: authError } = await sessionClient.auth.getUser();
-    if (authError || !user) {
-      return errorResponse("Please sign in to issue a certificate.", 401);
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const { id } = await params;
     if (!id?.trim()) {

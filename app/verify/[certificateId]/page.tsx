@@ -8,14 +8,24 @@ import { getEventCertificateTheme } from "@/lib/certificates/event-theme";
 import { certificateKindFromColumn } from "@/lib/certificates/theme";
 import { CERTIFICATE_OPTIONAL_COLUMNS, selectWithOptionalColumns } from "@/lib/certificates/optional-columns";
 import { certificateDisplayDate } from "@/lib/certificates/issue-date";
+import { certificateTypeDetail, certificateTypeLabel } from "@/lib/certificates/verify-view";
+import { VerifyActions, CopyId } from "@/components/verify/VerifyActions";
+import { VerifyIdForm } from "@/components/verify/VerifyIdForm";
 import {
   ShieldCheck,
   Award,
-  Calendar,
-  Download,
-  Search,
+  BadgeCheck,
+  Building2,
+  CalendarDays,
+  CalendarCheck,
+  ArrowLeft,
   AlertTriangle,
   GraduationCap,
+  Hash,
+  HandHeart,
+  Trophy,
+  Users,
+  type LucideIcon,
 } from "lucide-react";
 
 interface PageProps {
@@ -111,7 +121,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           eventDate: data.event_date_snapshot,
           awardTitle: getAwardTitle(data.award_title) || null,
           issueDate: data.issue_date,
-          issuedBy: "AWS Student Builder Group • Tulas University",
+          issuedBy: "AWS Student Builder Group\nTulas University",
           pdfUrl: data.pdf_url || `/api/certificates/${data.certificate_id}`,
           verificationUrl: data.verification_url,
           // Same lookup the PDF uses, so the preview and the download always match.
@@ -126,223 +136,199 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
     }
   }
 
+  const typeLabel = cert ? certificateTypeLabel(cert.kind, cert.awardTitle) : "";
+  const typeDetail = cert ? certificateTypeDetail({ kind: cert.kind, awardTitle: cert.awardTitle, role: cert.role, wing: cert.wing }) : "";
+  const TypeIcon: LucideIcon = cert?.awardTitle ? Trophy : cert?.kind === "volunteer" ? HandHeart : cert?.kind === "organiser" ? Users : Award;
+  // Excellence = amber, volunteer = green, everything else = the site's violet.
+  const tone = cert?.awardTitle
+    ? "border-amber-500/25 bg-amber-500/10 text-amber-300"
+    : cert?.kind === "volunteer"
+      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+      : "border-[#8B5CF6]/30 bg-[#8B5CF6]/10 text-[#C4B5FD]";
+
   return (
     <div
-      className="min-h-screen text-[#F4F4F6] selection:bg-[#6C63FF]/30 pt-32 sm:pt-36 pb-24 px-4 sm:px-6"
+      className="min-h-screen px-4 pb-20 pt-28 text-[#F4F4F6] selection:bg-[#6C63FF]/30 sm:px-6 sm:pt-32 lg:px-8 lg:pb-24"
       style={{
         background: `
-          radial-gradient(850px 420px at 50% 10%, rgba(108,99,255,0.16), transparent 70%),
-          radial-gradient(500px 300px at 85% 20%, rgba(255,153,0,0.05), transparent 70%),
+          radial-gradient(850px 420px at 50% 6%, rgba(108,99,255,0.16), transparent 70%),
+          radial-gradient(500px 300px at 88% 18%, rgba(255,153,0,0.05), transparent 70%),
           linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/48px 48px,
           linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/48px 48px,
           #08080B
         `,
       }}
     >
-      <main className="max-w-4xl mx-auto w-full">
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* CASE 1: VALID CERTIFICATE                                     */}
-        {/* ───────────────────────────────────────────────────────────── */}
+      <main className="mx-auto w-full max-w-6xl">
         {cert ? (
-          <div className="space-y-8">
-            {/* Certificate Details Breakdown */}
-            <div className="p-1 rounded-[2rem] bg-white/[0.04] border border-white/10 shadow-2xl">
-              <div className="p-6 sm:p-8 rounded-[calc(2rem-4px)] bg-[#0F0F13] space-y-6">
-                {/* Recipient Header with Verified Badge */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <span className="text-[11px] uppercase tracking-wider text-[#F59E0B] font-mono font-medium">
-                      Recipient
-                    </span>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1 tracking-tight">
-                      {cert.recipientName}
-                    </h1>
-                  </div>
-                  {cert.awardTitle && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold self-start">
-                      <Award className="w-3.5 h-3.5" />
-                      Certificate of Excellence - {cert.awardTitle}
-                    </div>
-                  )}
-                  {cert.kind === "volunteer" && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 text-[#C4B5FD] text-xs font-semibold self-start">
-                      <Award className="w-3.5 h-3.5" />
-                      Certificate of Volunteering
-                    </div>
-                  )}
-                  {cert.kind === "organiser" && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 text-[#C4B5FD] text-xs font-semibold self-start">
-                      <Award className="w-3.5 h-3.5" />
-                      Certificate of Appreciation
-                      {cert.role ? ` - ${cert.role}` : cert.wing ? ` - ${cert.wing} Wing` : ""}
-                    </div>
-                  )}
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono font-semibold self-start sm:self-center">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>VERIFIED CREDENTIAL</span>
-                  </div>
-                </div>
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-[#26262D]">
-                  {cert.awardTitle && (
-                    <div className="col-span-1 sm:col-span-2 p-4 rounded-xl bg-[#17171C] border border-[#26262D] flex items-center gap-3">
-                      <GraduationCap className="w-5 h-5 text-[#818CF8] shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-[10px] uppercase tracking-wider text-[#8B8B96] font-mono">
-                          Course
-                        </div>
-                        <div className="text-sm font-semibold text-white truncate">
-                          {cert.course}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {/* Event Name */}
-                  <div className="p-4 rounded-xl bg-[#17171C] border border-[#26262D] flex items-center gap-3">
-                    <Award className="w-5 h-5 text-[#F59E0B] shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-[10px] uppercase tracking-wider text-[#8B8B96] font-mono">
-                        Event / Workshop
-                      </div>
-                      <div className="text-sm font-semibold text-white truncate">
-                        {cert.eventName}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Event Date */}
-                  <div className="p-4 rounded-xl bg-[#17171C] border border-[#26262D] flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-[#34D399] shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-[10px] uppercase tracking-wider text-[#8B8B96] font-mono">
-                        Event Date
-                      </div>
-                      <div className="text-sm font-semibold text-white truncate">
-                        {cert.eventDateDisplay}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Registry Metadata Bar */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-[#26262D] text-xs">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-[#8B8B96] font-mono block mb-1">
-                      Certificate ID
-                    </span>
-                    <span className="font-mono font-bold text-[#6C63FF]">
-                      {cert.certificateId}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-[#8B8B96] font-mono block mb-1">
-                      Issue Date
-                    </span>
-                    <span className="text-[#D4D4D8] font-mono">
-                      {formatDate(cert.issueDate)}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-[#8B8B96] font-mono block mb-1">
-                      Issued By
-                    </span>
-                    <span className="text-white font-medium">
-                      {cert.issuedBy}
-                    </span>
-                  </div>
-                </div>
+          <div className="space-y-6 sm:space-y-8">
+            {/* ── Status ─────────────────────────────────────────── */}
+            <header className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:gap-5 sm:text-left">
+              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_0_40px_-8px_rgba(52,211,153,0.5)] sm:h-16 sm:w-16">
+                <ShieldCheck className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden="true" />
               </div>
-            </div>
+              <div className="min-w-0">
+                <p className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+                  <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  Verified credential
+                </p>
+                <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+                  This certificate is authentic
+                </h1>
+                <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-[#9A9AA5]">
+                  Issued by AWS Student Builder Group at Tulas University and found in the official registry.
+                </p>
+              </div>
+            </header>
 
-            {/* Certificate Preview Card */}
-            <div className="p-1 rounded-[2rem] bg-white/[0.04] border border-white/10 shadow-2xl overflow-hidden">
-              <div className="p-6 sm:p-8 rounded-[calc(2rem-4px)] bg-[#0F0F13]">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
-                    Official Certificate Preview
+            <div className="grid gap-6 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start xl:grid-cols-[25rem_minmax(0,1fr)]">
+              {/* ── Details ──────────────────────────────────────── */}
+              <section
+                aria-labelledby="recipient-name"
+                className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-1 shadow-2xl shadow-black/40 lg:sticky lg:top-28 lg:col-start-1 lg:row-start-1"
+              >
+                <div className="rounded-[calc(1.75rem-4px)] bg-[#0F0F13] p-5 sm:p-7">
+                  <span className={`inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${tone}`}>
+                    <TypeIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    <span className="truncate">{typeLabel}</span>
+                  </span>
+
+                  <p className="mt-5 font-mono text-[11px] font-medium uppercase tracking-wider text-[#F59E0B]">Awarded to</p>
+                  <h2 id="recipient-name" className="mt-1 break-words text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl">
+                    {cert.recipientName}
                   </h2>
-                  <a
-                    href={`/api/certificates/${cert.certificateId}`}
-                    download={`${cert.certificateId}.pdf`}
-                    className="h-9 px-4 rounded-xl text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-[#6C63FF]/20 active:scale-[0.98]"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download Certificate</span>
-                  </a>
-                </div>
+                  {typeDetail && <p className="mt-1.5 break-words text-sm font-medium text-[#C4B5FD]">{typeDetail}</p>}
 
-                <div className="rounded-xl overflow-hidden border border-[#26262D] bg-[#17171C]">
-                  <CertificatePreview
-                    participantName={cert.recipientName}
-                    eventTitle={cert.eventName}
-                    eventDate={cert.eventDateDisplay}
-                    certificateId={cert.certificateId}
-                    verificationUrl={cert.verificationUrl || undefined}
-                    awardTitle={cert.awardTitle || undefined}
-                    theme={cert.theme}
-                    kind={cert.kind || undefined}
-                    role={cert.role || undefined}
-                    wing={cert.wing || undefined}
-                  />
+                  <dl className="mt-6 divide-y divide-[#22222A] border-t border-[#22222A]">
+                    <DetailRow icon={Award} iconClass="text-[#F59E0B]" label="Event / Workshop" value={cert.eventName} />
+                    <DetailRow icon={CalendarDays} iconClass="text-[#34D399]" label="Event date" value={cert.eventDateDisplay} />
+                    {cert.awardTitle && (
+                      <DetailRow icon={GraduationCap} iconClass="text-[#818CF8]" label="Course" value={`${cert.course}${cert.rollNo && cert.rollNo !== "N/A" ? ` · ${cert.rollNo}` : ""}`} />
+                    )}
+                    <DetailRow icon={CalendarCheck} iconClass="text-[#60A5FA]" label="Issued on" value={formatDate(cert.issueDate)} />
+                    <DetailRow icon={Building2} iconClass="text-[#A1A1AA]" label="Issued by" value={cert.issuedBy} />
+                    <div className="flex items-start gap-3 py-3.5">
+                      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#26262D] bg-[#17171C] text-[#A78BFA]">
+                        <Hash className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <dt className="font-mono text-[10px] uppercase tracking-wider text-[#8B8B96]">Certificate ID</dt>
+                        <dd className="mt-1">
+                          <CopyId value={cert.certificateId} />
+                        </dd>
+                      </div>
+                    </div>
+                  </dl>
                 </div>
-              </div>
+              </section>
+
+              {/* ── Certificate ──────────────────────────────────── */}
+              <section
+                aria-label="Certificate"
+                className="min-w-0 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-1 shadow-2xl shadow-black/40 lg:col-start-2 lg:row-start-1"
+              >
+                <div className="space-y-5 rounded-[calc(1.75rem-4px)] bg-[#0F0F13] p-3 sm:p-6">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-1">
+                    <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-white sm:text-sm">Official certificate</h2>
+                    <p className="text-[11px] text-[#71717A]">Tap the certificate to see it full size</p>
+                  </div>
+
+                  <div className="rounded-xl border border-[#26262D] bg-[#17171C] p-1.5 sm:p-2.5">
+                    <CertificatePreview
+                      participantName={cert.recipientName}
+                      eventTitle={cert.eventName}
+                      eventDate={cert.eventDateDisplay}
+                      certificateId={cert.certificateId}
+                      verificationUrl={cert.verificationUrl || undefined}
+                      awardTitle={cert.awardTitle || undefined}
+                      theme={cert.theme}
+                      kind={cert.kind || undefined}
+                      role={cert.role || undefined}
+                      wing={cert.wing || undefined}
+                    />
+                  </div>
+
+                  <VerifyActions certificateId={cert.certificateId} eventName={cert.eventName} />
+                </div>
+              </section>
             </div>
+
+            <footer className="flex flex-col items-center justify-between gap-3 border-t border-white/[0.06] pt-6 text-center text-xs text-[#8B8B96] sm:flex-row sm:text-left">
+              <p>Does something look wrong? Compare this page with the certificate you were given.</p>
+              <Link
+                href="/verify"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 font-semibold text-white transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]/60"
+              >
+                Verify another certificate
+              </Link>
+            </footer>
           </div>
         ) : (
-          /* ───────────────────────────────────────────────────────────── */
-          /* CASE 2: NOT FOUND / INVALID CERTIFICATE                       */
-          /* ───────────────────────────────────────────────────────────── */
-          <div className="p-1 rounded-[2rem] bg-white/[0.04] border border-white/10 shadow-2xl">
-            <div className="p-8 sm:p-12 rounded-[calc(2rem-4px)] bg-[#0F0F13] text-center max-w-lg mx-auto">
-              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center bg-red-500/10 border border-red-500/30 text-red-400">
-                <AlertTriangle className="w-8 h-8" />
+          /* ── Not found / invalid ─────────────────────────────── */
+          <div className="mx-auto max-w-xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-1 shadow-2xl shadow-black/50">
+            <div className="rounded-[calc(2rem-4px)] bg-[#0F0F13] p-6 text-center sm:p-10">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400">
+                <AlertTriangle className="h-8 w-8" aria-hidden="true" />
               </div>
-
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-xs font-mono font-medium mb-3">
-                NOT FOUND
-              </div>
-
-              <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">
-                Certificate Record Not Found
-              </h2>
-
-              <p className="text-sm text-[#8B8B96] leading-relaxed mb-6">
-                No authentic certificate was found matching the ID:{" "}
-                <span className="font-mono text-white font-semibold">{cleanId}</span>.
-                Please ensure the Certificate ID was entered correctly without typos.
+              <p className="mb-3 inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 font-mono text-xs font-medium text-red-400">
+                {isFormatValid ? "NOT FOUND" : "INVALID ID"}
+              </p>
+              <h1 className="mb-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                {isFormatValid ? "No certificate found" : "That is not a certificate ID"}
+              </h1>
+              <p className="mx-auto mb-6 max-w-md text-sm leading-relaxed text-[#8B8B96]">
+                {isFormatValid ? "Nothing in the registry matches " : "We could not read "}
+                <span className="break-all font-mono font-semibold text-white">{cleanId || "an empty ID"}</span>.{" "}
+                {isFormatValid ? "Check the ID against your certificate and try again." : "Certificate IDs look like AWS-SBG-2026-GKTZ4W."}
               </p>
 
-              <div className="p-4 rounded-xl bg-[#17171C] border border-[#26262D] text-left text-xs space-y-2 mb-6">
-                <p className="font-semibold text-white">Possible Reasons:</p>
-                <ul className="list-disc list-inside text-[#8B8B96] space-y-1">
-                  <li>The Certificate ID was mistyped or incomplete.</li>
-                  <li>The session certificate has not yet been approved or issued.</li>
-                  <li>The credential was issued by an unofficial or unauthorized source.</li>
+              <div className="mb-6 text-left">
+                <VerifyIdForm initialValue={cleanId} submitLabel="Try again" />
+              </div>
+
+              <div className="mb-6 rounded-xl border border-[#26262D] bg-[#17171C] p-4 text-left text-xs">
+                <p className="mb-2 font-semibold text-white">Common reasons</p>
+                <ul className="list-inside list-disc space-y-1 text-[#8B8B96]">
+                  <li>The ID was mistyped (letters and numbers can look alike).</li>
+                  <li>The certificate has not been issued yet.</li>
+                  <li>The certificate was withdrawn by the organisers.</li>
+                  <li>The credential did not come from AWS Student Builder Group.</li>
                 </ul>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link
-                  href="/verify"
-                  className="w-full sm:w-auto h-11 px-5 rounded-xl text-xs font-semibold bg-[#6C63FF] hover:brightness-110 text-white flex items-center justify-center gap-2 transition-all"
-                >
-                  <Search className="w-4 h-4" />
-                  Search Again
-                </Link>
+              <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Link
                   href="/attendance"
-                  className="w-full sm:w-auto h-11 px-5 rounded-xl text-xs font-semibold bg-[#17171C] hover:bg-[#1f1f26] text-[#F4F4F6] border border-[#26262D] flex items-center justify-center gap-2 transition-all"
+                  className="flex h-11 w-full items-center justify-center rounded-xl border border-[#26262D] bg-[#17171C] px-5 text-xs font-semibold text-[#F4F4F6] transition-colors hover:bg-[#1f1f26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]/60 sm:w-auto"
                 >
                   Go to Attendance Portal
+                </Link>
+                <Link
+                  href="/"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-xs font-semibold text-[#8B8B96] transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]/60 sm:w-auto"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                  Back to home
                 </Link>
               </div>
             </div>
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function DetailRow({ icon: Icon, iconClass, label, value }: { icon: LucideIcon; iconClass: string; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3 py-3.5">
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#26262D] bg-[#17171C]">
+        <Icon className={`h-4 w-4 ${iconClass}`} aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <dt className="font-mono text-[10px] uppercase tracking-wider text-[#8B8B96]">{label}</dt>
+        <dd className="mt-1 whitespace-pre-line break-words text-sm font-semibold text-white">{value}</dd>
+      </div>
     </div>
   );
 }

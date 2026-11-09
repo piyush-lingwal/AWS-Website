@@ -175,7 +175,7 @@ export function OrganiserIssueDialog({
         title="Issue Certificates of Appreciation to the organising team"
       >
         <Users className="w-4 h-4 text-[#A78BFA]" />
-        <span className="hidden sm:inline">Organising Team</span>
+        <span className="hidden sm:inline">Add Members</span>
       </button>
 
       {open && (
@@ -235,7 +235,7 @@ export function OrganiserIssueDialog({
                         <Plus className="h-3.5 w-3.5" /> Add person
                       </button>
                       <button type="button" onClick={previewManual} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05]">
-                        Preview
+                        Review list
                       </button>
                       <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#8B5CF6]/90 px-3 text-xs font-semibold text-white hover:bg-[#8B5CF6]">
                         <Upload className="h-3.5 w-3.5" /> Upload sheet
@@ -251,7 +251,7 @@ export function OrganiserIssueDialog({
                   <div className="space-y-2">
                     <label htmlFor="organiser-paste" className="block text-xs font-semibold text-[#D4D4D8]">Or paste rows (Name, Email, Role, Wing)</label>
                     <textarea id="organiser-paste" value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={3} placeholder={"Name\tEmail\tRole\tWing"} className="w-full rounded-xl border border-white/[0.1] bg-[#09090E] p-3 font-mono text-xs text-white placeholder:text-[#52525B] focus:border-[#8B5CF6] focus:outline-none" />
-                    <button type="button" onClick={previewPaste} disabled={!pasteText.trim()} className="h-8 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05] disabled:opacity-40">Preview pasted rows</button>
+                    <button type="button" onClick={previewPaste} disabled={!pasteText.trim()} className="h-8 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05] disabled:opacity-40">Review pasted rows</button>
                   </div>
                 </>
               )}

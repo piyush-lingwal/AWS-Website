@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { resolveEventScope } from "@/lib/admin/event-scope";
 import { cleanFullName } from "@/lib/utils";
 import type { ApiResponse } from "@/types/certificate";
 
@@ -13,11 +13,9 @@ interface TopPerformerBody {
   email?: unknown;
   rollNo?: unknown;
   course?: unknown;
-  /** Optional: assign to this event. Defaults to the active event when omitted. */
+  /** The event to add to. Defaults to the active event when omitted. */
   eventId?: unknown;
 }
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function errorResponse(error: string, status: number) {
   return NextResponse.json(
@@ -26,47 +24,19 @@ function errorResponse(error: string, status: number) {
   );
 }
 
-async function getActiveEvent(admin: ReturnType<typeof getAdminClient>) {
-  if (!admin) return { event: null, error: "Database client unavailable." };
-
-  const { data: config, error: configError } = await admin
-    .from("portal_config")
-    .select("active_event_id")
-    .limit(1)
-    .single();
-
-  if (configError) {
-    console.error("[API/admin/top-performers] Active event lookup failed:", configError);
-    return { event: null, error: "Failed to load the active event." };
-  }
-
-  if (!config?.active_event_id) return { event: null, error: null };
-
-  const { data: event, error: eventError } = await admin
-    .from("events")
-    .select("id, name, event_date")
-    .eq("id", config.active_event_id)
-    .maybeSingle();
-
-  if (eventError) {
-    console.error("[API/admin/top-performers] Event lookup failed:", eventError);
-    return { event: null, error: "Failed to load the active event." };
-  }
-
-  return { event, error: null };
-}
-
-export async function GET() {
+// GET /api/admin/top-performers?eventId=<uuid> — the event's top performers
+// (the active event's when no eventId is given).
+export async function GET(request: NextRequest) {
   try {
-    const sessionClient = createClient(await cookies());
-    const { data: { user }, error: authError } = await sessionClient.auth.getUser();
-    if (authError || !user) return errorResponse("Please sign in to view top performers.", 401);
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const admin = getAdminClient();
     if (!admin) return errorResponse("Database client unavailable.", 500);
 
-    const { event, error: eventLookupError } = await getActiveEvent(admin);
-    if (eventLookupError) return errorResponse(eventLookupError, 500);
+    const scope = await resolveEventScope(admin, request.nextUrl.searchParams.get("eventId"));
+    if (!scope.ok) return errorResponse(scope.error, scope.status);
+    const event = scope.event;
     if (!event) {
       return NextResponse.json({
         success: true,
@@ -148,9 +118,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionClient = createClient(await cookies());
-    const { data: { user }, error: authError } = await sessionClient.auth.getUser();
-    if (authError || !user) return errorResponse("Please sign in to add a top performer.", 401);
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     let body: TopPerformerBody;
     try {
@@ -189,28 +158,11 @@ export async function POST(request: NextRequest) {
     const admin = getAdminClient();
     if (!admin) return errorResponse("Database client unavailable.", 500);
 
-    // Default to the active event; allow an explicit event (e.g. the one being
-    // viewed in the attendee directory) so admins can award past events too.
-    let event: { id: string; name: string; event_date: string | null } | null = null;
-    if (typeof body.eventId === "string" && body.eventId.trim() !== "") {
-      if (!UUID_PATTERN.test(body.eventId)) return errorResponse("Invalid event id.", 400);
-      const { data: chosen, error: chosenError } = await admin
-        .from("events")
-        .select("id, name, event_date")
-        .eq("id", body.eventId.toLowerCase())
-        .maybeSingle();
-      if (chosenError) {
-        console.error("[API/admin/top-performers] Event lookup failed:", chosenError);
-        return errorResponse("Failed to load the event.", 500);
-      }
-      if (!chosen) return errorResponse("The selected event could not be found.", 404);
-      event = chosen;
-    } else {
-      const { event: activeEvent, error: eventLookupError } = await getActiveEvent(admin);
-      if (eventLookupError) return errorResponse(eventLookupError, 500);
-      if (!activeEvent) return errorResponse("Set an active event before adding top performers.", 400);
-      event = activeEvent;
-    }
+    // The event the admin is viewing; the active event when none is given.
+    const scope = await resolveEventScope(admin, body.eventId);
+    if (!scope.ok) return errorResponse(scope.error, scope.status);
+    if (!scope.event) return errorResponse("Choose an event before adding top performers.", 400);
+    const event = scope.event;
 
     const { data: participant, error: participantLookupError } = await admin
       .from("participants")

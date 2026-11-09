@@ -1,41 +1,32 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldCheck, Search, Award, CheckCircle, ArrowRight } from "lucide-react";
-import { isValidCertificateIdFormat } from "@/lib/certificates/id-format";
+import { Award, ArrowLeft, FileSearch, QrCode, ShieldCheck, Type } from "lucide-react";
+import { VerifyIdForm } from "@/components/verify/VerifyIdForm";
+
+const STEPS = [
+  {
+    icon: QrCode,
+    title: "Find the ID",
+    text: "It is printed under the QR code at the bottom left of the certificate.",
+  },
+  {
+    icon: Type,
+    title: "Enter it here",
+    text: "Type the ID, or paste the verification link printed next to it.",
+  },
+  {
+    icon: FileSearch,
+    title: "Read the record",
+    text: "See who it was issued to, for which event, and view the original certificate.",
+  },
+] as const;
 
 export default function CertificateSearchPage() {
-  const router = useRouter();
-  const [certId, setCertId] = useState("");
-  const [error, setError] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = certId.trim().toUpperCase();
-
-    if (!clean) {
-      setError("Please enter a Certificate ID.");
-      return;
-    }
-
-    if (!isValidCertificateIdFormat(clean)) {
-      setError("Expected format: AWS-SBG-YYYY-XXXXXX (e.g. AWS-SBG-2026-GKTZ4W)");
-      return;
-    }
-
-    setIsSearching(true);
-    router.push(`/verify/${clean}`);
-  };
-
   return (
     <div
-      className="min-h-screen flex flex-col justify-center text-[#F4F4F6] px-4 py-20 sm:py-28"
+      className="flex min-h-screen flex-col justify-center px-4 pb-16 pt-28 text-[#F4F4F6] selection:bg-[#6C63FF]/30 sm:px-6 sm:pb-24 sm:pt-32"
       style={{
         background: `
-          radial-gradient(750px 380px at 50% 15%, rgba(108,99,255,0.18), transparent 70%),
+          radial-gradient(750px 380px at 50% 12%, rgba(108,99,255,0.18), transparent 70%),
           radial-gradient(400px 300px at 85% 25%, rgba(255,153,0,0.06), transparent 70%),
           linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/48px 48px,
           linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/48px 48px,
@@ -43,106 +34,60 @@ export default function CertificateSearchPage() {
         `,
       }}
     >
-      <div className="max-w-xl mx-auto w-full">
-        {/* Header */}
-        <header className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[rgba(108,99,255,0.1)] border border-[rgba(108,99,255,0.25)] text-xs text-[#A78BFA] font-medium mb-4">
-            <Award className="w-3.5 h-3.5 text-[#6C63FF]" />
-            <span>AWS Student Builder Group • Official Registry</span>
+      <main className="mx-auto w-full max-w-2xl">
+        <header className="mb-8 text-center sm:mb-10">
+          <div className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-[rgba(108,99,255,0.25)] bg-[rgba(108,99,255,0.1)] px-3.5 py-1.5 text-[11px] font-medium text-[#A78BFA] sm:text-xs">
+            <Award className="h-3.5 w-3.5 shrink-0 text-[#6C63FF]" aria-hidden="true" />
+            <span className="truncate">AWS Student Builder Group • Official Registry</span>
           </div>
-
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2.5">
-            Verify Certificate Authenticity
+          <h1 className="mb-3 text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+            Verify a certificate
           </h1>
-          <p className="text-[#8B8B96] text-xs sm:text-sm leading-relaxed max-w-md mx-auto">
-            Enter the unique Certificate ID printed on any official AWS Student Builder Group credential to verify its authenticity and inspect official session records.
+          <p className="mx-auto max-w-md text-sm leading-relaxed text-[#8B8B96] sm:text-base">
+            Check that a certificate from AWS Student Builder Group at Tulas University is real, and see the official record behind it.
           </p>
         </header>
 
-        {/* Search Card with Double-Bezel */}
-        <div className="p-1 rounded-[2rem] bg-white/[0.04] border border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] mb-8">
-          <div className="p-7 sm:p-9 rounded-[calc(2rem-4px)] bg-[#0F0F13]">
-            <form onSubmit={handleSearch} noValidate>
-              <div className="mb-4">
-                <label
-                  htmlFor="certId"
-                  className="block font-mono text-[11px] uppercase tracking-wider text-[#8B8B96] mb-2 font-medium"
-                >
-                  Certificate ID <span className="text-[#6C63FF]">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8B8B96] pointer-events-none">
-                    <Search className="w-4 h-4" />
-                  </div>
-                  <input
-                    id="certId"
-                    type="text"
-                    required
-                    autoFocus
-                    autoCapitalize="characters"
-                    value={certId}
-                    onChange={(e) => {
-                      setCertId(e.target.value.toUpperCase());
-                      setError("");
-                    }}
-                    placeholder="e.g. AWS-SBG-2026-GKTZ4W"
-                    className="w-full h-12 pl-11 pr-4 rounded-xl text-sm font-mono tracking-wider bg-[#17171C] border border-[#26262D] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
-                  />
-                </div>
-                <p className="text-[11px] text-[#71717A] font-mono mt-1.5">
-                  Format: AWS-SBG-YYYY-XXXXXX
-                </p>
-              </div>
-
-              {error && (
-                <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/25 text-xs text-red-400">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSearching}
-                className="w-full h-12 rounded-xl text-xs font-semibold bg-[#6C63FF] hover:brightness-110 text-white flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#6C63FF]/20"
-              >
-                {isSearching ? (
-                  <>
-                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    <span>Verifying with Database…</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>Verify Certificate</span>
-                    <ArrowRight className="w-4 h-4 ml-1 opacity-70" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Quick Helper */}
-            <div className="mt-6 pt-6 border-t border-[#26262D] grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] text-[#8B8B96]">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5 text-[#34D399] flex-shrink-0" />
-                <span>Instant official verification</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5 text-[#34D399] flex-shrink-0" />
-                <span>Verified event attendance</span>
-              </div>
-            </div>
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-1 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]">
+          <div className="rounded-[calc(2rem-4px)] bg-[#0F0F13] p-5 sm:p-8">
+            <VerifyIdForm autoFocus />
           </div>
         </div>
 
-        {/* Footer Links */}
-        <div className="text-center text-xs text-[#8B8B96] space-y-2">
-          <p>
-            <Link href="/" className="hover:text-white transition-colors">
-              ← Return to AWS SBG Homepage
-            </Link>
-          </p>
-        </div>
-      </div>
+        <section aria-labelledby="how-it-works" className="mt-10 sm:mt-12">
+          <h2 id="how-it-works" className="mb-4 text-center font-mono text-[11px] font-medium uppercase tracking-wider text-[#71717A]">
+            How it works
+          </h2>
+          <ol className="grid gap-3 sm:grid-cols-3">
+            {STEPS.map(({ icon: Icon, title, text }, i) => (
+              <li key={title} className="flex gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 sm:block">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#26262D] bg-[#17171C] text-[#A78BFA] sm:mb-3">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white">
+                    <span className="mr-1.5 font-mono text-xs text-[#6C63FF]">{i + 1}.</span>
+                    {title}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#8B8B96]">{text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-[#71717A]">
+          <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
+          Only certificates issued by AWS Student Builder Group appear in this registry.
+        </p>
+
+        <p className="mt-6 text-center text-xs">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-[#8B8B96] transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]/60">
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            Back to AWS SBG home
+          </Link>
+        </p>
+      </main>
     </div>
   );
 }

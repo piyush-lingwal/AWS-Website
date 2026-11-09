@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { resolveEventScope } from "@/lib/admin/event-scope";
 import { cleanFullName } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -52,11 +52,10 @@ function validateRow(row: ImportRow, index: number): ValidatedRow {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionClient = createClient(await cookies());
-    const { data: { user }, error: authError } = await sessionClient.auth.getUser();
-    if (authError || !user) return errorResponse("Please sign in to import top performers.", 401);
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
-    let body: { rows?: unknown };
+    let body: { rows?: unknown; eventId?: unknown };
     try {
       body = await request.json();
     } catch {
@@ -67,27 +66,11 @@ export async function POST(request: NextRequest) {
 
     const admin = getAdminClient();
     if (!admin) return errorResponse("Database client unavailable.", 500);
-    const { data: config, error: configError } = await admin
-      .from("portal_config")
-      .select("active_event_id")
-      .limit(1)
-      .single();
-    if (configError) {
-      console.error("[API/admin/top-performers/import] Active event lookup failed:", configError);
-      return errorResponse("Failed to load the active event.", 500);
-    }
-    if (!config?.active_event_id) return errorResponse("Set an active event before importing top performers.", 400);
-
-    const { data: event, error: eventError } = await admin
-      .from("events")
-      .select("id")
-      .eq("id", config.active_event_id)
-      .maybeSingle();
-    if (eventError) {
-      console.error("[API/admin/top-performers/import] Event lookup failed:", eventError);
-      return errorResponse("Failed to load the active event.", 500);
-    }
-    if (!event) return errorResponse("The active event could not be found.", 400);
+    // The event the admin is viewing; the active event when none is given.
+    const scope = await resolveEventScope(admin, body.eventId);
+    if (!scope.ok) return errorResponse(scope.error, scope.status);
+    if (!scope.event) return errorResponse("Choose an event before importing top performers.", 400);
+    const event = scope.event;
 
     const seenEmails = new Set<string>();
     const results: RowResult[] = [];

@@ -17,10 +17,12 @@ import { formatEventDate } from "@/lib/certificates/event-date";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TopPerformerImportDialog } from "@/components/features/TopPerformerImportDialog";
 import { AttendeeImportDialog } from "@/components/features/AttendeeImportDialog";
-import { OrganiserIssueDialog } from "@/components/features/OrganiserIssueDialog";
 import { DeleteAllButton } from "@/components/admin/DeleteAllButton";
-import { VolunteerSection } from "@/components/admin/VolunteerSection";
-import { exportFileName, organiserExportRows, topPerformerExportRows } from "@/lib/admin/export-rows";
+import { OrganiserSection, VolunteerSection } from "@/components/admin/certificates/TeamSections";
+import { CertificatesHeader, parseCertSection, type CertSection, type SectionCounts } from "@/components/admin/certificates/CertificatesHeader";
+import { ExportButton, SearchField, SectionHeading, TOOLBAR_BUTTON } from "@/components/admin/certificates/ListControls";
+import { filterRows } from "@/lib/admin/list-search";
+import { exportFileName, organiserExportRows, participantExportRows, topPerformerExportRows, volunteerExportRows } from "@/lib/admin/export-rows";
 import { CertificateThemePicker } from "@/components/features/CertificateThemePicker";
 import {
   DEFAULT_CERTIFICATE_THEME,
@@ -50,7 +52,6 @@ import {
   Radio,
   FileSpreadsheet,
   X,
-  SlidersHorizontal,
   Trash2,
   UserPlus,
   GraduationCap,
@@ -113,16 +114,6 @@ function getInitials(name: string): string {
     .slice(0, 2)
     .join("")
     .toUpperCase() || "ST";
-}
-
-interface OrganiserCertRow {
-  certificateId: string;
-  fullName: string;
-  role: string;
-  /** Media, Event, PR or Tech; empty when none was stored. */
-  wing?: string;
-  email: string;
-  issueDate: string;
 }
 
 interface TopPerformerRow {
@@ -206,11 +197,14 @@ function AdminPageContent() {
   // Auto-select active event if none selected
   useEffect(() => {
     if (!selectedEventId && events.length > 0) {
-      const defaultId = portalConfig?.active_event_id || events[0].id;
+      // A shared or reloaded link (?event=) wins, then the active event, then the newest.
+      const fromUrl = searchParams.get("event");
+      const defaultId =
+        (fromUrl && events.some((e) => e.id === fromUrl) ? fromUrl : null) || portalConfig?.active_event_id || events[0].id;
       setSelectedEventId(defaultId);
       setInspectingEventId(defaultId);
     }
-  }, [selectedEventId, events, portalConfig]);
+  }, [selectedEventId, events, portalConfig, searchParams]);
   const attendeesSectionRef = useRef<HTMLElement | null>(null);
   const [participants, setParticipants] = useState<AdminParticipantRow[]>([]);
   const [totalAttended, setTotalAttended] = useState<number>(0);
@@ -242,10 +236,15 @@ function AdminPageContent() {
   const [topPerformersError, setTopPerformersError] = useState("");
   const [addingTopPerformer, setAddingTopPerformer] = useState(false);
   const [deletingTopPerformerId, setDeletingTopPerformerId] = useState<string | null>(null);
-  // Organising-team (Certificate of Appreciation) list for the viewed event.
-  const [organisers, setOrganisers] = useState<OrganiserCertRow[]>([]);
-  const [loadingOrganisers, setLoadingOrganisers] = useState(false);
-  const [deletingOrganiserId, setDeletingOrganiserId] = useState<string | null>(null);
+  // Certificates tab: which list is shown, counts reported by the team lists, and busy flags.
+  const [certSection, setCertSection] = useState<CertSection>(() => parseCertSection(searchParams.get("section")));
+  const [organiserCount, setOrganiserCount] = useState<number | null>(null);
+  const [volunteerCount, setVolunteerCount] = useState<number | null>(null);
+  const [exportingAll, setExportingAll] = useState(false);
+  const [topPerformerSearch, setTopPerformerSearch] = useState("");
+  const [showAddTopPerformer, setShowAddTopPerformer] = useState(false);
+  // The event the Certificates tab shows, readable from callbacks without re-creating them.
+  const certEventRef = useRef("");
   const [issuingTopPerformerId, setIssuingTopPerformerId] = useState<string | null>(null);
   const [issuingAllTopPerformers, setIssuingAllTopPerformers] = useState(false);
   const [sendingTopPerformerId, setSendingTopPerformerId] = useState<string | null>(null);
@@ -341,51 +340,6 @@ function AdminPageContent() {
   }, [confirmModal.isOpen, closeConfirm]);
 
   // ── Data Fetching ─────────────────────────────────────────
-  // ── Fetch Organising-Team (Appreciation) certificates ─────
-  const fetchOrganisers = useCallback(async (eventId: string) => {
-    if (!eventId) return;
-    setLoadingOrganisers(true);
-    try {
-      const res = await fetch(`/api/admin/events/${eventId}/organisers`, { cache: "no-store" });
-      const json = await res.json();
-      setOrganisers(json.success && Array.isArray(json.data?.organisers) ? json.data.organisers : []);
-    } catch (err) {
-      console.error("Failed to load organising team certificates:", err);
-      setOrganisers([]);
-    } finally {
-      setLoadingOrganisers(false);
-    }
-  }, []);
-
-  const handleRevokeOrganiser = useCallback(
-    (eventId: string, cert: OrganiserCertRow) => {
-      showConfirm({
-        title: "Remove certificate",
-        message: `Remove the Certificate of Appreciation issued to "${cert.fullName}"? The certificate and its verification link will stop working.`,
-        confirmLabel: "Remove",
-        variant: "danger",
-        onConfirm: async () => {
-          setDeletingOrganiserId(cert.certificateId);
-          try {
-            const res = await fetch(
-              `/api/admin/events/${eventId}/organisers?certificateId=${encodeURIComponent(cert.certificateId)}`,
-              { method: "DELETE" }
-            );
-            const json = await res.json();
-            if (!res.ok || !json.success) throw new Error(json.error || "Could not remove the certificate.");
-            toast.success(`Removed ${cert.fullName}'s certificate.`);
-            await fetchOrganisers(eventId);
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Could not remove the certificate.");
-          } finally {
-            setDeletingOrganiserId(null);
-          }
-        },
-      });
-    },
-    [fetchOrganisers, showConfirm]
-  );
-
   // ── Fetch Team Members ─────────────────────────────────────
   const fetchTeamMembers = useCallback(async () => {
     setLoadingTeamMembers(true);
@@ -435,43 +389,41 @@ function AdminPageContent() {
     }
   }, []);
 
+  // Top performers of the event the Certificates tab shows (not only the active event).
   const fetchTopPerformers = useCallback(async () => {
+    const eventId = certEventRef.current;
+    if (!eventId) return;
     setLoadingTopPerformers(true);
     setTopPerformersError("");
     try {
-      const res = await fetch("/api/admin/top-performers", { cache: "no-store" });
+      const res = await fetch(`/api/admin/top-performers?eventId=${encodeURIComponent(eventId)}`, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok || !json.success) {
         throw new Error(json.error || "Could not load top performers.");
       }
+      if (certEventRef.current !== eventId) return; // another event was chosen meanwhile
       setTopPerformersEvent(json.data?.event || null);
       setTopPerformers(json.data?.topPerformers || []);
     } catch (err) {
+      if (certEventRef.current !== eventId) return;
       const message = err instanceof Error ? err.message : "Could not load top performers.";
       setTopPerformersError(message);
       setTopPerformers([]);
       setTopPerformersEvent(null);
     } finally {
-      setLoadingTopPerformers(false);
+      if (certEventRef.current === eventId) setLoadingTopPerformers(false);
     }
   }, []);
 
   useEffect(() => {
+    certEventRef.current = selectedEventId;
     if (selectedEventId) {
       fetchParticipants(selectedEventId);
-      fetchOrganisers(selectedEventId);
-    }
-  }, [selectedEventId, fetchParticipants, fetchOrganisers]);
-
-  useEffect(() => {
-    if (portalConfig?.active_event_id) {
-      void fetchTopPerformers();
-    } else {
-      setTopPerformersEvent(null);
       setTopPerformers([]);
-      setTopPerformersError("");
+      setTopPerformersEvent(null);
+      void fetchTopPerformers();
     }
-  }, [portalConfig?.active_event_id, fetchTopPerformers]);
+  }, [selectedEventId, fetchParticipants, fetchTopPerformers]);
 
   // ── Form Handlers ─────────────────────────────────────────
   const resetForm = () => {
@@ -623,6 +575,7 @@ function AdminPageContent() {
     }
     setInspectingEventId(eventId);
     setSelectedEventId(eventId);
+    setCertSection("participants");
     setActiveTab("registrations");
     setTimeout(() => {
       attendeesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -715,6 +668,7 @@ function AdminPageContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          eventId: selectedEventId,
           rank: Number(topPerformerForm.rank),
           fullName: topPerformerForm.fullName,
           email: topPerformerForm.email,
@@ -749,13 +703,13 @@ function AdminPageContent() {
       title: isIssued ? "Delete Top Performer & Certificate" : "Delete Top Performer",
       message: isIssued
         ? `Delete "${topPerformer.fullName}" from top performers? Their issued Certificate of Excellence will also be deleted.`
-        : `Delete "${topPerformer.fullName}" from the active event's top performers?`,
+        : `Delete "${topPerformer.fullName}" from this event's top performers?`,
       confirmLabel: isIssued ? "Delete Top Performer & Certificate" : "Delete Top Performer",
       variant: "danger",
       onConfirm: async () => {
         setDeletingTopPerformerId(topPerformer.id);
         try {
-          const res = await fetch(`/api/admin/top-performers/${topPerformer.id}`, {
+          const res = await fetch(`/api/admin/top-performers/${topPerformer.id}?eventId=${encodeURIComponent(selectedEventId)}`, {
             method: "DELETE",
           });
           const json = await res.json();
@@ -819,8 +773,7 @@ function AdminPageContent() {
       }
       toast.success(`${participant.name} assigned as a top performer (rank ${rankNumber}).`);
       setRankModal(null);
-      // Refresh the top-performers table when the viewed event is the active one.
-      if (currentViewEvent.id === portalConfig?.active_event_id) await fetchTopPerformers();
+      await fetchTopPerformers();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not assign this top performer.");
     } finally {
@@ -1351,25 +1304,16 @@ function AdminPageContent() {
 
   // ── Export Participants to CSV ────────────────────────────
   const handleExportCSV = async () => {
-    if (participants.length === 0) {
-      toast.error("No attendee records available to export");
+    // Exports what the list shows: everyone, or only the rows matching the search / course filter.
+    if (filteredParticipants.length === 0) {
+      toast.error("No participants to export");
       return;
     }
 
     const currentEvent = events.find((e) => e.id === selectedEventId);
     const eventTitle = currentEvent?.name || "AWS_SBG_Event";
 
-    const csvData = participants.map((p) => ({
-      "Full Name": p.name,
-      "Email Address": p.email,
-      "Course / Branch": p.course,
-      "Roll Number": p.rollNo,
-      "Submitted At": p.submittedAt,
-      "Certificate ID": p.certificateId || "N/A",
-      "Verification Link": p.certificateId
-        ? `${typeof window !== "undefined" ? window.location.origin : ""}/verify/${p.certificateId}`
-        : "N/A",
-    }));
+    const csvData = participantExportRows(filteredParticipants, window.location.origin);
 
     const Papa = (await import("papaparse")).default;
     const csv = Papa.unparse(csvData);
@@ -1385,7 +1329,7 @@ function AdminPageContent() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success("Attendee list exported to CSV");
+    toast.success(`Exported ${filteredParticipants.length} participants`);
   };
 
   // ── Export Organising Team / Top Performers to CSV ────────
@@ -1404,20 +1348,12 @@ function AdminPageContent() {
     toast.success(`${label} exported to CSV`);
   };
 
-  const handleExportOrganisersCSV = async () => {
-    if (organisers.length === 0) {
-      toast.error("No Certificates of Appreciation to export");
-      return;
-    }
-    await downloadCsv(organiserExportRows(organisers, window.location.origin), "Appreciation", "Certificates of Appreciation");
-  };
-
   const handleExportTopPerformersCSV = async () => {
-    if (topPerformers.length === 0) {
+    if (shownTopPerformers.length === 0) {
       toast.error("No top performers to export");
       return;
     }
-    await downloadCsv(topPerformerExportRows(topPerformers, window.location.origin), "Top_Performers", "Top performers");
+    await downloadCsv(topPerformerExportRows(shownTopPerformers, window.location.origin), "Top_Performers", "Top performers");
   };
 
   // ── Single Certificate Email Send ─────────────────────────
@@ -1482,8 +1418,19 @@ function AdminPageContent() {
 
   const activeEvent = events.find((e) => e.id === portalConfig?.active_event_id);
   const currentViewEvent = events.find((e) => e.id === selectedEventId);
-  const canManageTopPerformers =
-    currentViewEvent?.id === portalConfig?.active_event_id;
+  const shownTopPerformers = useMemo(
+    () =>
+      filterRows(topPerformers, topPerformerSearch, (t) => [
+        t.fullName,
+        t.email,
+        t.rollNo,
+        t.course,
+        getAwardTitle(t.rank),
+        t.certificateId,
+        t.certificateId ? "issued" : "not issued pending",
+      ]),
+    [topPerformers, topPerformerSearch]
+  );
 
   // One message for every "no list to show" state of Top Performers (used by the phone layout).
   const topPerformerStatus = loadingTopPerformers
@@ -1494,7 +1441,9 @@ function AdminPageContent() {
         : "Loading event details…"
       : topPerformers.length === 0
         ? "No top performers added for this event yet."
-        : null;
+        : shownTopPerformers.length === 0
+          ? "Nobody matches this search."
+          : null;
 
   // Available course filters
   const courseOptions = useMemo(() => {
@@ -1507,21 +1456,78 @@ function AdminPageContent() {
 
   // Filter participants
   const filteredParticipants = useMemo(() => {
-    return participants.filter((p) => {
-      const matchesSearch =
-        !participantSearch.trim() ||
-        p.name.toLowerCase().includes(participantSearch.toLowerCase()) ||
-        p.email.toLowerCase().includes(participantSearch.toLowerCase()) ||
-        p.rollNo.toLowerCase().includes(participantSearch.toLowerCase()) ||
-        p.course.toLowerCase().includes(participantSearch.toLowerCase()) ||
-        (p.certificateId && p.certificateId.toLowerCase().includes(participantSearch.toLowerCase()));
-
-      const matchesCourse =
-        selectedCourseFilter === "ALL" || p.course === selectedCourseFilter;
-
-      return matchesSearch && matchesCourse;
-    });
+    const inCourse = selectedCourseFilter === "ALL" ? participants : participants.filter((p) => p.course === selectedCourseFilter);
+    return filterRows(inCourse, participantSearch, (p) => [p.name, p.email, p.rollNo, p.course, p.certificateId]);
   }, [participants, participantSearch, selectedCourseFilter]);
+
+  const certCounts: SectionCounts = {
+    participants: loadingParticipants ? null : participants.length,
+    participationIssued: loadingParticipants ? null : participants.filter((p) => p.certificateId).length,
+    topPerformers: loadingTopPerformers || topPerformersEvent?.id !== selectedEventId ? null : topPerformers.length,
+    excellenceIssued:
+      loadingTopPerformers || topPerformersEvent?.id !== selectedEventId ? null : topPerformers.filter((t) => t.certificateId).length,
+    organisers: organiserCount,
+    volunteers: volunteerCount,
+  };
+
+  // Keep ?tab=registrations&event=…&section=… in the address bar, so reloads and shared links open the same list.
+  const writeCertUrl = (patch: { event?: string; section?: CertSection }) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", "registrations");
+    if (patch.event) params.set("event", patch.event);
+    if (patch.section) params.set("section", patch.section);
+    router.replace(`${window.location.pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const selectCertEvent = (id: string) => {
+    if (!id || id === selectedEventId) return;
+    setSelectedEventId(id);
+    setInspectingEventId(id);
+    setParticipantSearch("");
+    setSelectedCourseFilter("ALL");
+    setParticipantPage(1);
+    setTopPerformerSearch("");
+    setShowAddTopPerformer(false);
+    setOrganiserCount(null);
+    setVolunteerCount(null);
+    writeCertUrl({ event: id });
+  };
+
+  const selectCertSection = (section: CertSection) => {
+    setCertSection(section);
+    writeCertUrl({ section });
+  };
+
+  // One Excel file with every list of the chosen event, a sheet each.
+  const handleExportAllCertificates = async () => {
+    const ev = currentViewEvent;
+    if (!ev || exportingAll) return;
+    setExportingAll(true);
+    try {
+      const [orgJson, volJson] = await Promise.all([
+        fetch(`/api/admin/events/${ev.id}/organisers`, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+        fetch(`/api/admin/events/${ev.id}/volunteers`, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+      ]);
+      const origin = window.location.origin;
+      const XLSX = await import("xlsx");
+      const wb = XLSX.utils.book_new();
+      const addSheet = (name: string, rows: Record<string, string>[]) => {
+        const sheet = rows.length ? XLSX.utils.json_to_sheet(rows) : XLSX.utils.aoa_to_sheet([["None for this event"]]);
+        XLSX.utils.book_append_sheet(wb, sheet, name);
+      };
+      addSheet("Participants", participantExportRows(participants, origin));
+      addSheet("Top Performers", topPerformerExportRows(topPerformers, origin));
+      addSheet("Organising Team", organiserExportRows(Array.isArray(orgJson?.data?.organisers) ? orgJson.data.organisers : [], origin));
+      addSheet("Volunteers", volunteerExportRows(Array.isArray(volJson?.data?.volunteers) ? volJson.data.volunteers : [], origin));
+      XLSX.writeFile(wb, exportFileName(ev.name, "Certificates").replace(/\.csv$/, ".xlsx"));
+      toast.success("Exported every list of this event");
+    } catch (err) {
+      console.error("Export all failed:", err);
+      toast.error("Could not export this event's lists.");
+    } finally {
+      setExportingAll(false);
+    }
+  };
 
   // Show the list 50 rows at a time. The page is clamped at render time, so a shrinking
   // list (new search, a removed attendee) can never leave the table on an empty page.
@@ -1916,7 +1922,7 @@ function AdminPageContent() {
                       section="events"
                       noun="events"
                       count={events.length}
-                      consequences="Every event's registrations, certificates (participation, Excellence and Appreciation), top performers and gallery entries go with them, and the attendance portal is switched off. Team members are not affected."
+                      consequences="Every event's participants, certificates (participation, Excellence and Appreciation), top performers and gallery entries go with them, and the attendance portal is switched off. Team members are not affected."
                       onDeleted={async () => {
                         setInspectingEventId(null);
                         setSelectedEventId("");
@@ -2094,156 +2100,99 @@ function AdminPageContent() {
             {/* ══════════════════════════════════════════════════ */}
             {activeTab === "registrations" && (
               currentViewEvent ? (
-                <>
+                <div className="space-y-5 sm:space-y-6">
+                  <CertificatesHeader
+                    events={events}
+                    selectedEventId={selectedEventId}
+                    activeEventId={portalConfig?.active_event_id}
+                    onSelectEvent={selectCertEvent}
+                    section={certSection}
+                    onSection={selectCertSection}
+                    counts={certCounts}
+                    onExportAll={handleExportAllCertificates}
+                    exporting={exportingAll}
+                  />
+
+                  {/* ── PARTICIPANTS ─────────────────────────────── */}
+                  <div id="cert-panel-participants" role="tabpanel" aria-labelledby="cert-tab-participants" className={certSection === "participants" ? "rounded-3xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5 lg:p-6" : "hidden"}>
                   <section
                     ref={attendeesSectionRef}
-                className="space-y-5 scroll-mt-24"
+                className="space-y-4 scroll-mt-24"
               >
-                {/* Header with Title & Event Context Selector */}
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                        Registrations
-                      </h2>
-                      <span className="max-w-full truncate px-2.5 py-0.5 rounded-full text-xs font-mono bg-[#6C63FF]/20 border border-[#6C63FF]/40 text-[#A78BFA]">
-                        {currentViewEvent.name}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#71717A] mt-1">
-                      Official student attendance submissions, registration records, and credential management for this session.
-                    </p>
-                  </div>
+                <SectionHeading
+                  title="Participants"
+                  description={<>Attendance submissions and Certificates of Participation for <span className="text-[#A78BFA]">{currentViewEvent.name}</span>.</>}
+                >
+                  <AttendeeImportDialog
+                    key={currentViewEvent.id}
+                    eventId={currentViewEvent.id}
+                    eventName={currentViewEvent.name}
+                    eventDate={currentViewEvent.event_date?.trim() ? currentViewEvent.event_date : null}
+                    existingEmails={participants.map((p) => p.email)}
+                    onImported={() => fetchParticipants(currentViewEvent.id)}
+                  />
+                  <ExportButton
+                    onClick={handleExportCSV}
+                    disabled={loadingParticipants || filteredParticipants.length === 0}
+                    label={participantSearch.trim() || selectedCourseFilter !== "ALL" ? "Export matches" : "Export"}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleBulkSendEmails}
+                    disabled={participants.length === 0}
+                    className={TOOLBAR_BUTTON}
+                    title="Email every participant their certificate"
+                  >
+                    <Send className="h-4 w-4 text-[#A78BFA]" />
+                    <span>Email all</span>
+                  </button>
+                  <DeleteAllButton
+                    section="registrations"
+                    noun="participants"
+                    count={participants.length}
+                    eventId={currentViewEvent.id}
+                    scope={`for "${currentViewEvent.name}"`}
+                    consequences="Their attendance records and the certificates issued through them are deleted, so those certificate links stop verifying. Certificates of Appreciation are kept."
+                    onDeleted={async () => {
+                      await Promise.all([fetchParticipants(currentViewEvent.id), fetchTopPerformers()]);
+                    }}
+                  />
+                </SectionHeading>
 
-                  {/* Event Selector & Actions */}
-                  <div className="flex min-w-0 flex-wrap items-center gap-2.5">
-                    {/* Event Select Dropdown */}
-                    <div className="relative w-full sm:w-auto">
-                      <select
-                        value={selectedEventId}
-                        onChange={(e) => {
-                          setSelectedEventId(e.target.value);
-                          setInspectingEventId(e.target.value);
-                        }}
-                        className="h-11 w-full truncate pl-3.5 pr-8 rounded-xl text-xs bg-[#111117] border border-white/[0.1] text-white focus:outline-none focus:border-[#6C63FF] transition-colors cursor-pointer appearance-none sm:h-10 sm:w-auto sm:max-w-xs"
-                      >
-                        {events.map((ev) => (
-                          <option key={ev.id} value={ev.id}>
-                            {ev.name} ({formatDate(ev.event_date, ev.event_end_date)})
-                          </option>
-                        ))}
-                      </select>
-                      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A]">
-                        <SlidersHorizontal className="w-3.5 h-3.5" />
-                      </div>
-                    </div>
-
-                    {/* Import attendees from Excel / CSV */}
-                    <AttendeeImportDialog
-                      key={currentViewEvent.id}
-                      eventId={currentViewEvent.id}
-                      eventName={currentViewEvent.name}
-                      eventDate={currentViewEvent.event_date?.trim() ? currentViewEvent.event_date : null}
-                      existingEmails={participants.map((p) => p.email)}
-                      onImported={() => fetchParticipants(currentViewEvent.id)}
-                    />
-
-                    {/* Issue Certificates of Appreciation to the organising team */}
-                    <OrganiserIssueDialog
-                      key={`org-${currentViewEvent.id}`}
-                      eventId={currentViewEvent.id}
-                      eventName={currentViewEvent.name}
-                      eventHasDate={Boolean(currentViewEvent.event_date?.trim())}
-                      onIssued={() => fetchOrganisers(currentViewEvent.id)}
-                    />
-
-                    {/* Export CSV Button */}
-                    <button
-                      onClick={handleExportCSV}
-                      disabled={participants.length === 0}
-                      className="h-10 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
-                      title="Export Attendees to CSV"
-                    >
-                      <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                      <span className="hidden sm:inline">Export CSV</span>
-                    </button>
-
-                    {/* Bulk Email Certificates Button */}
-                    <button
-                      onClick={handleBulkSendEmails}
-                      disabled={participants.length === 0}
-                      className="h-10 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-40"
-                      title="Email Certificates to all attendees"
-                    >
-                      <Send className="w-4 h-4 text-[#A78BFA]" />
-                      <span className="hidden sm:inline">Email Certificates</span>
-                    </button>
-
-                    {/* Delete every registration of this event (asks twice) */}
-                    <DeleteAllButton
-                      section="registrations"
-                      noun="registrations"
-                      count={participants.length}
-                      eventId={currentViewEvent.id}
-                      scope={`for "${currentViewEvent.name}"`}
-                      consequences="Their attendance records and the certificates issued through them are deleted, so those certificate links stop verifying. Certificates of Appreciation are kept."
-                      onDeleted={async () => {
-                        await Promise.all([fetchParticipants(currentViewEvent.id), fetchTopPerformers()]);
-                      }}
-                    />
-
-                    {/* Close Inspector Button */}
-                  </div>
-                </div>
-
-
-              {/* Search & Course Filter Controls */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                {/* Search Bar */}
-                <div className="relative flex-1 max-w-md">
-                  <Search className="w-4 h-4 text-[#52525B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+                  <SearchField
                     value={participantSearch}
-                    onChange={(e) => {
-                      setParticipantSearch(e.target.value);
+                    onChange={(value) => {
+                      setParticipantSearch(value);
                       setParticipantPage(1);
                     }}
-                    placeholder="Search name, roll no, email or certificate…"
-                    className="w-full h-10 pl-10 pr-9 rounded-xl text-xs bg-[#111117] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] transition-colors"
+                    placeholder="Search name, roll no, email, course or certificate…"
+                    shown={filteredParticipants.length}
+                    total={participants.length}
                   />
-                  {participantSearch && (
-                    <button
-                      onClick={() => setParticipantSearch("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                  {courseOptions.length > 2 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 xl:pb-0" role="group" aria-label="Filter by course">
+                      {courseOptions.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCourseFilter(c);
+                            setParticipantPage(1);
+                          }}
+                          aria-pressed={selectedCourseFilter === c}
+                          className={`h-8 shrink-0 cursor-pointer whitespace-nowrap rounded-lg px-3 font-mono text-[11px] uppercase transition-all ${
+                            selectedCourseFilter === c
+                              ? "bg-[#6C63FF] font-bold text-white"
+                              : "border border-white/[0.06] bg-white/[0.03] text-[#71717A] hover:bg-white/[0.06] hover:text-white"
+                          }`}
+                        >
+                          {c === "ALL" ? "All courses" : c}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
-
-                {/* Course Filter Pills */}
-                {courseOptions.length > 2 && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                    {courseOptions.map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => {
-                          setSelectedCourseFilter(c);
-                          setParticipantPage(1);
-                        }}
-                        className={`h-8 px-3 rounded-lg text-[11px] font-mono uppercase whitespace-nowrap transition-all cursor-pointer ${
-                          selectedCourseFilter === c
-                            ? "bg-[#6C63FF] text-white font-bold"
-                            : "bg-white/[0.03] text-[#71717A] hover:text-white hover:bg-white/[0.06] border border-white/[0.06]"
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
 
               {/* ── PARTICIPANTS TABLE CONTAINER ────────────── */}
               <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/10 shadow-2xl overflow-hidden">
@@ -2282,7 +2231,10 @@ function AdminPageContent() {
                               {getInitials(p.name)}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-white">{p.name}</p>
+                              <p className="truncate text-sm font-semibold text-white">
+                                <span className="mr-1.5 font-mono text-[11px] font-normal text-[#52525B]">{participantRange.from + idx}.</span>
+                                {p.name}
+                              </p>
                               <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#71717A]">
                                 <span className="font-mono">Roll: {p.rollNo}</span>
                                 {p.course && (
@@ -2329,7 +2281,8 @@ function AdminPageContent() {
                       <table className="w-full min-w-[760px] text-left text-xs border-collapse">
                         <thead>
                           <tr className="sticky top-0 z-10 border-b border-white/[0.06] bg-[#13131a] text-[#71717A] font-mono text-[10.5px] uppercase tracking-wider">
-                            <th className="py-3.5 px-5">Participant</th>
+                            <th className="w-12 py-3.5 pl-5 pr-2">#</th>
+                            <th className="py-3.5 px-4">Participant</th>
                             <th className="py-3.5 px-4">Contact</th>
                             <th className="py-3.5 px-4">Academic Details</th>
                             <th className="py-3.5 px-4">Submitted At</th>
@@ -2343,8 +2296,9 @@ function AdminPageContent() {
                               key={`${p.email}-${idx}`}
                               className="hover:bg-white/[0.025] transition-colors group"
                             >
+                              <td className="py-4 pl-5 pr-2 font-mono text-[11px] tabular-nums text-[#52525B]">{participantRange.from + idx}</td>
                               {/* Name with Avatar Initials */}
-                              <td className="py-4 px-5">
+                              <td className="py-4 px-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#6C63FF]/20 to-[#A78BFA]/20 border border-[#6C63FF]/30 flex items-center justify-center text-[10px] font-bold text-[#A78BFA] shrink-0 font-mono">
                                     {getInitials(p.name)}
@@ -2465,70 +2419,66 @@ function AdminPageContent() {
               </div>
             </section>
 
-            {/* ══════════════════════════════════════════════════ */}
-            {/* ── TOP PERFORMERS ──────────────────────────────── */}
-            {/* ══════════════════════════════════════════════════ */}
-            <section className="space-y-5 pt-8 border-t border-white/[0.08]">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                    Top Performers
-                  </h2>
-                  <p className="text-xs text-[#71717A] mt-1">
-                    {canManageTopPerformers
-                      ? "Manage excellence awards for this event."
-                      : "Top Performers can only be managed for the active event. Set this event as active to manage its awards."}
-                  </p>
-                </div>
-                {canManageTopPerformers && (
-                  <button
-                    type="button"
-                    onClick={handleIssueAllPendingTopPerformers}
-                    disabled={
-                      loadingTopPerformers ||
-                      topPerformersEvent?.id !== currentViewEvent.id ||
-                      issuingAllTopPerformers ||
-                      issuingTopPerformerId !== null ||
-                      topPerformers.filter((performer) => !performer.certificateId).length === 0
-                    }
-                    className="inline-flex h-9 items-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    {issuingAllTopPerformers ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Award className="h-3.5 w-3.5" />}
-                    {issuingAllTopPerformers ? "Issuing Pending…" : "Issue All Pending"}
-                  </button>
-                )}
-              </div>
-
-              {canManageTopPerformers && (
-                <>
-
-                  <div className="flex flex-wrap justify-end gap-2.5">
-                    <button
-                      type="button"
-                      onClick={handleExportTopPerformersCSV}
-                      disabled={loadingTopPerformers || topPerformersEvent?.id !== currentViewEvent.id || topPerformers.length === 0}
-                      className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-semibold text-white transition-all hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
-                      title="Export Top Performers to CSV"
-                    >
-                      <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
-                      <span>Export CSV</span>
-                    </button>
-                    <DeleteAllButton
-                      section="top-performers"
-                      noun="top performers"
-                      count={topPerformers.length}
-                      eventId={currentViewEvent.id}
-                      scope={`for "${currentViewEvent.name}"`}
-                      disabled={loadingTopPerformers || topPerformersEvent?.id !== currentViewEvent.id}
-                      consequences="Their Certificates of Excellence are deleted too, so those certificate links stop verifying."
-                      onDeleted={fetchTopPerformers}
-                    />
-                    <TopPerformerImportDialog
-                      existingEmails={topPerformers.map((performer) => performer.email)}
-                      onImported={fetchTopPerformers}
-                    />
                   </div>
 
+                  {/* ── TOP PERFORMERS ───────────────────────────── */}
+                  <div id="cert-panel-top-performers" role="tabpanel" aria-labelledby="cert-tab-top-performers" className={certSection === "top-performers" ? "rounded-3xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5 lg:p-6" : "hidden"}>
+            <section className="space-y-4">
+              <SectionHeading
+                title="Top Performers"
+                description={<>Certificates of Excellence for <span className="text-amber-300">{currentViewEvent.name}</span>. The rank becomes the award, e.g. 1st Position.</>}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowAddTopPerformer((open) => !open)}
+                  aria-expanded={showAddTopPerformer}
+                  className={TOOLBAR_BUTTON}
+                >
+                  {showAddTopPerformer ? <X className="h-4 w-4" /> : <UserPlus className="h-4 w-4 text-amber-400" />}
+                  <span>{showAddTopPerformer ? "Close form" : "Add one"}</span>
+                </button>
+                <TopPerformerImportDialog
+                  key={`tp-import-${currentViewEvent.id}`}
+                  eventId={currentViewEvent.id}
+                  existingEmails={topPerformers.map((performer) => performer.email)}
+                  onImported={fetchTopPerformers}
+                />
+                <ExportButton
+                  onClick={handleExportTopPerformersCSV}
+                  disabled={loadingTopPerformers || topPerformersEvent?.id !== currentViewEvent.id || shownTopPerformers.length === 0}
+                  label={topPerformerSearch.trim() ? "Export matches" : "Export"}
+                />
+                <button
+                  type="button"
+                  onClick={handleIssueAllPendingTopPerformers}
+                  disabled={
+                    loadingTopPerformers ||
+                    topPerformersEvent?.id !== currentViewEvent.id ||
+                    issuingAllTopPerformers ||
+                    issuingTopPerformerId !== null ||
+                    topPerformers.filter((performer) => !performer.certificateId).length === 0
+                  }
+                  className="inline-flex h-10 cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-amber-500/25 bg-amber-500/10 px-3.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {issuingAllTopPerformers ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Award className="h-3.5 w-3.5" />}
+                  {issuingAllTopPerformers
+                    ? "Issuing…"
+                    : `Issue pending (${topPerformers.filter((performer) => !performer.certificateId).length})`}
+                </button>
+                <DeleteAllButton
+                  section="top-performers"
+                  noun="top performers"
+                  count={topPerformers.length}
+                  eventId={currentViewEvent.id}
+                  scope={`for "${currentViewEvent.name}"`}
+                  disabled={loadingTopPerformers || topPerformersEvent?.id !== currentViewEvent.id}
+                  consequences="Their Certificates of Excellence are deleted too, so those certificate links stop verifying."
+                  onDeleted={fetchTopPerformers}
+                />
+              </SectionHeading>
+
+                  {showAddTopPerformer && (
+                  <div className="rounded-2xl border border-amber-500/15 bg-amber-500/[0.03] p-3 sm:p-4">
                   <form onSubmit={handleAddTopPerformer} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
                     <label className="space-y-1.5">
                       <span className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA]">Rank</span>
@@ -2600,6 +2550,16 @@ function AdminPageContent() {
                       </button>
                     </div>
                   </form>
+                  </div>
+                  )}
+
+                  <SearchField
+                    value={topPerformerSearch}
+                    onChange={setTopPerformerSearch}
+                    placeholder="Search name, email, roll no, course, award or certificate…"
+                    shown={shownTopPerformers.length}
+                    total={topPerformers.length}
+                  />
 
                   {topPerformersError && (
                     <p role="alert" className="text-xs text-red-400">{topPerformersError}</p>
@@ -2612,10 +2572,10 @@ function AdminPageContent() {
                       </p>
                     ) : (
                       <ul className="space-y-3">
-                        {topPerformers.map((performer) => (
+                        {shownTopPerformers.map((performer) => (
                           <li key={`m-${performer.id}`} className="space-y-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
                             <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
+                              <div className="min-w-0 flex-1">
                                 <p className="font-mono text-xs font-semibold text-amber-400">{getAwardTitle(performer.rank)}</p>
                                 <p className="mt-1 truncate text-sm font-semibold text-white">{performer.fullName}</p>
                                 <p className="text-[11px] text-[#71717A]">Roll: {performer.rollNo} · {performer.course}</p>
@@ -2703,13 +2663,13 @@ function AdminPageContent() {
                               {topPerformersError ? "Top performers are unavailable." : "Loading event details…"}
                             </td>
                           </tr>
-                        ) : topPerformers.length === 0 ? (
+                        ) : shownTopPerformers.length === 0 ? (
                           <tr>
                             <td colSpan={6} className="px-4 py-8 text-center text-[#71717A]">
-                              No top performers added for this event yet.
+                              {topPerformers.length === 0 ? "No top performers added for this event yet." : "Nobody matches this search."}
                             </td>
                           </tr>
-                        ) : topPerformers.map((performer) => (
+                        ) : shownTopPerformers.map((performer) => (
                           <tr key={performer.id} className="text-[#D4D4D8] hover:bg-white/[0.02]">
                             <td className="px-4 py-3 font-mono font-semibold text-amber-400">{getAwardTitle(performer.rank)}</td>
                             <td className="px-4 py-3">
@@ -2779,194 +2739,33 @@ function AdminPageContent() {
                       </tbody>
                     </table>
                   </div>
-                </>
-              )}
             </section>
-
-            {/* ══════════════════════════════════════════════════ */}
-            {/* ── ORGANISING TEAM (CERTIFICATES OF APPRECIATION) ─ */}
-            {/* ══════════════════════════════════════════════════ */}
-            <section className="space-y-5 pt-8 border-t border-white/[0.08]">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[10px] font-mono uppercase tracking-wider text-[#C4B5FD] mb-2">
-                    <Users className="w-3 h-3" />
-                    <span>Organising Team</span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                    Certificates of Appreciation
-                  </h2>
-                  <p className="text-xs text-[#71717A] mt-1">
-                    Appreciation certificates issued to the organising team of{" "}
-                    <span className="text-[#A78BFA]">{currentViewEvent.name}</span>. Use the Organising Team button above to issue more.
-                  </p>
+
+                  {/* ── ORGANISING TEAM ──────────────────────────── */}
+                  <div id="cert-panel-organisers" role="tabpanel" aria-labelledby="cert-tab-organisers" className={certSection === "organisers" ? "rounded-3xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5 lg:p-6" : "hidden"}>
+                    <OrganiserSection
+                      key={`org-${currentViewEvent.id}`}
+                      eventId={currentViewEvent.id}
+                      eventName={currentViewEvent.name}
+                      eventHasDate={Boolean(currentViewEvent.event_date?.trim())}
+                      confirm={showConfirm}
+                      onCountChange={setOrganiserCount}
+                    />
+                  </div>
+
+                  {/* ── VOLUNTEERS ───────────────────────────────── */}
+                  <div id="cert-panel-volunteers" role="tabpanel" aria-labelledby="cert-tab-volunteers" className={certSection === "volunteers" ? "rounded-3xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5 lg:p-6" : "hidden"}>
+                    <VolunteerSection
+                      key={`vol-${currentViewEvent.id}`}
+                      eventId={currentViewEvent.id}
+                      eventName={currentViewEvent.name}
+                      eventHasDate={Boolean(currentViewEvent.event_date?.trim())}
+                      confirm={showConfirm}
+                      onCountChange={setVolunteerCount}
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2.5 self-start">
-                  <span className="text-xs font-mono text-[#C4B5FD] px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] whitespace-nowrap">
-                    {organisers.length} issued
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleExportOrganisersCSV}
-                    disabled={loadingOrganisers || organisers.length === 0}
-                    className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-semibold text-white transition-all hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
-                    title="Export Certificates of Appreciation to CSV"
-                  >
-                    <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
-                    <span className="hidden sm:inline">Export CSV</span>
-                  </button>
-                  <DeleteAllButton
-                    section="organisers"
-                    noun="Certificates of Appreciation"
-                    count={organisers.length}
-                    eventId={currentViewEvent.id}
-                    scope={`for "${currentViewEvent.name}"`}
-                    disabled={loadingOrganisers}
-                    compact
-                    consequences="Those certificate links stop verifying. Registrations and other certificates are kept."
-                    onDeleted={() => fetchOrganisers(currentViewEvent.id)}
-                  />
-                </div>
-              </div>
-
-              {/* Phones: one card per certificate (a 5-column table cannot fit) */}
-              <div className="md:hidden">
-                {loadingOrganisers || organisers.length === 0 ? (
-                  <p className="rounded-2xl border border-white/[0.08] px-4 py-8 text-center text-xs text-[#71717A]">
-                    {loadingOrganisers ? "Loading certificates…" : "No appreciation certificates issued for this event yet."}
-                  </p>
-                ) : (
-                  <ul className="space-y-3">
-                    {organisers.map((org) => (
-                      <li key={`m-${org.certificateId}`} className="space-y-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-white">{org.fullName}</p>
-                          {org.email && <p className="truncate font-mono text-[11px] text-[#71717A]">{org.email}</p>}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                          <span className="rounded-lg border border-[#8B5CF6]/20 bg-[#8B5CF6]/10 px-2.5 py-1 font-medium text-[#C4B5FD]">
-                            {org.role || (org.wing ? `${org.wing} Wing` : "Organising Team")}
-                          </span>
-                          <span className="font-mono text-[#71717A]">{formatDate(org.issueDate)}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <Link href={`/verify/${org.certificateId}`} target="_blank" className="flex min-h-10 items-center truncate font-mono text-xs text-[#A78BFA]">
-                            {org.certificateId}
-                          </Link>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <a
-                              href={`/api/certificates/${org.certificateId}`}
-                              download={`${org.certificateId}.pdf`}
-                              aria-label={`Download certificate ${org.certificateId}`}
-                              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-[#A1A1AA]"
-                            >
-                              <Download className="h-4 w-4" />
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => handleRevokeOrganiser(currentViewEvent.id, org)}
-                              disabled={deletingOrganiserId === org.certificateId}
-                              aria-label={`Remove certificate ${org.certificateId}`}
-                              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-[#71717A] disabled:opacity-40"
-                            >
-                              {deletingOrganiserId === org.certificateId ? (
-                                <div className="h-3.5 w-3.5 animate-spin rounded-full border border-red-400/30 border-t-red-400" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <div className="hidden max-w-full overflow-x-auto rounded-2xl border border-white/[0.08] md:block">
-                <table className="w-full min-w-[640px] text-left text-xs">
-                  <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-[#71717A]">
-                    <tr>
-                      <th className="px-4 py-3">Member</th>
-                      <th className="px-4 py-3">Role</th>
-                      <th className="px-4 py-3">Certificate ID</th>
-                      <th className="px-4 py-3">Issued</th>
-                      <th className="px-4 py-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.05]">
-                    {loadingOrganisers ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-[#71717A]">
-                          <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Loading certificates…</span>
-                        </td>
-                      </tr>
-                    ) : organisers.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-[#71717A]">
-                          No appreciation certificates issued for this event yet.
-                        </td>
-                      </tr>
-                    ) : organisers.map((org) => (
-                      <tr key={org.certificateId} className="text-[#D4D4D8] hover:bg-white/[0.02]">
-                        <td className="px-4 py-3">
-                          <span className="block font-semibold text-white">{org.fullName}</span>
-                          {org.email && <span className="text-[10px] text-[#71717A] font-mono">{org.email}</span>}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="inline-block px-2.5 py-1 rounded-lg bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[#C4B5FD] font-medium text-[11px]">
-                            {org.role || (org.wing ? `${org.wing} Wing` : "Organising Team")}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Link href={`/verify/${org.certificateId}`} target="_blank" className="font-mono text-[11px] text-[#A78BFA] hover:underline">
-                            {org.certificateId}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-[11px] text-[#71717A] whitespace-nowrap">{formatDate(org.issueDate)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <a
-                              href={`/api/certificates/${org.certificateId}`}
-                              download={`${org.certificateId}.pdf`}
-                              className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center justify-center transition-colors"
-                              title="Download PDF"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => handleRevokeOrganiser(currentViewEvent.id, org)}
-                              disabled={deletingOrganiserId === org.certificateId}
-                              className="h-7 w-7 rounded-lg bg-white/[0.03] hover:bg-red-500/20 text-[#71717A] hover:text-red-400 border border-white/[0.06] hover:border-red-500/30 flex items-center justify-center transition-colors disabled:opacity-40"
-                              title="Remove certificate"
-                            >
-                              {deletingOrganiserId === org.certificateId ? (
-                                <div className="w-3 h-3 rounded-full border border-red-400/30 border-t-red-400 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            {/* ══════════════════════════════════════════════════ */}
-            {/* ── VOLUNTEERS (CERTIFICATES OF VOLUNTEERING) ───── */}
-            {/* ══════════════════════════════════════════════════ */}
-            <VolunteerSection
-              key={`vol-${currentViewEvent.id}`}
-              eventId={currentViewEvent.id}
-              eventName={currentViewEvent.name}
-              eventHasDate={Boolean(currentViewEvent.event_date?.trim())}
-              confirm={showConfirm}
-            />
-                </>
               ) : (
                 <div className="p-12 text-center rounded-[2rem] bg-white/[0.02] border border-white/10 space-y-4">
                   <div className="w-12 h-12 mx-auto rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-[#71717A]">
@@ -2975,7 +2774,7 @@ function AdminPageContent() {
                   <div className="space-y-1">
                     <h3 className="text-base font-semibold text-white">No Events Available</h3>
                     <p className="text-xs text-[#71717A] max-w-sm mx-auto">
-                      Create an event first in the Events tab to view attendee registrations.
+                      Create an event first in the Events tab to view participants and certificates.
                     </p>
                   </div>
                   <button

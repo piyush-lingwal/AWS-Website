@@ -23,6 +23,8 @@ interface ImportResult {
 }
 
 interface TopPerformerImportDialogProps {
+  /** The event to import into (the one the admin is viewing). */
+  eventId?: string;
   existingEmails: string[];
   onImported: () => Promise<void>;
 }
@@ -134,7 +136,7 @@ function parseMatrix(matrix: unknown[][], existingEmails: Set<string>): ImportRo
   });
 }
 
-export function TopPerformerImportDialog({ existingEmails, onImported }: TopPerformerImportDialogProps) {
+export function TopPerformerImportDialog({ eventId, existingEmails, onImported }: TopPerformerImportDialogProps) {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [pasteText, setPasteText] = useState("");
@@ -237,6 +239,7 @@ export function TopPerformerImportDialog({ existingEmails, onImported }: TopPerf
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          eventId,
           rows: ready.map((row) => ({
             rowNumber: row.rowNumber,
             rank: Number(row.rank),

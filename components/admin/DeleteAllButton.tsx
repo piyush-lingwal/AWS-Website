@@ -17,7 +17,7 @@ import { BULK_DELETE_CONFIRMATION, type BulkDeleteSection } from "@/lib/admin/bu
 
 interface DeleteAllButtonProps {
   section: BulkDeleteSection;
-  /** Plural name of the entries, e.g. "registrations". */
+  /** Plural name of the entries, e.g. "participants". */
   noun: string;
   /** How many entries the admin can see. The button is disabled at 0. */
   count: number;
@@ -34,7 +34,7 @@ interface DeleteAllButtonProps {
 
 const COUNT_LABELS: Record<string, [string, string]> = {
   events: ["event", "events"],
-  registrations: ["registration", "registrations"],
+  registrations: ["participant", "participants"],
   certificates: ["certificate", "certificates"],
   participants: ["unused participant record", "unused participant records"],
   topPerformers: ["top performer", "top performers"],

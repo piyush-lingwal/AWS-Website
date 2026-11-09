@@ -24,7 +24,7 @@ type NavLink = { id: string; label: string; href: string; icon: React.ComponentT
 const TAB_LINKS: { id: AdminTab; label: string; icon: NavLink["icon"] }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "events", label: "Events", icon: Calendar },
-  { id: "registrations", label: "Registrations", icon: Users },
+  { id: "registrations", label: "Certificates", icon: Users },
   { id: "team", label: "Team", icon: GraduationCap },
 ];
 

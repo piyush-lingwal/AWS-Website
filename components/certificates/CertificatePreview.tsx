@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
 import {
   getAwardTitle,
   getCertificateAwardLayout,
 } from "@/lib/certificates/award-title";
 import { generateQRCodeDataUrl } from "@/lib/certificates/qr-generator";
+import { ZOOM_STEPS, fitWidth, stepZoom } from "@/lib/certificates/fit-size";
 import {
   CERTIFICATE_THEME_INFO,
   DEFAULT_CERTIFICATE_THEME,
@@ -342,6 +343,43 @@ export function CertificatePreview({
   ]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [zoom, setZoom] = useState<number>(1);
+  const [fit, setFit] = useState(0);
+
+  const viewerRef = useRef<HTMLDivElement>(null);
+
+  // Size the full-size view from the space the viewer really has (so the whole certificate
+  // is in view at 100%), and follow window resizes and rotation.
+  useLayoutEffect(() => {
+    if (!isFullscreen) return;
+    setZoom(1);
+    const el = viewerRef.current;
+    if (!el) return;
+    const measure = () => {
+      const css = getComputedStyle(el);
+      const w = el.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight);
+      const h = el.clientHeight - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom);
+      setFit(fitWidth(w, h));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [isFullscreen]);
 
   if (isLoading) {
     return (
@@ -362,44 +400,90 @@ export function CertificatePreview({
 
   return (
     <>
-      <div className="relative group/preview">
-        <div
-          className="w-full aspect-[3300/2550] rounded-xl overflow-hidden border border-white/10 shadow-2xl shadow-black/80 bg-white select-none transition-all duration-300 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
-          dangerouslySetInnerHTML={{ __html: renderedSvg }}
-        />
+      <div className="relative">
+        {/* The whole certificate is the button: tap or click to open it full size. */}
         <button
           type="button"
           onClick={() => setIsFullscreen(true)}
-          className="absolute bottom-3 right-3 px-3 py-1.5 rounded-lg bg-slate-950/80 hover:bg-slate-900 border border-white/15 text-slate-200 text-xs font-medium backdrop-blur-md opacity-0 group-hover/preview:opacity-100 transition-all duration-200 shadow-lg flex items-center gap-1.5 cursor-pointer"
+          aria-label="Open the certificate full size"
+          className="group/preview relative block w-full cursor-zoom-in overflow-hidden rounded-lg border border-white/10 bg-white shadow-2xl shadow-black/60 transition-shadow duration-300 hover:shadow-[0_25px_80px_-20px_rgba(108,99,255,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF] sm:rounded-xl"
         >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-          </svg>
-          Expand
+          <span
+            className={`block aspect-[3300/2550] w-full select-none [&_svg]:block [&_svg]:h-full [&_svg]:w-full ${renderedSvg ? "" : "animate-pulse bg-slate-200"}`}
+            dangerouslySetInnerHTML={{ __html: renderedSvg }}
+          />
+          <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg border border-white/15 bg-slate-950/85 px-2.5 py-1.5 text-[11px] font-medium text-slate-100 shadow-lg backdrop-blur-md sm:bottom-3 sm:right-3 sm:text-xs">
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+            </svg>
+            Tap to enlarge
+          </span>
         </button>
       </div>
 
-      {/* Fullscreen Lightbox Modal */}
+      {/* Full-size view. It opens fitted to the screen so the whole certificate is
+          visible; the buttons zoom in, and a finger (or the scroll bars) moves around. */}
       {isFullscreen && (
         <div
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md p-4 sm:p-8 flex flex-col items-center justify-center animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] flex flex-col bg-black/90 backdrop-blur-md"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Certificate, full size"
           onClick={() => setIsFullscreen(false)}
         >
+          <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-3 sm:px-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1.5" role="group" aria-label="Zoom">
+              <button
+                type="button"
+                onClick={() => setZoom((z) => stepZoom(z, -1))}
+                disabled={zoom <= ZOOM_STEPS[0]}
+                aria-label="Zoom out"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-800/90 text-white transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="M5 12h14" /></svg>
+              </button>
+              <span className="min-w-[3.25rem] text-center font-mono text-xs text-slate-300" aria-live="polite">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setZoom((z) => stepZoom(z, 1))}
+                disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
+                aria-label="Zoom in"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-800/90 text-white transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(false)}
+              autoFocus
+              className="inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/20 bg-slate-800/90 px-5 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+              Close
+            </button>
+          </div>
           <div
-            className="relative max-w-6xl w-full aspect-[3300/2550] max-h-[90vh] rounded-2xl overflow-hidden border border-white/20 shadow-2xl bg-white [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
-            onClick={(e) => e.stopPropagation()}
-            dangerouslySetInnerHTML={{ __html: renderedSvg }}
-          />
-          <button
-            type="button"
+            ref={viewerRef}
+            className="flex min-h-0 flex-1 overflow-auto overscroll-contain p-4 sm:px-8"
+            style={{ touchAction: "pan-x pan-y pinch-zoom", WebkitOverflowScrolling: "touch" }}
+            data-lenis-prevent
             onClick={() => setIsFullscreen(false)}
-            className="mt-4 px-5 py-2 rounded-full bg-slate-800/90 hover:bg-slate-700 text-white text-xs font-semibold tracking-wide border border-white/20 transition-all cursor-pointer flex items-center gap-2 shadow-xl"
           >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-            Close Fullscreen (Esc)
-          </button>
+            <div
+              className="m-auto aspect-[3300/2550] shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white shadow-2xl [&_svg]:block [&_svg]:h-full [&_svg]:w-full"
+              style={{ width: fit ? `${Math.round(fit * zoom)}px` : "100%" }}
+              onClick={(e) => e.stopPropagation()}
+              dangerouslySetInnerHTML={{ __html: renderedSvg }}
+            />
+          </div>
+          <p className="shrink-0 px-4 pb-3 text-center text-[11px] text-slate-400" onClick={(e) => e.stopPropagation()}>
+            {zoom > 1 ? "Drag to move around" : "Use + to zoom in"} · Esc or tap outside to close
+          </p>
         </div>
       )}
     </>

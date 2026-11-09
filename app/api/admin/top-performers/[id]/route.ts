@@ -1,25 +1,20 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { isUuid } from "@/lib/auth/roles";
 import type { ApiResponse } from "@/types/certificate";
 
 export const dynamic = "force-dynamic";
 
+// DELETE /api/admin/top-performers/<id>?eventId=<uuid> — remove one top performer and
+// their Certificate of Excellence. With eventId the row must belong to that event.
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionClient = createClient(await cookies());
-    const { data: { user }, error: authError } = await sessionClient.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: "Please sign in to remove a top performer." } satisfies ApiResponse,
-        { status: 401 }
-      );
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const { id } = await params;
     if (!id?.trim()) {
@@ -37,32 +32,14 @@ export async function DELETE(
       );
     }
 
-    const { data: config, error: configError } = await admin
-      .from("portal_config")
-      .select("active_event_id")
-      .limit(1)
-      .single();
-
-    if (configError) {
-      console.error("[API/admin/top-performers] Active event lookup failed:", configError);
-      return NextResponse.json(
-        { success: false, error: "Failed to load the active event." } satisfies ApiResponse,
-        { status: 500 }
-      );
-    }
-    if (!config?.active_event_id) {
-      return NextResponse.json(
-        { success: false, error: "There is no active event." } satisfies ApiResponse,
-        { status: 400 }
-      );
+    const eventId = new URL(request.url).searchParams.get("eventId")?.trim().toLowerCase() || "";
+    if (eventId && !isUuid(eventId)) {
+      return NextResponse.json({ success: false, error: "Invalid event id." } satisfies ApiResponse, { status: 400 });
     }
 
-    const { data: topPerformer, error: topPerformerError } = await admin
-      .from("top_performers")
-      .select("id, event_id, participant_id")
-      .eq("id", id.trim())
-      .eq("event_id", config.active_event_id)
-      .maybeSingle();
+    let lookup = admin.from("top_performers").select("id, event_id, participant_id").eq("id", id.trim());
+    if (eventId) lookup = lookup.eq("event_id", eventId);
+    const { data: topPerformer, error: topPerformerError } = await lookup.maybeSingle();
 
     if (topPerformerError) {
       console.error("[API/admin/top-performers] Top performer lookup failed:", topPerformerError);
@@ -73,7 +50,7 @@ export async function DELETE(
     }
     if (!topPerformer) {
       return NextResponse.json(
-        { success: false, error: "Top performer not found for the active event." } satisfies ApiResponse,
+        { success: false, error: "Top performer not found for this event." } satisfies ApiResponse,
         { status: 404 }
       );
     }
@@ -99,7 +76,7 @@ export async function DELETE(
       .from("top_performers")
       .delete()
       .eq("id", topPerformer.id)
-      .eq("event_id", config.active_event_id)
+      .eq("event_id", topPerformer.event_id)
       .select("id")
       .maybeSingle();
 
