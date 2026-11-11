@@ -22,11 +22,11 @@
 -- route handlers using the SERVICE-ROLE key, which bypasses RLS. The admin
 -- UI also only calls /api/admin/*. No browser code queries tables directly.
 --
--- PREREQUISITES: 0001 applied, seed-admins.sql run, new code deployed.
+-- PREREQUISITES: 0001 applied, supabase/seed-admins.sql run, new code deployed.
 -- Otherwise authenticated users lose access to rows they could reach before.
 --
 -- ROLLBACK (emergency only): the previous permissive policies are in
--- supabase_schema_v2.sql, section "6. Row Level Security". Prefer fixing
+-- 20260929000001_base_schema.sql, section "8. Row Level Security". Prefer fixing
 -- forward; restoring them re-opens the data exposure above.
 -- ============================================================
 

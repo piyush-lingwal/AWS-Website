@@ -1,9 +1,15 @@
 # Daily housekeeping for the Media Portal: expires abandoned uploads and purges
 # failed / deleted media (files first, then rows). See docs/architecture/media-portal.md.
 #
-# Repository secrets needed (Settings -> Secrets and variables -> Actions):
-#   SITE_URL     e.g. https://sbg.example.com   (no trailing slash)
-#   CRON_SECRET  the same value as the CRON_SECRET env var on Amplify
+# To turn it on, set the SAME secret (32+ characters) in both places:
+#   - Amplify:  App settings -> Environment variables -> CRON_SECRET, then redeploy
+#   - GitHub:   Settings -> Secrets and variables -> Actions -> repository secrets
+#               SITE_URL     e.g. https://awstulas.org   (no trailing slash)
+#               CRON_SECRET  the same value as on Amplify
+#
+# Until both are set the job is skipped with a warning instead of failing, so it
+# does not send a failure email every night. A wrong secret or a server error
+# still fails the run.
 name: media-cleanup
 
 on:
@@ -31,12 +37,34 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${SITE_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
-            echo "SITE_URL and CRON_SECRET secrets must be set"; exit 1
+            echo "::warning title=Media cleanup not set up::Add the SITE_URL and CRON_SECRET repository secrets to turn on the daily media cleanup. Skipped."
+            exit 0
           fi
+          SITE_URL="${SITE_URL%/}"
           query=""
           if [ "${DRY_RUN:-false}" = "true" ]; then query="?dryRun=1"; fi
           code=$(curl -sS -o response.json -w '%{http_code}' -X POST \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             --max-time 90 "${SITE_URL}/api/cron/media-cleanup${query}")
           cat response.json; echo
-          [ "$code" = "200" ] || { echo "Cleanup failed with HTTP $code"; exit 1; }
+          case "$code" in
+            200)
+              ;;
+            404)
+              # The route answers 404 with this JSON when the site has no CRON_SECRET (job switched off).
+              if grep -q '"error":"Not found."' response.json; then
+                echo "::warning title=Media cleanup is switched off on the site::The deployed site has no CRON_SECRET (32+ characters). Set it in Amplify, redeploy, and use the same value in GitHub. Skipped."
+                exit 0
+              fi
+              echo "::error title=Cleanup endpoint not found::Nothing at ${SITE_URL}/api/cron/media-cleanup. Check the SITE_URL secret."
+              exit 1
+              ;;
+            401)
+              echo "::error title=Wrong CRON_SECRET::The CRON_SECRET in GitHub does not match the one on the site."
+              exit 1
+              ;;
+            *)
+              echo "::error title=Cleanup failed::The cleanup endpoint answered HTTP $code."
+              exit 1
+              ;;
+          esac

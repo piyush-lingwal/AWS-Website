@@ -16,6 +16,7 @@ import { Award, CalendarDays, Check, ChevronDown, Download, HandHeart, Loader2, 
 import type { DbEvent } from "@/types/certificate";
 import { formatEventDate } from "@/lib/certificates/event-date";
 import { filterRows } from "@/lib/admin/list-search";
+import { CountBone } from "@/components/admin/Skeletons";
 
 export type CertSection = "participants" | "top-performers" | "organisers" | "volunteers";
 
@@ -209,7 +210,8 @@ const TILES: {
   icon: typeof Users;
   tone: string;
   count: (c: SectionCounts) => number | null;
-  sub: (c: SectionCounts) => string;
+  /** null while loading. */
+  sub: (c: SectionCounts) => string | null;
 }[] = [
   {
     id: "participants",
@@ -217,7 +219,7 @@ const TILES: {
     icon: Users,
     tone: "text-[#A78BFA] border-[#6C63FF]/30 bg-[#6C63FF]/10",
     count: (c) => c.participants,
-    sub: (c) => (c.participationIssued === null ? "…" : `${c.participationIssued} certificates`),
+    sub: (c) => (c.participationIssued === null ? null : `${c.participationIssued} certificates`),
   },
   {
     id: "top-performers",
@@ -225,7 +227,7 @@ const TILES: {
     icon: Trophy,
     tone: "text-amber-300 border-amber-500/30 bg-amber-500/10",
     count: (c) => c.topPerformers,
-    sub: (c) => (c.excellenceIssued === null || c.topPerformers === null ? "…" : `${c.excellenceIssued} of ${c.topPerformers} issued`),
+    sub: (c) => (c.excellenceIssued === null || c.topPerformers === null ? null : `${c.excellenceIssued} of ${c.topPerformers} issued`),
   },
   {
     id: "organisers",
@@ -275,7 +277,7 @@ export function CertificatesHeader({
         <EventPicker events={events} value={selectedEventId} activeEventId={activeEventId} onChange={onSelectEvent} />
         <div className="flex items-center justify-between gap-3 lg:justify-end">
           <p className="text-xs text-[#A1A1AA]">
-            <span className="text-lg font-bold tabular-nums text-white">{total ?? "…"}</span> certificates issued for this event
+            <span className="text-lg font-bold tabular-nums text-white">{total ?? <CountBone className="h-5 w-8" />}</span> certificates issued for this event
           </p>
           <button
             type="button"
@@ -313,8 +315,12 @@ export function CertificatesHeader({
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-[11px] font-medium text-[#A1A1AA] sm:text-xs">{tile.label}</span>
-                <span className="block text-xl font-bold tabular-nums leading-tight text-white sm:text-2xl">{n ?? "…"}</span>
-                <span className="block truncate text-[10px] text-[#71717A] sm:text-[11px]">{tile.sub(counts)}</span>
+                <span className="block text-xl font-bold tabular-nums leading-tight text-white sm:text-2xl">
+                  {n ?? <CountBone className="my-1 h-6 w-10 sm:h-7" />}
+                </span>
+                <span className="block truncate text-[10px] text-[#71717A] sm:text-[11px]">
+                  {tile.sub(counts) ?? <CountBone className="h-2.5 w-20" />}
+                </span>
               </span>
             </button>
           );

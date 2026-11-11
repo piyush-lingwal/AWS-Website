@@ -1,5 +1,6 @@
 "use client";
 
+import { CardsSkeleton } from "@/components/admin/Skeletons";
 import { useCallback, useEffect, useState } from "react";
 import { Copy, KeyRound, UserPlus } from "lucide-react";
 
@@ -222,7 +223,7 @@ export default function MediaMembersPage() {
           </h2>
 
           {loading ? (
-            <p className="text-sm text-[#A1A1AA]">Loading…</p>
+            <CardsSkeleton count={3} label="Loading media members" />
           ) : members.length === 0 ? (
             <p className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 text-sm text-[#A1A1AA]">
               No media members yet.

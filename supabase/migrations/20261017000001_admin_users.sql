@@ -6,7 +6,7 @@
 --
 -- ROLLOUT ORDER (important):
 --   1. Apply THIS migration.
---   2. Run supabase/seed-admins.sql to add yourself (and other real admins).
+--   2. Run supabase/seed-admins.sql (kept outside migrations on purpose) to add yourself (and other real admins).
 --   3. Deploy the application code (requireAdmin guard).
 --   4. Verify admin login + the dashboard still work.
 --   5. Only then apply 0002_lock_down_rls.sql.

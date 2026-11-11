@@ -2,7 +2,7 @@
 // Certificate System — Core Types (V2)
 // ============================================================
 //
-// Matches supabase_schema_v2.sql exactly.
+// Matches supabase/migrations/20260929000001_base_schema.sql exactly.
 // No enums. No unnecessary timestamps.
 //
 // ============================================================

@@ -18,6 +18,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { TopPerformerImportDialog } from "@/components/features/TopPerformerImportDialog";
 import { AttendeeImportDialog } from "@/components/features/AttendeeImportDialog";
 import { DeleteAllButton } from "@/components/admin/DeleteAllButton";
+import { AdminPageSkeleton, CardsSkeleton, ListSkeleton, TableRowsSkeleton, TeamGridSkeleton } from "@/components/admin/Skeletons";
 import { OrganiserSection, VolunteerSection } from "@/components/admin/certificates/TeamSections";
 import { CertificatesHeader, parseCertSection, type CertSection, type SectionCounts } from "@/components/admin/certificates/CertificatesHeader";
 import { ExportButton, SearchField, SectionHeading, TOOLBAR_BUTTON } from "@/components/admin/certificates/ListControls";
@@ -1617,12 +1618,7 @@ function AdminPageContent() {
         )}
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-32 space-y-4">
-            <div className="w-8 h-8 rounded-full border-2 border-[#6C63FF]/30 border-t-[#6C63FF] animate-spin" />
-            <p className="text-xs font-mono text-[#71717A] tracking-wider uppercase">
-              Loading Operations Cockpit…
-            </p>
-          </div>
+          <AdminPageSkeleton />
         ) : (
           <>
             {/* ── OVERVIEW ─────────────────────────────────────── */}
@@ -2198,12 +2194,7 @@ function AdminPageContent() {
               <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/10 shadow-2xl overflow-hidden">
                 <div className="rounded-[calc(2rem-4px)] bg-[#0C0C10] overflow-hidden">
                   {loadingParticipants ? (
-                    <div className="py-24 text-center space-y-3">
-                      <div className="w-7 h-7 mx-auto rounded-full border-2 border-[#6C63FF]/30 border-t-[#6C63FF] animate-spin" />
-                      <p className="text-xs text-[#71717A] font-mono">
-                        Querying attendance database…
-                      </p>
-                    </div>
+                    <ListSkeleton rows={8} label="Loading participants" />
                   ) : filteredParticipants.length === 0 ? (
                     <div className="py-24 text-center px-4 max-w-md mx-auto space-y-3">
                       <div className="w-14 h-14 mx-auto rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#71717A]">
@@ -2566,7 +2557,9 @@ function AdminPageContent() {
                   )}
 
                   <div className="md:hidden">
-                    {topPerformerStatus ? (
+                    {loadingTopPerformers ? (
+                      <CardsSkeleton count={3} label="Loading top performers" />
+                    ) : topPerformerStatus ? (
                       <p className="rounded-xl border border-white/[0.07] px-4 py-8 text-center text-xs text-[#71717A]">
                         {topPerformerStatus}
                       </p>
@@ -2652,11 +2645,7 @@ function AdminPageContent() {
                       </thead>
                       <tbody className="divide-y divide-white/[0.05]">
                         {loadingTopPerformers ? (
-                          <tr>
-                            <td colSpan={6} className="px-4 py-8 text-center text-[#71717A]">
-                              <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Loading top performers…</span>
-                            </td>
-                          </tr>
+                          <TableRowsSkeleton rows={4} columns={6} label="Loading top performers" />
                         ) : topPerformersEvent?.id !== currentViewEvent.id ? (
                           <tr>
                             <td colSpan={6} className="px-4 py-8 text-center text-[#71717A]">
@@ -2894,10 +2883,7 @@ function AdminPageContent() {
 
               {/* Team Members List (Grouped by Batch with Visual Separators) */}
               {loadingTeamMembers ? (
-                <div className="flex flex-col items-center justify-center py-24 space-y-3">
-                  <div className="w-7 h-7 rounded-full border-2 border-cyan-500/30 border-t-cyan-500 animate-spin" />
-                  <p className="text-xs text-[#71717A] font-mono">Loading team …</p>
-                </div>
+                <TeamGridSkeleton />
               ) : groupedTeamMembers.length === 0 ? (
                 <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-dashed border-white/10">
                   <div className="p-12 rounded-[calc(2rem-4px)] bg-[#0D0D12] text-center">
@@ -4516,7 +4502,7 @@ function AdminPageContent() {
 
 export default function AdminPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 pt-24 sm:pt-28 pb-24"><AdminPageSkeleton /></div>}>
       <AdminPageContent />
     </Suspense>
   );

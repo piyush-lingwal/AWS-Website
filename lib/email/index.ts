@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import {
   ApplicationEmailData,
@@ -17,7 +16,7 @@ import { getAwardTitle } from "../certificates/award-title";
 
 export interface SendEmailResult {
   success: boolean;
-  provider?: "resend" | "smtp" | "gmail" | "simulated";
+  provider?: "smtp" | "gmail" | "simulated";
   messageId?: string;
   error?: string;
 }
@@ -124,9 +123,8 @@ export async function sendCertificateEmail(
 /**
  * Core multi-provider email dispatcher:
  * 1. Gmail SMTP (port 465 -> fallback port 587)
- * 2. Resend REST API (HTTPS port 443)
- * 3. Custom SMTP
- * 4. Development simulation
+ * 2. Custom SMTP
+ * 3. Development simulation
  */
 async function sendGenericEmail({
   to,
@@ -145,7 +143,6 @@ async function sendGenericEmail({
 }): Promise<SendEmailResult> {
   const gmailUser = process.env.GMAIL_USER?.trim();
   const gmailPass = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
-  const resendApiKey = process.env.RESEND_API_KEY?.trim();
 
   // ── 1. Gmail SMTP (Serverless Optimized with Port 465 / 587 Failover) ─
   if (gmailUser && gmailPass) {
@@ -185,22 +182,12 @@ async function sendGenericEmail({
       } catch (err587: any) {
         console.error("[Email/Gmail-587] Gmail SMTP failed completely:", err587.message);
 
-        if (resendApiKey) {
-          console.log("[Email/Gmail] Falling back to Resend API over HTTPS...");
-          return await sendViaResend(resendApiKey, to, subject, html, text, attachments, fromName);
-        }
-
         return { success: false, provider: "gmail", error: `Gmail SMTP failed: ${err587.message}` };
       }
     }
   }
 
-  // ── 2. Resend API Provider (Over HTTPS) ───────────────────────────────
-  if (resendApiKey) {
-    return await sendViaResend(resendApiKey, to, subject, html, text, attachments, fromName);
-  }
-
-  // ── 3. Custom SMTP Provider ──────────────────────────────────────────
+  // ── 2. Custom SMTP Provider ──────────────────────────────────────────
   const smtpHost = process.env.SMTP_HOST;
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
@@ -239,9 +226,9 @@ async function sendGenericEmail({
     }
   }
 
-  // ── 4. Simulated Provider (No credentials configured) ────────────────
+  // ── 3. Simulated Provider (No credentials configured) ────────────────
   console.warn("==================================================================");
-  console.warn("[Email/Simulation] No email credentials configured (GMAIL_USER / RESEND_API_KEY).");
+  console.warn("[Email/Simulation] No email credentials configured (GMAIL_USER / SMTP_HOST).");
   console.warn(`Simulating email delivery to: ${to}`);
   console.warn(`Subject: ${subject}`);
   console.warn("==================================================================");
@@ -251,48 +238,4 @@ async function sendGenericEmail({
     provider: "simulated",
     messageId: `sim_${Date.now()}`,
   };
-}
-
-async function sendViaResend(
-  apiKey: string,
-  to: string,
-  subject: string,
-  html: string,
-  text: string,
-  attachments?: EmailAttachment[],
-  fromName?: string
-): Promise<SendEmailResult> {
-  try {
-    const configuredFromAddress =
-      process.env.RESEND_FROM ||
-      (process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes("@gmail.com")
-        ? process.env.EMAIL_FROM
-        : "AWS Student Builder Group <onboarding@resend.dev>");
-    const fromAddress = withDisplayName(configuredFromAddress, fromName);
-
-    const resend = new Resend(apiKey);
-    const res = await resend.emails.send({
-      from: fromAddress,
-      to: [to],
-      subject,
-      html,
-      text,
-      attachments: attachments?.map((att) => ({
-        filename: att.filename,
-        content: att.content,
-        ...(att.cid ? { contentId: att.cid } : {}),
-      })),
-    });
-
-    if (res.error) {
-      console.error("[Email/Resend] Failed to send email:", res.error);
-      return { success: false, provider: "resend", error: res.error.message };
-    }
-
-    console.log(`[Email/Resend] Email sent successfully to ${to} (ID: ${res.data?.id})`);
-    return { success: true, provider: "resend", messageId: res.data?.id };
-  } catch (err: any) {
-    console.error("[Email/Resend] Unexpected error:", err);
-    return { success: false, provider: "resend", error: err.message };
-  }
 }

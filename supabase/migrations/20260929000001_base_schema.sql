@@ -1,38 +1,29 @@
 -- ============================================================
--- AWS SBG — Schema V2: Event + Attendance + Certificate System
+-- 20260929000001 — Base schema                (FRESH DATABASES ONLY, RUN FIRST)
 -- ============================================================
+-- The starting tables for the AWS SBG site: events, participants, attendance,
+-- certificates, the attendance portal's config, and the audit log. Every later
+-- migration in this folder builds on it.
 --
--- This migration:
---   1. Drops the old schema (events, participants, certificates,
---      certificate_attendance, audit_logs triggers on those tables)
---   2. Creates the new normalized schema:
---        participants, events, attendance, certificates, portal_config
---   3. Adds all FKs, unique constraints, indexes
---   4. Configures RLS policies
---   5. Seeds the portal_config with a single row
+-- This one file replaces the two old baselines:
+--   20260929000001_schema_init.sql  the first schema (events, certificates, ...)
+--   20260930000001_schema_v2.sql    dropped those tables and created these ones,
+--                                   keeping only audit_logs and set_updated_at()
+-- It creates exactly what running both in order left behind, without the
+-- DROP TABLE step, so it can never delete data.
 --
--- Run against a FRESH or TEST database only.
--- Old data will be destroyed.
+-- Safe to run? On an EMPTY database, yes. On a database that already has these
+-- tables it stops at the first CREATE TABLE and, because it runs in one
+-- transaction, changes nothing. It is not meant to be re-run.
 --
+-- The RLS policies below are the original permissive ones. They are replaced
+-- by 20261017000002_lock_down_rls.sql (admins only); apply that migration
+-- before going live.
 -- ============================================================
 
--- Enable pgcrypto if not already enabled
+BEGIN;
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
-
--- ── 0. Drop old schema ──────────────────────────────────────────
-
--- Drop triggers first (they reference the old tables)
-DROP TRIGGER IF EXISTS trigger_events_updated_at ON public.events;
-DROP TRIGGER IF EXISTS trigger_participants_updated_at ON public.participants;
-DROP TRIGGER IF EXISTS trigger_certificates_updated_at ON public.certificates;
-
--- Drop old tables (order matters due to FK dependencies)
-DROP TABLE IF EXISTS public.certificate_attendance CASCADE;
-DROP TABLE IF EXISTS public.certificates CASCADE;
-DROP TABLE IF EXISTS public.participants CASCADE;
-DROP TABLE IF EXISTS public.events CASCADE;
--- audit_logs is preserved as-is (existing data kept, not populated by new flow)
 
 
 -- ── 1. participants ─────────────────────────────────────────────
@@ -128,13 +119,45 @@ CREATE TABLE public.portal_config (
 COMMENT ON TABLE public.portal_config IS 'Single-row configuration table. Determines which event the Attendance Portal currently serves.';
 
 
--- ── 6. Row Level Security (RLS) ─────────────────────────────────
+-- ── 6. audit_logs (from the first schema, kept by v2) ───────────
+
+CREATE TABLE public.audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    resource_type TEXT NOT NULL,
+    resource_id TEXT,
+    result TEXT NOT NULL DEFAULT 'SUCCESS' CHECK (result IN ('SUCCESS', 'FAILURE')),
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_audit_logs_action ON public.audit_logs (action);
+CREATE INDEX idx_audit_logs_created_at ON public.audit_logs (created_at DESC);
+
+
+-- ── 7. set_updated_at() (from the first schema, kept by v2) ─────
+-- Generic "touch updated_at" trigger function. No table in this file uses it;
+-- it is kept so a new database matches existing ones.
+
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- ── 8. Row Level Security (RLS) ─────────────────────────────────
+-- Original permissive policies; 20261017000002_lock_down_rls.sql replaces them.
 
 ALTER TABLE public.participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.portal_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- PUBLIC (anon) read access — needed for attendance portal + verification
 
@@ -206,9 +229,15 @@ CREATE POLICY "Admin full access portal_config"
     ON public.portal_config FOR ALL TO authenticated
     USING (true) WITH CHECK (true);
 
+CREATE POLICY "Admin full access audit_logs"
+    ON public.audit_logs FOR ALL TO authenticated
+    USING (true) WITH CHECK (true);
 
--- ── 7. Seed portal_config ───────────────────────────────────────
 
--- Insert the single portal configuration row (no active event yet)
+-- ── 9. Seed portal_config ───────────────────────────────────────
+
+-- The single portal configuration row (no active event yet)
 INSERT INTO public.portal_config (active_event_id, attendance_enabled)
 VALUES (NULL, false);
+
+COMMIT;

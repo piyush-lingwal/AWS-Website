@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Download, Loader2, Plus, Trash2, Upload, Users, X } from "lucide-react";
+import { AlertCircle, Award, CheckCircle2, Download, Loader2, Plus, Trash2, Upload, Users, X } from "lucide-react";
 import { ORGANISER_WINGS, validateOrganiser } from "@/lib/certificates/organiser";
 import {
   ORGANISER_TEMPLATE_HEADERS,
@@ -78,6 +78,8 @@ export function OrganiserIssueDialog({
   const [busy, setBusy] = useState(false);
   const [finished, setFinished] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // The list of people to generate for appears below the inputs; bring it into view.
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const count = (s: RowStatus) => rows.filter((r) => r.status === s).length;
   const readyCount = count("ready");
@@ -89,6 +91,7 @@ export function OrganiserIssueDialog({
     if (nonEmpty.length === 0) { setRows([]); return; }
     if (nonEmpty.length > BATCH_SIZE) { setRows([]); setError(`Up to ${BATCH_SIZE} people at a time.`); return; }
     setRows(toPreview(nonEmpty));
+    requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }));
   };
 
   const previewManual = () => loadRows(manual);
@@ -234,8 +237,8 @@ export function OrganiserIssueDialog({
                       <button type="button" onClick={() => setManual((m) => [...m, emptyRow()])} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05]">
                         <Plus className="h-3.5 w-3.5" /> Add person
                       </button>
-                      <button type="button" onClick={previewManual} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05]">
-                        Review list
+                      <button type="button" onClick={previewManual} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-500">
+                        <Award className="h-3.5 w-3.5" /> Generate certificates
                       </button>
                       <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#8B5CF6]/90 px-3 text-xs font-semibold text-white hover:bg-[#8B5CF6]">
                         <Upload className="h-3.5 w-3.5" /> Upload sheet
@@ -251,7 +254,7 @@ export function OrganiserIssueDialog({
                   <div className="space-y-2">
                     <label htmlFor="organiser-paste" className="block text-xs font-semibold text-[#D4D4D8]">Or paste rows (Name, Email, Role, Wing)</label>
                     <textarea id="organiser-paste" value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={3} placeholder={"Name\tEmail\tRole\tWing"} className="w-full rounded-xl border border-white/[0.1] bg-[#09090E] p-3 font-mono text-xs text-white placeholder:text-[#52525B] focus:border-[#8B5CF6] focus:outline-none" />
-                    <button type="button" onClick={previewPaste} disabled={!pasteText.trim()} className="h-8 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05] disabled:opacity-40">Review pasted rows</button>
+                    <button type="button" onClick={previewPaste} disabled={!pasteText.trim()} className="h-8 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05] disabled:opacity-40">Generate from pasted rows</button>
                   </div>
                 </>
               )}
@@ -259,14 +262,16 @@ export function OrganiserIssueDialog({
               {error && <p role="alert" className="flex items-start gap-2 text-xs text-red-400"><AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{error}</p>}
 
               {rows.length > 0 && (
-                <>
+                <div ref={resultsRef} className="scroll-mt-4 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-[#A1A1AA]">
-                      {finished ? `${count("issued")} issued, ${count("already_issued")} already issued, ${count("error")} errors` : `${readyCount} ready, ${count("error")} errors`}
+                      {finished
+                        ? `${count("issued")} generated, ${count("already_issued")} already had one, ${count("error")} errors`
+                        : `${readyCount} ready to generate${count("error") ? `, ${count("error")} need fixing` : ""}. Check the list, then confirm.`}
                     </p>
                     <button type="button" onClick={() => void issue()} disabled={readyCount === 0 || busy || finished} className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45">
                       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                      {busy ? "Issuing…" : finished ? "Done" : `Issue ${readyCount} ${readyCount === 1 ? "certificate" : "certificates"}`}
+                      {busy ? "Generating…" : finished ? "Certificates generated" : `Confirm & generate ${readyCount} ${readyCount === 1 ? "certificate" : "certificates"}`}
                     </button>
                   </div>
                   <div className="max-w-full overflow-x-auto rounded-xl border border-white/[0.08]">
@@ -287,7 +292,7 @@ export function OrganiserIssueDialog({
                       </tbody>
                     </table>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </section>

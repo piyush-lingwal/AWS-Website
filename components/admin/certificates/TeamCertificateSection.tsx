@@ -14,6 +14,7 @@ import Link from "next/link";
 import { Download, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteAllButton } from "@/components/admin/DeleteAllButton";
+import { CardsSkeleton, TableRowsSkeleton } from "@/components/admin/Skeletons";
 import { ExportButton, SearchField, SectionHeading } from "@/components/admin/certificates/ListControls";
 import { exportFileName } from "@/lib/admin/export-rows";
 import { filterRows } from "@/lib/admin/list-search";
@@ -196,9 +197,11 @@ export function TeamCertificateSection<T extends TeamRow>({
 
       {/* Phones: one card per person */}
       <div className="md:hidden">
-        {loading || shown.length === 0 ? (
+        {loading ? (
+          <CardsSkeleton count={3} label={`Loading ${title}`} />
+        ) : shown.length === 0 ? (
           <p className="rounded-2xl border border-white/[0.08] px-4 py-8 text-center text-xs text-[#71717A]">
-            {loading ? "Loading…" : rows.length === 0 ? emptyText : "Nobody matches this search."}
+            {rows.length === 0 ? emptyText : "Nobody matches this search."}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -259,11 +262,7 @@ export function TeamCertificateSection<T extends TeamRow>({
           </thead>
           <tbody className="divide-y divide-white/[0.05]">
             {loading ? (
-              <tr>
-                <td colSpan={colSpan} className="px-4 py-8 text-center text-[#71717A]">
-                  <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Loading…</span>
-                </td>
-              </tr>
+              <TableRowsSkeleton rows={4} columns={colSpan} label={`Loading ${title}`} />
             ) : shown.length === 0 ? (
               <tr>
                 <td colSpan={colSpan} className="px-4 py-8 text-center text-[#71717A]">

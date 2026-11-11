@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { usesNativeScroll } from "@/lib/layout/native-scroll";
 
 export default function SmoothScroll({
   children,
@@ -12,8 +13,11 @@ export default function SmoothScroll({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  // Admin screens use the browser's own scrolling (see lib/layout/native-scroll.ts).
+  const smooth = !usesNativeScroll(pathname);
 
   useEffect(() => {
+    if (!smooth) return;
     gsap.registerPlugin(ScrollTrigger);
 
     const lenis = new Lenis({
@@ -54,8 +58,9 @@ export default function SmoothScroll({
       resizeObserver.disconnect();
       lenis.destroy();
       gsap.ticker.remove(update);
+      if (typeof window !== "undefined") delete (window as any).__lenis;
     };
-  }, []);
+  }, [smooth]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
