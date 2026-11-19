@@ -6,11 +6,12 @@
 //   /verify, /verify/<id>      certificate verification: the page is a record,
 //                              and the assistant sat on top of the certificate
 //   /certificate/verify/<id>   the older verification link
+//   /preview                   the light-theme design preview (the assistant is styled for the dark site)
 //
 // Matching is by whole path segment, so "/verifying" or "/administrator" are not hidden.
 // ============================================================
 
-const HIDDEN_PREFIXES = ["/admin", "/verify", "/certificate/verify"] as const;
+const HIDDEN_PREFIXES = ["/admin", "/verify", "/certificate/verify", "/preview"] as const;
 
 export function isChatbotHidden(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

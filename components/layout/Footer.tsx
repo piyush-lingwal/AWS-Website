@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { isStandalonePage } from "@/lib/layout/standalone-pages";
 import { Linkedin, Instagram, Mail } from "lucide-react";
 import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
 import { Sparkles } from "@/components/ui/animate-ui/icons/sparkles";
@@ -156,7 +157,7 @@ export function Footer() {
     return () => clearTimeout(refreshTimer);
   }, { scope: footerRef });
 
-  if (pathname?.startsWith("/admin")) {
+  if (pathname?.startsWith("/admin") || isStandalonePage(pathname)) {
     return null;
   }
 

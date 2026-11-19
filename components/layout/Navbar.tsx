@@ -14,12 +14,15 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useRecruitment } from "@/hooks/useRecruitment";
+import { isStandalonePage } from "@/lib/layout/standalone-pages";
 
 export function Navbar() {
   const pathname = usePathname();
   // /admin renders its own navbar inside app/admin/layout.tsx (it needs the admin data provider).
   // The public navbar is a separate component so its hooks never run (or change count) on /admin pages.
   if (pathname?.startsWith("/admin")) return null;
+  // Standalone pages (the light design preview) draw their own navigation.
+  if (isStandalonePage(pathname)) return null;
   return <SiteNavbar />;
 }
 
