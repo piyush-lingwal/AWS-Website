@@ -88,7 +88,7 @@ export default async function EventMediaPage({
     purpose: r.purpose as "cover" | "gallery",
     status: r.status as string,
     size_bytes: r.size_bytes === null ? null : Number(r.size_bytes),
-    source: r.source === "drive" ? "drive" : "s3",
+    source: r.source === "drive" ? "drive" : r.source === "supabase" ? "supabase" : "s3",
     caption: (r.caption as string | null) ?? null,
     created_at: r.created_at as string,
     mine: r.uploaded_by === session.user.id,

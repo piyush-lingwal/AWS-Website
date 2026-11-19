@@ -1,6 +1,7 @@
 "use client";
 
 import { isDriveUrl } from "@/lib/media/drive";
+import { isPreprocessedMediaUrl } from "@/lib/media/image-src";
 import * as React from "react";
 import Image from "next/image";
 import gsap from "gsap";
@@ -24,30 +25,6 @@ const PLACEHOLDERS = [
   { span: "" },
 ];
 
-const FLOWER_OVERLAYS = [
-  {
-    id: 1,
-    src: "/flowers/flower.webp",
-    alt: "Decorative flower accent top-right",
-    className:
-      "flower-overlay absolute top-8 right-2 sm:top-10 sm:right-6 md:top-14 md:right-8 lg:top-16 lg:right-12 w-28 sm:w-44 md:w-56 lg:w-68 z-[30] opacity-90 hover:opacity-100 transition-opacity duration-500 pointer-events-none select-none filter brightness-105 drop-shadow-[0_10px_25px_rgba(167,139,250,0.22)]",
-  },
-  {
-    id: 2,
-    src: "/flowers/flower3.webp",
-    alt: "Decorative flower accent mid-left",
-    className:
-      "flower-overlay absolute top-[44%] left-2 sm:top-[42%] sm:left-4 md:left-6 lg:left-8 w-28 sm:w-40 md:w-52 lg:w-64 -rotate-45 z-[30] opacity-90 hover:opacity-100 transition-opacity duration-500 pointer-events-none select-none filter brightness-105 drop-shadow-[0_10px_25px_rgba(244,114,182,0.22)]",
-  },
-  {
-    id: 3,
-    src: "/flowers/flower2.webp",
-    alt: "Decorative flower accent bottom-right",
-    className:
-      "flower-overlay absolute bottom-4 right-2 sm:bottom-6 sm:right-4 md:bottom-8 md:right-8 lg:bottom-12 lg:right-12 w-32 sm:w-48 md:w-60 lg:w-72 -rotate-[45deg] z-[40] opacity-100 pointer-events-none select-none filter brightness-115 saturate-110 drop-shadow-[0_10px_25px_rgba(167,139,250,0.25)]",
-  },
-];
-
 export function Gallery({ groups }: { groups: GalleryGroup[] }) {
   const containerRef = React.useRef<HTMLElement>(null);
 
@@ -64,39 +41,6 @@ export function Gallery({ groups }: { groups: GalleryGroup[] }) {
         start: "top 85%",
         toggleActions: "play none none reverse",
       },
-    });
-
-    // Flower overlays reveal animation
-    gsap.from(".flower-overlay", {
-      opacity: 0,
-      scale: 0.5,
-      rotation: "+=30",
-      duration: 1.2,
-      stagger: 0.12,
-      ease: "back.out(1.7)",
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top 85%",
-        toggleActions: "play none none reverse",
-      },
-    });
-
-    // Gentle continuous floating motion for each flower
-    const flowerElements = gsap.utils.toArray<HTMLElement>(".flower-overlay");
-    flowerElements.forEach((el, idx) => {
-      const duration = 4 + (idx % 3) * 1.2;
-      const yOffset = 10 + (idx % 3) * 5;
-      const rotOffset = (idx % 2 === 0 ? 1 : -1) * (4 + (idx % 3) * 3);
-
-      gsap.to(el, {
-        y: `-=${yOffset}`,
-        rotation: `+=${rotOffset}`,
-        duration: duration,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-        delay: idx * 0.15,
-      });
     });
 
     // Set initial hidden state so gallery items stay hidden until reaching viewport
@@ -150,20 +94,6 @@ export function Gallery({ groups }: { groups: GalleryGroup[] }) {
         className="pointer-events-none absolute right-0 top-1/3 h-[480px] w-[480px] translate-x-1/3 rounded-full bg-secondary/8 blur-[140px]"
       />
 
-      {/* Flower Overlays */}
-      {FLOWER_OVERLAYS.map((flower) => (
-        <div key={flower.id} className={flower.className}>
-          <Image
-            src={flower.src}
-            alt={flower.alt}
-            width={320}
-            height={320}
-            className="w-full h-auto object-contain"
-            priority={flower.id <= 2}
-          />
-        </div>
-      ))}
-
       <div className="relative mx-auto max-w-content px-4 sm:px-6 pt-28 pb-16 md:pt-32 md:pb-24 lg:pt-32 lg:pb-32 z-10">
         <div className="gallery-header-container">
           <p className="gallery-header-el text-[11px] uppercase tracking-[0.16em] text-muted">
@@ -213,7 +143,7 @@ export function Gallery({ groups }: { groups: GalleryGroup[] }) {
                         alt=""
                         fill
                         sizes="144px"
-                        unoptimized={isDriveUrl(cover.thumbUrl)}
+                        unoptimized={isPreprocessedMediaUrl(cover.thumbUrl)}
                         referrerPolicy={isDriveUrl(cover.thumbUrl) ? "no-referrer" : undefined}
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />

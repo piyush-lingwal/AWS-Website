@@ -32,5 +32,5 @@ export function heicToJpegName(name: string): string {
   return `${base || "photo"}.jpg`;
 }
 
-/** JPEG quality for the conversion. High: the server re-encodes to WebP afterwards. */
+/** JPEG quality for the conversion. High: the browser re-encodes it to WebP right after (compress-image.ts). */
 export const HEIC_JPEG_QUALITY = 0.92;

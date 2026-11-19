@@ -7,6 +7,7 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { isDriveUrl } from "@/lib/media/drive";
+import { isPreprocessedMediaUrl } from "@/lib/media/image-src";
 import {
   Calendar,
   Clock,
@@ -432,7 +433,7 @@ export default function UpcomingEventCard() {
                       src={item.image}
                       alt={item.title}
                       fill
-                      unoptimized={isDriveUrl(item.image)}
+                      unoptimized={isPreprocessedMediaUrl(item.image)}
                       referrerPolicy={isDriveUrl(item.image) ? "no-referrer" : undefined}
                       sizes="(max-width: 640px) 100vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"

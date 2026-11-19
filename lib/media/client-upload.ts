@@ -6,7 +6,7 @@
 // XHR is used for the S3 upload because fetch() cannot report upload progress.
 // ============================================================
 
-import type { MediaPurpose } from "./policy";
+import type { MediaPurpose, MediaTarget } from "./policy";
 import type { CompleteOutcome } from "./upload-queue";
 
 export interface SignedUpload {
@@ -23,13 +23,14 @@ export type InitResult =
 export async function initUploads(
   eventId: string,
   purpose: MediaPurpose,
-  files: Array<{ type: string; size: number }>
+  files: Array<{ type: string; size: number }>,
+  target: MediaTarget = "s3"
 ): Promise<InitResult> {
   try {
     const res = await fetch("/api/media/uploads/init", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId, purpose, files }),
+      body: JSON.stringify({ eventId, purpose, files, target }),
     });
     const json = await res.json().catch(() => null);
     if (res.ok && json?.success && Array.isArray(json.data?.uploads)) {
@@ -76,6 +77,44 @@ export function postToS3(
           xhr.status === 403
             ? "The upload link expired. Try again."
             : `Upload failed (${xhr.status}). Try again.`,
+      });
+    };
+    xhr.onerror = () => resolve({ ok: false, error: "Network error. Check your connection." });
+    xhr.onabort = () => resolve({ ok: false, error: "Upload cancelled." });
+    xhr.send(form);
+  });
+}
+
+/**
+ * PUT the file to a Supabase signed upload URL (the token is in the URL).
+ * Same body shape supabase-js uses: form data with the file as the unnamed part.
+ */
+export function putToSupabase(
+  signed: { url: string },
+  file: File,
+  onProgress: (percent: number) => void
+): Promise<S3Result> {
+  return new Promise((resolve) => {
+    const form = new FormData();
+    form.append("cacheControl", "3600");
+    form.append("", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", signed.url);
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress((e.loaded / e.total) * 100);
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) return resolve({ ok: true });
+      resolve({
+        ok: false,
+        error:
+          xhr.status === 413
+            ? "File is too large for Supabase Storage. Check the file size limit in Supabase."
+            : xhr.status === 400 || xhr.status === 401 || xhr.status === 403
+              ? "The upload link was rejected or expired. Try again."
+              : `Upload failed (${xhr.status}). Try again.`,
       });
     };
     xhr.onerror = () => resolve({ ok: false, error: "Network error. Check your connection." });

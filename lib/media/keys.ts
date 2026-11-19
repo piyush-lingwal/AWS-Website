@@ -92,3 +92,16 @@ export function publicUrl(cdnBase: string, key: string): string {
   if (!isPublicKey(key)) throw new Error("Refusing to build a public URL for a non-public key.");
   return `${cdnBase}/${key}`;
 }
+
+/**
+ * Public URL of a file in the public Supabase bucket. Same safety rule as
+ * publicUrl(): only keys we generated, and never the private `original/` area.
+ * `supabaseUrl` is the project URL, e.g. https://abcd.supabase.co
+ */
+export function supabasePublicUrl(supabaseUrl: string, bucket: string, key: string): string {
+  if (!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(supabaseUrl)) {
+    throw new Error("Supabase URL must be an https origin without a trailing slash.");
+  }
+  if (!isPublicKey(key)) throw new Error("Refusing to build a public URL for a non-public key.");
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${key}`;
+}

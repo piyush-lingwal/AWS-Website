@@ -122,7 +122,7 @@ test("a Drive image becomes Drive thumbnail urls, with no CDN needed", () => {
   assert.ok(v);
   assert.equal(v!.source, "drive");
   assert.equal(v!.url, `https://drive.google.com/thumbnail?id=${DRIVE_ID}&sz=w1600`);
-  assert.equal(v!.thumbUrl, `https://drive.google.com/thumbnail?id=${DRIVE_ID}&sz=w480`);
+  assert.equal(v!.thumbUrl, `https://drive.google.com/thumbnail?id=${DRIVE_ID}&sz=w640`);
   assert.equal(v!.embedUrl, undefined);
 });
 

@@ -36,7 +36,7 @@ request cannot overwrite a newer state. Delete is a soft delete (`deleted_at`).
 |---|---|---|
 | init | member | row created `pending`; presigned POST (exact size/type) returned |
 | upload | browser | file goes to `events/{event}/original/{id}.jpg` (private) or `video/` |
-| complete | server | verify file → images: rotate, strip metadata, make 1920px web + 480px thumb WebP → `ready` |
+| complete | server | verify file → images: rotate, strip metadata, make 1920px web + 640px-wide thumb WebP → `ready` |
 | moderate | uploader / admin | hide ↔ show, caption, soft delete |
 | cleanup | daily job | see section 5 |
 

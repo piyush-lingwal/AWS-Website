@@ -36,6 +36,10 @@ export interface DbEvent {
   certificate_theme?: CertificateTheme | null;
   /** CDN URL of the event's cover photo (Media Portal), or null if none has been uploaded. */
   cover_url: string | null;
+  /** media_items.id of the cover row. Present only from /api/admin/events — pass to DELETE /api/media/items/[id] to remove it. */
+  cover_id?: string | null;
+  /** Cover row's upload status ("pending" | "processing" | "ready" | "hidden"), or null/absent if there is no cover. */
+  cover_status?: string | null;
 }
 
 export interface DbAttendance {

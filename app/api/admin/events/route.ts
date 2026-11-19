@@ -15,6 +15,7 @@ import {
   type CertificateTheme,
 } from "@/lib/certificates/theme";
 import { validateEventEndDate } from "@/lib/certificates/event-date";
+import { getEventCoverSlots } from "@/lib/media/admin-data";
 import type { ApiResponse, DbEvent, AdminEventRequest } from "@/types/certificate";
 
 /**
@@ -45,7 +46,19 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({ success: true, data } satisfies ApiResponse<DbEvent[]>);
+  const rows = (data ?? []) as DbEvent[];
+  const covers = await getEventCoverSlots(rows.map((r) => r.id));
+  const withCovers: DbEvent[] = rows.map((r) => {
+    const cover = covers.get(r.id);
+    return {
+      ...r,
+      cover_url: cover?.url ?? null,
+      cover_id: cover?.id ?? null,
+      cover_status: cover?.status ?? null,
+    };
+  });
+
+  return NextResponse.json({ success: true, data: withCovers } satisfies ApiResponse<DbEvent[]>);
 }
 
 /**

@@ -43,6 +43,20 @@ export const ALLOWED_EXTENSIONS: readonly string[] = Object.values(ALLOWED_TYPES
   (t) => t.ext
 );
 
+/** Where an upload is stored. Supabase is the stop-gap until S3 is set up. */
+export type MediaTarget = "s3" | "supabase";
+export const MEDIA_TARGETS: readonly MediaTarget[] = ["s3", "supabase"];
+
+/** Supabase's free plan caps one upload at 50 MB, so videos there are limited to that. */
+export const SUPABASE_VIDEO_MAX_BYTES = 50 * MB;
+
+/** The size limit for a file type on the chosen storage. */
+export function maxBytesFor(rule: AllowedType, target: MediaTarget): number {
+  return rule.kind === "video" && target === "supabase"
+    ? Math.min(rule.maxBytes, SUPABASE_VIDEO_MAX_BYTES)
+    : rule.maxBytes;
+}
+
 export const MAX_FILES_PER_REQUEST = 20;
 export const MAX_CAPTION_LENGTH = 280;
 /** How long a presigned upload permission stays valid. */
@@ -54,3 +68,13 @@ export const SNIFF_BYTES = 32;
 
 export type MediaPurpose = "cover" | "gallery";
 export const MEDIA_PURPOSES: readonly MediaPurpose[] = ["cover", "gallery"];
+
+/**
+ * Thumbnails (the gallery's masonry tiles) are sized by WIDTH, because a tile
+ * is always one column wide: 640 px stays sharp in a ~300 px column on a
+ * high-density screen, for portrait photos too. Height follows the photo, up
+ * to THUMB_MAX_HEIGHT_PX (only extreme panoramas/screenshots reach it).
+ * Never enlarged. Used for uploads (process-image.ts) and Drive links (public-view.ts).
+ */
+export const THUMB_WIDTH_PX = 640;
+export const THUMB_MAX_HEIGHT_PX = 1600;

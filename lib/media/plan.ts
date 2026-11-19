@@ -8,13 +8,14 @@
 // ============================================================
 
 import { buildUploadKey } from "./keys.ts";
-import type { MediaKind, MediaPurpose } from "./policy.ts";
+import type { MediaKind, MediaPurpose, MediaTarget } from "./policy.ts";
 import type { ValidInitRequest } from "./validate.ts";
 
 export interface PendingMediaRow {
   id: string;
   event_id: string;
   uploaded_by: string;
+  source: MediaTarget;
   kind: MediaKind;
   purpose: MediaPurpose;
   mime_type: string;
@@ -42,6 +43,7 @@ export function planPendingRows(
         id,
         event_id: request.eventId,
         uploaded_by: userId,
+        source: request.target,
         kind: file.kind,
         purpose: request.purpose,
         mime_type: file.mimeType,

@@ -13,7 +13,7 @@ export interface MediaListItem {
   status: "processing" | "ready" | "hidden" | string;
   /** null for a Drive item whose size Drive did not report. */
   size_bytes: number | null;
-  source: "s3" | "drive";
+  source: "s3" | "drive" | "supabase";
   created_at: string;
   caption: string | null;
   mine: boolean;
@@ -148,7 +148,7 @@ function MediaRow({ item }: { item: MediaListItem }) {
           </p>
           <p className="mt-0.5 text-xs text-[#71717A]">
             {[
-              item.source === "drive" ? "Google Drive" : null,
+              item.source === "drive" ? "Google Drive" : item.source === "supabase" ? "Supabase" : null,
               item.size_bytes ? formatBytes(item.size_bytes) : null,
               formatWhen(item.created_at),
             ]

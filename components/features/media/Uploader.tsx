@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, Film, Image as ImageIcon, Loader2, RotateCcw, UploadCloud, X } from "lucide-react";
-import type { MediaPurpose } from "@/lib/media/policy";
+import { SUPABASE_VIDEO_MAX_BYTES, type MediaPurpose, type MediaTarget } from "@/lib/media/policy";
 import {
   buildQueueItem,
   chunkForInit,
@@ -14,9 +14,11 @@ import {
   isBusy,
   type QueueItem,
 } from "@/lib/media/upload-queue";
-import { completeOne, initUploads, postToS3 } from "@/lib/media/client-upload";
+import { completeOne, initUploads, postToS3, putToSupabase } from "@/lib/media/client-upload";
 import { isHeicFile } from "@/lib/media/heic";
+import { canCompressImage } from "@/lib/media/client-compress";
 import { convertHeicToJpeg } from "./convert-heic";
+import { compressToWebp } from "./compress-image";
 
 // HEIC (iPhone photos) is accepted by the picker and converted to JPEG in the browser first.
 const HEIC_ACCEPT = "image/heic,image/heif,.heic,.heif";
@@ -36,9 +38,11 @@ export function Uploader({ eventId }: { eventId: string }) {
   const router = useRouter();
   const [items, dispatch] = useReducer(queueReducer, [] as QueueItem[]);
   const [purpose, setPurpose] = useState<MediaPurpose>("gallery");
+  /** Where files are stored. Defaults to Supabase while S3 is not set up; switch to AWS S3 once it is. */
+  const [target, setTarget] = useState<MediaTarget>("supabase");
   const [dragging, setDragging] = useState(false);
-  /** iPhone photos still being converted to JPEG (shown as a message). */
-  const [converting, setConverting] = useState(0);
+  /** Photos still being compressed to WebP in the browser (shown as a message). */
+  const [compressing, setCompressing] = useState(0);
 
   // Non-state bookkeeping: the File objects, signed forms, previews, and
   // "already started" guards (so React StrictMode's double effects cannot
@@ -51,6 +55,10 @@ export function Uploader({ eventId }: { eventId: string }) {
   const completing = useRef(new Set<string>());
   const purposeRef = useRef(purpose);
   purposeRef.current = purpose;
+  const targetRef = useRef(target);
+  targetRef.current = target;
+  /** Which storage each queued file was signed for (the toggle may change later). */
+  const itemTargetRef = useRef(new Map<string, MediaTarget>());
 
   const summary = summarize(items);
   const hasUnfinished = items.some((i) => i.state !== "live" && i.state !== "processing" && i.state !== "error");
@@ -65,7 +73,7 @@ export function Uploader({ eventId }: { eventId: string }) {
 
     for (const group of chunkForInit(ids)) {
       const groupItems = group.map((id) => queued.find((q) => q.id === id)!);
-      void initUploads(eventId, purposeRef.current, groupItems.map((i) => ({ type: i.mimeType, size: i.size }))).then((res) => {
+      void initUploads(eventId, purposeRef.current, groupItems.map((i) => ({ type: i.mimeType, size: i.size })), targetRef.current).then((res) => {
         if (!res.ok) {
           for (const id of group) dispatch({ type: "fail", id, message: res.error, retryable: res.retryable });
           return;
@@ -78,6 +86,7 @@ export function Uploader({ eventId }: { eventId: string }) {
             return;
           }
           signedRef.current.set(id, { url: u.url, fields: u.fields });
+          itemTargetRef.current.set(id, targetRef.current);
           dispatch({ type: "signed", id, mediaId: u.mediaId });
         });
       });
@@ -93,7 +102,8 @@ export function Uploader({ eventId }: { eventId: string }) {
       if (!file || !signed) continue;
       uploadStarted.current.add(id);
       dispatch({ type: "start", id });
-      void postToS3(signed, file, (p) => dispatch({ type: "progress", id, progress: p })).then((res) => {
+      const send = itemTargetRef.current.get(id) === "supabase" ? putToSupabase : postToS3;
+      void send(signed, file, (p) => dispatch({ type: "progress", id, progress: p })).then((res) => {
         signedRef.current.delete(id); // a signature is single-use
         if (res.ok) dispatch({ type: "uploaded", id });
         else dispatch({ type: "fail", id, message: res.error, retryable: true });
@@ -142,31 +152,38 @@ export function Uploader({ eventId }: { eventId: string }) {
     if (purposeRef.current === "cover") files = files.slice(0, 1); // one cover per event
     if (files.length === 0) return;
 
-    // iPhone photos: convert to JPEG here, one at a time (each decode needs real memory).
-    // A file that fails to convert stays as it is and is rejected by the normal pre-check.
-    const heicCount = files.filter((f) => isHeicFile(f)).length;
-    if (heicCount > 0) {
-      setConverting((n) => n + heicCount);
-      const converted: File[] = [];
-      for (const file of files) {
-        if (!isHeicFile(file)) {
-          converted.push(file);
-          continue;
-        }
-        try {
-          converted.push(await convertHeicToJpeg(file));
-        } catch {
-          converted.push(file);
-        } finally {
-          setConverting((n) => n - 1);
-        }
+    // Photos are shrunk and converted to WebP here, before upload, one at a time
+    // (each decode needs real memory). iPhone HEIC photos become JPEG first.
+    // A file that fails to convert stays as it is and goes through the normal pre-check.
+    const needsWork = (f: File) => isHeicFile(f) || canCompressImage(f);
+    const workCount = files.filter(needsWork).length;
+    const prepared: Array<{ file: File; originalSize: number }> = [];
+    if (workCount > 0) setCompressing((n) => n + workCount);
+    for (const original of files) {
+      if (!needsWork(original)) {
+        prepared.push({ file: original, originalSize: original.size });
+        continue;
       }
-      files = converted;
+      let file = original;
+      try {
+        if (isHeicFile(file)) file = await convertHeicToJpeg(file);
+        file = await compressToWebp(file);
+      } catch {
+        // keep whatever we have; the pre-check decides
+      } finally {
+        setCompressing((n) => n - 1);
+      }
+      prepared.push({ file, originalSize: original.size });
     }
 
-    const built = files.map((file) => {
+    const built = prepared.map(({ file, originalSize }) => {
       const id = crypto.randomUUID();
-      const item = buildQueueItem(id, { name: file.name, type: file.type, size: file.size }, purposeRef.current);
+      const item = buildQueueItem(
+        id,
+        { name: file.name, type: file.type, size: file.size, originalSize },
+        purposeRef.current,
+        targetRef.current
+      );
       if (item.state !== "error") {
         filesRef.current.set(id, file);
         if (item.kind === "image") previewsRef.current.set(id, URL.createObjectURL(file));
@@ -179,6 +196,7 @@ export function Uploader({ eventId }: { eventId: string }) {
   const forget = (id: string) => {
     filesRef.current.delete(id);
     signedRef.current.delete(id);
+    itemTargetRef.current.delete(id);
     const url = previewsRef.current.get(id);
     if (url) URL.revokeObjectURL(url);
     previewsRef.current.delete(id);
@@ -212,6 +230,22 @@ export function Uploader({ eventId }: { eventId: string }) {
     <section aria-labelledby="upload-heading" className="space-y-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="upload-heading" className="text-lg font-semibold">Upload</h2>
+        <div role="group" aria-label="Where to store the files" className="inline-flex rounded-xl border border-white/[0.08] p-0.5 text-xs">
+          {(["s3", "supabase"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              aria-pressed={target === t}
+              disabled={hasUnfinished}
+              onClick={() => setTarget(t)}
+              className={`rounded-[10px] px-3 py-1.5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                target === t ? "bg-[#6C63FF] text-white" : "text-[#A1A1AA] hover:text-white"
+              }`}
+            >
+              {t === "s3" ? "AWS S3" : "Supabase"}
+            </button>
+          ))}
+        </div>
         <div role="group" aria-label="What are you uploading?" className="inline-flex rounded-xl border border-white/[0.08] p-0.5 text-xs">
           {(["gallery", "cover"] as const).map((p) => (
             <button
@@ -250,7 +284,8 @@ export function Uploader({ eventId }: { eventId: string }) {
           {purpose === "cover" ? "Choose one cover image" : "Drop files here, or click to browse"}
         </span>
         <span className="text-xs text-[#71717A]">
-          JPEG, PNG, WebP, iPhone HEIC up to 25 MB{purpose === "gallery" ? " · MP4, WebM up to 500 MB" : ""}
+          JPEG, PNG, WebP, iPhone HEIC · compressed to WebP before upload
+          {purpose === "gallery" ? ` · MP4, WebM up to ${target === "supabase" ? SUPABASE_VIDEO_MAX_BYTES / (1024 * 1024) : 500} MB` : ""}
         </span>
         <input
           type="file"
@@ -264,10 +299,10 @@ export function Uploader({ eventId }: { eventId: string }) {
         />
       </label>
 
-      {converting > 0 && (
+      {compressing > 0 && (
         <p role="status" className="flex items-center gap-2 text-xs text-[#A1A1AA]">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-          Converting {converting} iPhone {converting === 1 ? "photo" : "photos"} to JPEG…
+          Compressing {compressing} {compressing === 1 ? "photo" : "photos"} to WebP…
         </p>
       )}
 
@@ -342,7 +377,10 @@ function UploadRow({
           {done && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
           {(item.state === "signing" || item.state === "verifying") && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden="true" />}
           <span>
-            {formatBytes(item.size)} · {status}
+            {item.originalSize !== undefined && item.originalSize > item.size
+              ? `${formatBytes(item.originalSize)} → ${formatBytes(item.size)}`
+              : formatBytes(item.size)}{" "}
+            · {status}
           </span>
         </p>
         {uploading && (

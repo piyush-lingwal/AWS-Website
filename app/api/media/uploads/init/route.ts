@@ -2,14 +2,15 @@
 // POST /api/media/uploads/init   — start an upload   (media members + admins)
 // ============================================================
 //
-// Body: { eventId, purpose?: "gallery" | "cover", files: [{ type, size }] }
+// Body: { eventId, purpose?: "gallery" | "cover", target?: "s3" | "supabase", files: [{ type, size }] }
 //
 // What it does, in order:
 //   1. Auth (requireRole) and body validation (lib/media/validate.ts)
 //   2. The event must exist
 //   3. Per-user cap on unfinished uploads
 //   4. Plan server-generated ids and S3 keys (the client never picks a key)
-//   5. Sign one presigned POST per file (exact key, type and size)
+//   5. Sign one upload link per file. S3: a presigned POST (exact key, type, size).
+//      Supabase (body.target = "supabase"): a single-use signed upload URL.
 //   6. Insert the `pending` rows, then return the signatures
 //
 // Signing happens BEFORE the insert, so a signing failure leaves no rows.
@@ -20,6 +21,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { MEDIA_PORTAL_ROLES } from "@/lib/auth/roles";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { getStorage, signUpload, type SignedUpload } from "@/lib/storage/s3";
+import { signSupabaseUpload } from "@/lib/storage/supabase-storage";
 import { validateInitRequest } from "@/lib/media/validate";
 import { planPendingRows } from "@/lib/media/plan";
 import { MAX_PENDING_PER_USER, PRESIGN_TTL_SECONDS } from "@/lib/media/policy";
@@ -47,9 +49,10 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) return fail(parsed.error, 400);
   const req = parsed.value;
 
-  const storage = getStorage();
   const db = getAdminClient();
-  if (!storage || !db) return fail("Media uploads are not configured.", 500);
+  // S3 is only needed when the upload goes to S3; Supabase uses the admin client.
+  const storage = req.target === "s3" ? getStorage() : null;
+  if (!db || (req.target === "s3" && !storage)) return fail("Media uploads are not configured.", 500);
 
   // 2) The event must exist.
   const eventRes = await db.from("events").select("id").eq("id", req.eventId).maybeSingle();
@@ -60,11 +63,16 @@ export async function POST(request: NextRequest) {
   if (!eventRes.data) return fail("Event not found.", 404);
 
   // 3) Cap unfinished uploads (limits orphaned files from abandoned uploads).
-  const pending = await db
+  // Supabase has no cleanup job yet, so uploads abandoned for over a day stop counting.
+  let pendingQuery = db
     .from("media_items")
     .select("id", { count: "exact", head: true })
     .eq("uploaded_by", userId)
     .eq("status", "pending");
+  if (req.target === "supabase") {
+    pendingQuery = pendingQuery.gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  }
+  const pending = await pendingQuery;
   if (pending.error) {
     console.error("[API/media/init] Pending count error:", pending.error.message);
     return fail("Failed to start the upload.", 500);
@@ -96,12 +104,14 @@ export async function POST(request: NextRequest) {
   try {
     signed = await Promise.all(
       planned.map(({ row }) =>
-        signUpload(storage, {
-          key: row.original_key,
-          mimeType: row.mime_type,
-          sizeBytes: row.size_bytes,
-          kind: row.kind,
-        })
+        storage
+          ? signUpload(storage, {
+              key: row.original_key,
+              mimeType: row.mime_type,
+              sizeBytes: row.size_bytes,
+              kind: row.kind,
+            })
+          : signSupabaseUpload(db, row.original_key)
       )
     );
   } catch (err) {

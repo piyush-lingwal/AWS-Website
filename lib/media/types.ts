@@ -5,14 +5,14 @@
 import type { MediaKind, MediaPurpose } from "./policy.ts";
 import type { MediaStatus } from "./status.ts";
 
-export type MediaSource = "s3" | "drive";
+export type MediaSource = "s3" | "drive" | "supabase";
 
 /** Full row — server code only. Never send this to a browser. */
 export interface MediaItemRow {
   id: string;
   event_id: string;
   uploaded_by: string | null;
-  /** 's3' = file in our bucket; 'drive' = link-only, shown straight from Google Drive. */
+  /** 's3' = file in our bucket; 'drive' = link-only, shown straight from Google Drive; 'supabase' = file in Supabase Storage. */
   source: MediaSource;
   drive_file_id: string | null;
   kind: MediaKind;

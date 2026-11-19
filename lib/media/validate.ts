@@ -13,9 +13,12 @@ import {
   MAX_CAPTION_LENGTH,
   MAX_FILES_PER_REQUEST,
   MEDIA_PURPOSES,
+  MEDIA_TARGETS,
+  maxBytesFor,
   type AllowedType,
   type MediaKind,
   type MediaPurpose,
+  type MediaTarget,
 } from "./policy.ts";
 
 export interface ValidFile {
@@ -30,6 +33,7 @@ export interface ValidFile {
 export interface ValidInitRequest {
   eventId: string;
   purpose: MediaPurpose;
+  target: MediaTarget;
   files: ValidFile[];
 }
 
@@ -41,7 +45,7 @@ export function validateInitRequest(body: unknown): Validation<ValidInitRequest>
   if (typeof body !== "object" || body === null) {
     return { ok: false, error: "Invalid request body." };
   }
-  const { eventId, purpose, files } = body as Record<string, unknown>;
+  const { eventId, purpose, files, target } = body as Record<string, unknown>;
 
   if (typeof eventId !== "string" || !isUuid(eventId)) {
     return { ok: false, error: "A valid event is required." };
@@ -53,6 +57,14 @@ export function validateInitRequest(body: unknown): Validation<ValidInitRequest>
       return { ok: false, error: "Purpose must be 'cover' or 'gallery'." };
     }
     cleanPurpose = purpose as MediaPurpose;
+  }
+
+  let cleanTarget: MediaTarget = "s3";
+  if (target !== undefined) {
+    if (typeof target !== "string" || !MEDIA_TARGETS.includes(target as MediaTarget)) {
+      return { ok: false, error: "Storage must be 's3' or 'supabase'." };
+    }
+    cleanTarget = target as MediaTarget;
   }
 
   if (!Array.isArray(files) || files.length === 0) {
@@ -79,8 +91,9 @@ export function validateInitRequest(body: unknown): Validation<ValidInitRequest>
     if (typeof size !== "number" || !Number.isInteger(size) || size <= 0) {
       return { ok: false, error: `${label}: invalid file size.` };
     }
-    if (size > rule.maxBytes) {
-      return { ok: false, error: `${label}: too large. ${rule.kind === "image" ? "Images" : "Videos"} can be up to ${formatMB(rule.maxBytes)}.` };
+    const limit = maxBytesFor(rule, cleanTarget);
+    if (size > limit) {
+      return { ok: false, error: `${label}: too large. ${rule.kind === "image" ? "Images" : "Videos"} can be up to ${formatMB(limit)}.` };
     }
 
     valid.push({ index: i, mimeType: type, sizeBytes: size, kind: rule.kind, ext: rule.ext });
@@ -92,7 +105,7 @@ export function validateInitRequest(body: unknown): Validation<ValidInitRequest>
     }
   }
 
-  return { ok: true, value: { eventId: eventId.toLowerCase(), purpose: cleanPurpose, files: valid } };
+  return { ok: true, value: { eventId: eventId.toLowerCase(), purpose: cleanPurpose, target: cleanTarget, files: valid } };
 }
 
 /** Caption for PATCH /api/media/items/[id]. Empty string clears it. */

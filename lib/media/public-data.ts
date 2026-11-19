@@ -7,7 +7,7 @@
 // leak through these paths, no matter what gets added to media_items later.
 //
 // If S3/CDN is not configured (lib/storage/config.ts), S3 rows are skipped
-// (Drive rows still show). Pages render rather than 500. A missing cover or gallery
+// (Drive and Supabase rows still show). Pages render rather than 500. A missing cover or gallery
 // section is a worse outcome, but not a broken site.
 // ============================================================
 
@@ -15,6 +15,12 @@ import { getAdminClient } from "../supabase/admin";
 import { getStorage } from "../storage/s3";
 import { groupByEvent, pickCover, toPublicViews, type EventLike, type GalleryGroup, type PublicMediaView } from "./public-view";
 import { PUBLIC_MEDIA_SELECT, type PublicMediaItem } from "./types";
+
+/** Project URL for Supabase Storage files, or null when it is not set. */
+function supabaseBase(): string | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, "");
+  return url && /^https:\/\//.test(url) ? url : null;
+}
 
 /** Covers for several events in one query. Missing/unconfigured -> empty map. */
 export async function getEventCovers(eventIds: readonly string[]): Promise<Map<string, PublicMediaView>> {
@@ -38,7 +44,7 @@ export async function getEventCovers(eventIds: readonly string[]): Promise<Map<s
     return out;
   }
 
-  const views = toPublicViews((data ?? []) as unknown as PublicMediaItem[], storage?.config.cdnUrl ?? null);
+  const views = toPublicViews((data ?? []) as unknown as PublicMediaItem[], storage?.config.cdnUrl ?? null, supabaseBase());
   const byEvent = new Map<string, PublicMediaView[]>();
   for (const v of views) {
     const list = byEvent.get(v.eventId);
@@ -77,7 +83,7 @@ export async function getEventMedia(eventId: string): Promise<{ cover: PublicMed
     return { cover: null, items: [] };
   }
 
-  const all = toPublicViews((data ?? []) as unknown as PublicMediaItem[], storage?.config.cdnUrl ?? null);
+  const all = toPublicViews((data ?? []) as unknown as PublicMediaItem[], storage?.config.cdnUrl ?? null, supabaseBase());
   const cover = pickCover(all.filter((i) => i.purpose === "cover"));
   const items = all.filter((i) => i !== cover);
   return { cover, items };
@@ -103,6 +109,6 @@ export async function getGalleryGroups(events: readonly EventLike[]): Promise<Ga
     return [];
   }
 
-  const views = toPublicViews((data ?? []) as unknown as PublicMediaItem[], storage?.config.cdnUrl ?? null);
+  const views = toPublicViews((data ?? []) as unknown as PublicMediaItem[], storage?.config.cdnUrl ?? null, supabaseBase());
   return groupByEvent(events, views);
 }

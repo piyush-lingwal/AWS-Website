@@ -24,8 +24,10 @@
 import {
   ALLOWED_TYPES,
   MAX_FILES_PER_REQUEST,
+  maxBytesFor,
   type MediaKind,
   type MediaPurpose,
+  type MediaTarget,
 } from "./policy.ts";
 
 export const MAX_PARALLEL_UPLOADS = 3;
@@ -46,6 +48,8 @@ export interface QueueItem {
   name: string;
   mimeType: string;
   size: number;
+  /** Size of the file the user picked, when the browser compressed it before upload. */
+  originalSize?: number;
   kind: MediaKind;
   state: ItemState;
   /** 0-100, bytes sent to storage. */
@@ -62,6 +66,8 @@ export interface FileInfo {
   name: string;
   type: string;
   size: number;
+  /** Size before in-browser compression (omit when the file was not changed). */
+  originalSize?: number;
 }
 
 // ── Formatting ───────────────────────────────────────────────
@@ -82,11 +88,12 @@ export function formatBytes(bytes: number): string {
 // ── Pre-check ────────────────────────────────────────────────
 
 const IOS_FORMATS = /\.(heic|heif|mov)$/i;
-// HEIC is converted to JPEG in the browser before it gets here (Uploader.tsx).
-// Seeing one here means that conversion failed.
+// HEIC is converted to JPEG, and every photo is then compressed to WebP, in the
+// browser before it gets here (Uploader.tsx), so the size limit applies to the
+// compressed file. Seeing a HEIC here means that conversion failed.
 
 /** Plain-language reason a file cannot be uploaded, or null if it looks fine. */
-export function precheckFile(file: FileInfo, purpose: MediaPurpose): string | null {
+export function precheckFile(file: FileInfo, purpose: MediaPurpose, target: MediaTarget = "s3"): string | null {
   if (file.size <= 0) return "This file is empty.";
 
   const rule = Object.hasOwn(ALLOWED_TYPES, file.type) ? ALLOWED_TYPES[file.type] : undefined;
@@ -101,22 +108,24 @@ export function precheckFile(file: FileInfo, purpose: MediaPurpose): string | nu
 
   if (purpose === "cover" && rule.kind !== "image") return "A cover must be an image.";
 
-  if (file.size > rule.maxBytes) {
-    const limit = formatBytes(rule.maxBytes);
+  const maxBytes = maxBytesFor(rule, target);
+  if (file.size > maxBytes) {
+    const limit = formatBytes(maxBytes);
     return `Too large (${formatBytes(file.size)}). ${rule.kind === "image" ? "Images" : "Videos"} can be up to ${limit}.`;
   }
   return null;
 }
 
 /** Build a queue item. Files that fail the pre-check become non-retryable error rows. */
-export function buildQueueItem(id: string, file: FileInfo, purpose: MediaPurpose): QueueItem {
+export function buildQueueItem(id: string, file: FileInfo, purpose: MediaPurpose, target: MediaTarget = "s3"): QueueItem {
   const rule = Object.hasOwn(ALLOWED_TYPES, file.type) ? ALLOWED_TYPES[file.type] : undefined;
-  const problem = precheckFile(file, purpose);
+  const problem = precheckFile(file, purpose, target);
   return {
     id,
     name: file.name,
     mimeType: file.type,
     size: file.size,
+    ...(file.originalSize !== undefined && file.originalSize !== file.size ? { originalSize: file.originalSize } : {}),
     kind: rule?.kind ?? "image",
     state: problem ? "error" : "queued",
     progress: 0,

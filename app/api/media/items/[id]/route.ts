@@ -12,7 +12,8 @@
 //     people clicking at once cannot overwrite each other.
 //
 // DELETE is a SOFT delete (deleted_at = now()): the item leaves the public
-// site immediately. The S3 files are purged later by the cleanup job.
+// site immediately. S3 files are purged later by the cleanup job; files in
+// Supabase Storage are removed right here (best effort, failures are logged).
 //
 // Both refresh the cached public gallery so a takedown is visible right away.
 
@@ -24,6 +25,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { canManageUpload } from "@/lib/media/access";
 import { planItemPatch, validateItemPatch } from "@/lib/media/moderation";
 import { isMediaStatus } from "@/lib/media/status";
+import { removeSupabaseFiles } from "@/lib/storage/supabase-storage";
 import type { ApiResponse } from "@/types/certificate";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -42,7 +44,7 @@ async function loadManageable(
 
   const { data, error } = await db
     .from("media_items")
-    .select("id, uploaded_by, status")
+    .select("id, uploaded_by, status, source, event_id, original_key, web_key, thumb_key")
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
@@ -54,7 +56,18 @@ async function loadManageable(
   if (!data || !isMediaStatus(data.status) || !canManageUpload(caller.role, caller.userId, data.uploaded_by)) {
     return { error: fail("Item not found.", 404) } as const;
   }
-  return { db, row: { id: data.id as string, status: data.status } } as const;
+  return {
+    db,
+    row: {
+      id: data.id as string,
+      status: data.status,
+      source: data.source as string,
+      event_id: data.event_id as string,
+      original_key: (data.original_key as string | null) ?? null,
+      web_key: (data.web_key as string | null) ?? null,
+      thumb_key: (data.thumb_key as string | null) ?? null,
+    },
+  } as const;
 }
 
 function refreshPublicPages() {
@@ -133,6 +146,9 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
     console.error("[API/media/items] Delete error:", error.message);
     return fail("Failed to delete the item.", 500);
   }
+
+  // The row is already hidden from the site; now free the storage space.
+  if (row.source === "supabase") await removeSupabaseFiles(db, row);
 
   refreshPublicPages();
   return NextResponse.json({ success: true } satisfies ApiResponse, { headers: NO_STORE });

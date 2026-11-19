@@ -350,3 +350,37 @@
   from { background-position: 160% 0; }
   to { background-position: -60% 0; }
 }
+
+/* ── Event gallery masonry (Pinterest style) ─────────────────────
+   Maths in lib/media/gallery-layout.ts. The grid's rows are tiny (--scale rows
+   per column width); each tile spans as many rows as its photo is tall, and
+   `dense` puts every tile into the shortest column, left to right. --scale and
+   --gap-rows are set by components/features/gallery/Lightbox.tsx. */
+.gallery-masonry-wrap {
+  container-type: inline-size;
+}
+.gallery-masonry {
+  --cols: 2;
+  --col: calc(100cqi / (var(--cols) + (var(--cols) - 1) * var(--gap-rows) / var(--scale)));
+  --row: calc(var(--col) / var(--scale));
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-auto-rows: var(--row);
+  grid-auto-flow: row dense;
+  column-gap: calc(var(--row) * var(--gap-rows));
+  row-gap: 0;
+}
+.gallery-masonry > li {
+  padding-bottom: calc(var(--row) * var(--gap-rows));
+}
+@container (min-width: 36rem) {
+  .gallery-masonry { --cols: 3; }
+}
+@container (min-width: 58rem) {
+  .gallery-masonry { --cols: 4; }
+}
+/* Browsers without container units (pre-2023): plain columns, same tile shapes. */
+@supports not (width: 1cqi) {
+  .gallery-masonry { display: block; columns: 2 220px; column-gap: 12px; }
+  .gallery-masonry > li { break-inside: avoid; padding-bottom: 0; margin-bottom: 12px; }
+}

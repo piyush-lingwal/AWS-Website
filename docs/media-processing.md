@@ -3,7 +3,7 @@
 ## What happens to a photo
 1. The browser uploads the original to the **private** `events/<event>/original/` area of S3.
 2. The browser calls `/api/media/uploads/complete`. The server checks the real file (size, type, first bytes), then:
-3. reads the original, makes a **web** version (WebP, max 1920 px) and a **thumb** (WebP, max 480 px),
+3. reads the original, makes a **web** version (WebP, max 1920 px) and a **thumb** (WebP, 640 px wide, for the gallery grid),
    writes both to the public `web/` and `thumb/` areas, and marks the item `ready`.
 
 The whole thing happens inside that one request (a few photos in parallel, 3 at a time).

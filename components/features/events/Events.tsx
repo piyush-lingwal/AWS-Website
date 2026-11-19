@@ -31,6 +31,7 @@ import {
 import { SuggestEventSection } from "@/components/features/events/SuggestEventSection";
 import Image from "next/image";
 import { isDriveUrl } from "@/lib/media/drive";
+import { isPreprocessedMediaUrl } from "@/lib/media/image-src";
 import type { ApiResponse, DbEvent } from "@/types/certificate";
 import { cn } from "@/lib/utils";
 import gsap from "gsap";
@@ -194,7 +195,7 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
             src={event.coverUrl}
             alt=""
             fill
-            unoptimized={isDriveUrl(event.coverUrl)}
+            unoptimized={isPreprocessedMediaUrl(event.coverUrl)}
             referrerPolicy={isDriveUrl(event.coverUrl) ? "no-referrer" : undefined}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"

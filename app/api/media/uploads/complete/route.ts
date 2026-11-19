@@ -18,6 +18,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { MEDIA_PORTAL_ROLES } from "@/lib/auth/roles";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { getStorage, s3Ports } from "@/lib/storage/s3";
+import { supabasePorts } from "@/lib/storage/supabase-storage";
 import { dbPorts } from "@/lib/media/db-ports";
 import { imagePort } from "@/lib/media/image-port";
 import { mapLimit } from "@/lib/media/concurrency";
@@ -52,25 +53,27 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) return fail(parsed.error, 400);
   const ids = parsed.value;
 
-  const storage = getStorage();
+  const storage = getStorage(); // null is fine when only Supabase uploads are used
   const db = getAdminClient();
-  if (!storage || !db) return fail("Media uploads are not configured.", 500);
+  if (!db) return fail("Media uploads are not configured.", 500);
 
   const rowsRes = await db
     .from("media_items")
-    .select("id, event_id, uploaded_by, kind, mime_type, size_bytes, original_key, status")
+    .select("id, event_id, uploaded_by, kind, mime_type, size_bytes, original_key, status, source")
     .in("id", ids)
-    .eq("source", "s3") // Drive items never go through S3 completion
+    .in("source", ["s3", "supabase"]) // Drive items need no completion
     .is("deleted_at", null);
   if (rowsRes.error) {
     console.error("[API/media/complete] Row lookup error:", rowsRes.error.message);
     return fail("Failed to complete the upload.", 500);
   }
-  const byId = new Map<string, CompletionRow>(
-    (rowsRes.data as CompletionRow[]).map((r) => [r.id, r])
-  );
+  const rows = rowsRes.data as Array<CompletionRow & { source: "s3" | "supabase" }>;
+  const byId = new Map(rows.map((r) => [r.id, r]));
 
-  const ports = { ...s3Ports(storage), ...dbPorts(db), ...imagePort };
+  // Same pipeline for both storages: only the file operations differ.
+  const common = { ...dbPorts(db), ...imagePort };
+  const s3 = storage ? { ...s3Ports(storage), ...common } : null;
+  const supabase = { ...supabasePorts(db), ...common };
 
   // A few at a time: decoding a large photo needs real memory.
   const results: Result[] = await mapLimit(
@@ -78,7 +81,10 @@ export async function POST(request: NextRequest) {
     PROCESS_CONCURRENCY,
     async (id): Promise<Result> => {
       try {
-        return await completeUpload(id, byId.get(id), caller, ports);
+        const row = byId.get(id);
+        const ports = row?.source === "supabase" ? supabase : s3;
+        if (row && !ports) throw new Error("S3 is not configured for an S3 upload.");
+        return await completeUpload(id, row, caller, ports ?? supabase);
       } catch (err) {
         // Log details server-side; the client only learns "error" for this file.
         console.error("[API/media/complete] Item error:", id, err instanceof Error ? err.message : err);

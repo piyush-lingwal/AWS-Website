@@ -37,16 +37,16 @@ export function cleanupPorts({ db, storage, now, distributionId }: CleanupDeps):
     async listCandidates(limit) {
       // One simple query per condition (oldest first). `classify` makes the final call.
       const queries = [
-        db.from("media_items").select(COLUMNS)
+        db.from("media_items").select(COLUMNS).neq("source", "supabase") // Supabase files are removed by the API, not this S3 job
           .not("deleted_at", "is", null).lt("deleted_at", iso(now - DELETED_GRACE_MS))
           .order("deleted_at", { ascending: true }).limit(limit),
-        db.from("media_items").select(COLUMNS)
+        db.from("media_items").select(COLUMNS).neq("source", "supabase") // Supabase files are removed by the API, not this S3 job
           .is("deleted_at", null).eq("status", "failed").lt("updated_at", iso(now - FAILED_RETENTION_MS))
           .order("updated_at", { ascending: true }).limit(limit),
-        db.from("media_items").select(COLUMNS)
+        db.from("media_items").select(COLUMNS).neq("source", "supabase") // Supabase files are removed by the API, not this S3 job
           .is("deleted_at", null).eq("status", "pending").lt("created_at", iso(now - PENDING_MAX_AGE_MS))
           .order("created_at", { ascending: true }).limit(limit),
-        db.from("media_items").select(COLUMNS)
+        db.from("media_items").select(COLUMNS).neq("source", "supabase") // Supabase files are removed by the API, not this S3 job
           .is("deleted_at", null).eq("status", "processing").lt("updated_at", iso(now - PROCESSING_MAX_AGE_MS))
           .order("updated_at", { ascending: true }).limit(limit),
       ];

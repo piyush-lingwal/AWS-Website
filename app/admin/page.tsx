@@ -237,6 +237,7 @@ function AdminPageContent() {
   const [topPerformersError, setTopPerformersError] = useState("");
   const [addingTopPerformer, setAddingTopPerformer] = useState(false);
   const [deletingTopPerformerId, setDeletingTopPerformerId] = useState<string | null>(null);
+  const [removingCoverId, setRemovingCoverId] = useState<string | null>(null);
   // Certificates tab: which list is shown, counts reported by the team lists, and busy flags.
   const [certSection, setCertSection] = useState<CertSection>(() => parseCertSection(searchParams.get("section")));
   const [organiserCount, setOrganiserCount] = useState<number | null>(null);
@@ -614,6 +615,36 @@ function AdminPageContent() {
           }
         } catch (err: any) {
           toast.error(err.message || "Failed to delete event", { id: "delete-event" });
+        }
+      },
+    });
+  };
+
+  // ── Remove Cover Photo ──────────────────────────────────────
+  const handleRemoveCover = (event: DbEvent) => {
+    if (!event.cover_id) return;
+    const coverId = event.cover_id;
+    showConfirm({
+      title: "Remove Cover Photo",
+      message: `Remove the cover photo for "${event.name}"?\n\nIt will disappear from the Home and Events pages right away. A new one can be uploaded from the Media Portal afterwards.`,
+      confirmLabel: "Remove Cover",
+      variant: "danger",
+      onConfirm: async () => {
+        setRemovingCoverId(coverId);
+        toast.loading("Removing cover photo…", { id: "remove-cover" });
+        try {
+          const res = await fetch(`/api/media/items/${coverId}`, { method: "DELETE" });
+          const json = await res.json();
+          if (json.success) {
+            toast.success("Cover photo removed.", { id: "remove-cover" });
+            await fetchData();
+          } else {
+            toast.error(json.error || "Failed to remove cover photo", { id: "remove-cover" });
+          }
+        } catch (err: any) {
+          toast.error(err.message || "Failed to remove cover photo", { id: "remove-cover" });
+        } finally {
+          setRemovingCoverId(null);
         }
       },
     });
@@ -1802,6 +1833,45 @@ function AdminPageContent() {
                             </div>
                           )}
                         </div>
+
+                        {/* Cover Photo */}
+                        {activeEvent.cover_id && (
+                          <div className="flex items-center gap-2.5 p-2 pr-3 rounded-xl bg-white/[0.03] border border-white/[0.08] w-fit">
+                            <div className="w-9 h-9 rounded-lg overflow-hidden bg-black/30 border border-white/[0.08] shrink-0 flex items-center justify-center">
+                              {activeEvent.cover_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={activeEvent.cover_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Loader2 className="w-3.5 h-3.5 text-[#71717A] animate-spin" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-medium text-[#D4D4D8]">Cover photo</p>
+                              <p className="text-[10px] text-[#71717A]">
+                                {activeEvent.cover_status === "pending"
+                                  ? "Upload not finished"
+                                  : activeEvent.cover_status === "processing"
+                                  ? "Processing…"
+                                  : activeEvent.cover_status === "hidden"
+                                  ? "Hidden from site"
+                                  : "Live on site"}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCover(activeEvent)}
+                              disabled={removingCoverId === activeEvent.cover_id}
+                              title="Remove cover photo"
+                              className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                            >
+                              {removingCoverId === activeEvent.cover_id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Right Action Stack */}
@@ -2019,6 +2089,47 @@ function AdminPageContent() {
                               </p>
                             )}
                           </div>
+
+                          {event.cover_id && (
+                            <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                              <div className="w-9 h-9 rounded-lg overflow-hidden bg-black/30 border border-white/[0.08] shrink-0 flex items-center justify-center">
+                                {event.cover_url ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={event.cover_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <Loader2 className="w-3.5 h-3.5 text-[#71717A] animate-spin" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[11px] font-medium text-[#D4D4D8]">Cover photo</p>
+                                <p className="text-[10px] text-[#71717A]">
+                                  {event.cover_status === "pending"
+                                    ? "Upload not finished"
+                                    : event.cover_status === "processing"
+                                    ? "Processing…"
+                                    : event.cover_status === "hidden"
+                                    ? "Hidden from site"
+                                    : "Live on site"}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveCover(event);
+                                }}
+                                disabled={removingCoverId === event.cover_id}
+                                title="Remove cover photo"
+                                className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                              >
+                                {removingCoverId === event.cover_id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          )}
 
                           <div className="space-y-1.5 text-xs text-[#A1A1AA] pt-2 border-t border-white/[0.04]">
                             <div className="flex items-center gap-2">

@@ -12,10 +12,13 @@
 // enforces the same thing from the other side.)
 // ============================================================
 
-import { publicUrl } from "./keys.ts";
+import { publicUrl, supabasePublicUrl } from "./keys.ts";
 import { driveThumbUrl, drivePreviewUrl, DRIVE_ID_PATTERN } from "./drive.ts";
-import type { MediaKind, MediaPurpose } from "./policy.ts";
+import { THUMB_WIDTH_PX, type MediaKind, type MediaPurpose } from "./policy.ts";
 import type { PublicMediaItem } from "./types.ts";
+
+/** Public Supabase bucket id (lib/storage/supabase-storage.ts). Plain constant: this file stays free of server imports. */
+export const SUPABASE_PUBLIC_BUCKET = "event-media";
 
 export interface PublicMediaView {
   id: string;
@@ -35,14 +38,18 @@ export interface PublicMediaView {
   posterUrl?: string;
   /** Google Drive player (iframe src) for a Drive video. `url` is then a still image. */
   embedUrl?: string;
-  source: "s3" | "drive";
+  source: "s3" | "drive" | "supabase";
 }
 
 /**
  * One row -> one view, or null if it is not ready to show (no public file yet,
  * or an S3 row while the CDN is not configured). Drive rows need no CDN.
  */
-export function toPublicView(row: PublicMediaItem, cdnBase: string | null): PublicMediaView | null {
+export function toPublicView(
+  row: PublicMediaItem,
+  cdnBase: string | null,
+  supabaseUrl: string | null = null
+): PublicMediaView | null {
   const common = {
     id: row.id,
     eventId: row.event_id,
@@ -62,10 +69,17 @@ export function toPublicView(row: PublicMediaItem, cdnBase: string | null): Publ
       ...common,
       source: "drive",
       url,
-      thumbUrl: driveThumbUrl(row.drive_file_id, 480),
+      thumbUrl: driveThumbUrl(row.drive_file_id, THUMB_WIDTH_PX),
       posterUrl: row.kind === "video" ? url : undefined,
       embedUrl: row.kind === "video" ? drivePreviewUrl(row.drive_file_id) : undefined,
     };
+  }
+
+  if (row.source === "supabase") {
+    if (!row.web_key || !supabaseUrl) return null;
+    const url = supabasePublicUrl(supabaseUrl, SUPABASE_PUBLIC_BUCKET, row.web_key);
+    const thumbUrl = row.thumb_key ? supabasePublicUrl(supabaseUrl, SUPABASE_PUBLIC_BUCKET, row.thumb_key) : url;
+    return { ...common, source: "supabase", url, thumbUrl };
   }
 
   if (!row.web_key || !cdnBase) return null;
@@ -76,10 +90,14 @@ export function toPublicView(row: PublicMediaItem, cdnBase: string | null): Publ
 }
 
 /** Maps a batch, silently dropping rows that are not renderable (never throws on bad data). */
-export function toPublicViews(rows: readonly PublicMediaItem[], cdnBase: string | null): PublicMediaView[] {
+export function toPublicViews(
+  rows: readonly PublicMediaItem[],
+  cdnBase: string | null,
+  supabaseUrl: string | null = null
+): PublicMediaView[] {
   const out: PublicMediaView[] = [];
   for (const row of rows) {
-    const v = toPublicView(row, cdnBase);
+    const v = toPublicView(row, cdnBase, supabaseUrl);
     if (v) out.push(v);
   }
   return out;

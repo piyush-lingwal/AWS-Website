@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import sharp from "sharp";
-import { processImage, UnreadableImageError, WEB_MAX_PX, THUMB_MAX_PX } from "../../lib/media/process-image.ts";
+import { processImage, UnreadableImageError, WEB_MAX_PX } from "../../lib/media/process-image.ts";
+import { THUMB_WIDTH_PX } from "../../lib/media/policy.ts";
 import { mapLimit } from "../../lib/media/concurrency.ts";
 import { heicToJpegName, isHeicFile } from "../../lib/media/heic.ts";
 
 const solid = (w: number, h: number) => sharp({ create: { width: w, height: h, channels: 3, background: { r: 200, g: 30, b: 30 } } });
 
-test("big photo: web <= 1920, thumb <= 480, both WebP, aspect kept", async () => {
+test("big photo: web <= 1920, thumb 640 wide, both WebP, aspect kept", async () => {
   const input = await solid(4000, 3000).jpeg().toBuffer();
   const out = await processImage(input);
   const web = await sharp(out.web).metadata();
@@ -15,7 +16,7 @@ test("big photo: web <= 1920, thumb <= 480, both WebP, aspect kept", async () =>
   assert.equal(web.format, "webp");
   assert.equal(thumb.format, "webp");
   assert.deepEqual([web.width, web.height], [WEB_MAX_PX, 1440]);
-  assert.deepEqual([thumb.width, thumb.height], [THUMB_MAX_PX, 360]);
+  assert.deepEqual([thumb.width, thumb.height], [THUMB_WIDTH_PX, 480]);
   assert.deepEqual([out.width, out.height], [WEB_MAX_PX, 1440]);
 });
 

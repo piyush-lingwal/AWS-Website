@@ -3,7 +3,7 @@
 // ============================================================
 //
 // Input:  the original bytes (JPEG / PNG / WebP, already type-checked)
-// Output: a "web" WebP (max 1920px) and a "thumb" WebP (max 480px)
+// Output: a "web" WebP (max 1920px) and a "thumb" WebP (640px wide, see THUMB_WIDTH_PX)
 //
 // What this does on purpose:
 //   - Applies the EXIF orientation, THEN drops all metadata. Phone photos
@@ -15,9 +15,9 @@
 // ============================================================
 
 import sharp from "sharp";
+import { THUMB_MAX_HEIGHT_PX, THUMB_WIDTH_PX } from "./policy.ts";
 
 export const WEB_MAX_PX = 1920;
-export const THUMB_MAX_PX = 480;
 /** ~80 megapixels. A 12 MP phone photo is 12M; this leaves room for pro cameras. */
 export const MAX_INPUT_PIXELS = 80_000_000;
 
@@ -49,7 +49,7 @@ export async function processImage(input: Uint8Array): Promise<ProcessedImage> {
 
     const thumb = await open()
       .rotate()
-      .resize({ width: THUMB_MAX_PX, height: THUMB_MAX_PX, fit: "inside", withoutEnlargement: true })
+      .resize({ width: THUMB_WIDTH_PX, height: THUMB_MAX_HEIGHT_PX, fit: "inside", withoutEnlargement: true })
       .webp({ quality: 72 })
       .toBuffer();
 
