@@ -22,7 +22,7 @@ export function TeamAvatar({
 
   return (
     <span
-      className={`relative block shrink-0 overflow-hidden border-4 border-[color:var(--surface-line)] bg-[var(--tile-bg)] shadow-[0_18px_40px_-18px_var(--tile-shadow)] ${className}`}
+      className={`team-avatar relative block shrink-0 overflow-hidden border-4 border-[color:var(--surface-line)] bg-[var(--tile-bg)] shadow-[0_18px_40px_-18px_var(--tile-shadow)] ${className}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- admin-set URLs can point anywhere */}
       <img

@@ -47,7 +47,7 @@ export function TeamHero({ memberCount, wingCount }: { memberCount: number; wing
         >
           The people behind
           <br />
-          <span className="t-serif text-sbg-accent">the builds.</span>
+          <span className="t-serif text-sbg-accent">the Builder Group.</span>
         </h1>
 
         <p className="rise t-lead mx-auto mt-6 max-w-xl sm:mt-8" style={delay(240)}>

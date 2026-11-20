@@ -37,6 +37,7 @@ export function TeamLeadership({ core }: { core: PublicTeamMember[] }) {
               <li key={m.id} className={span(i, core.length)}>
                 <Reveal index={i % 3} className="h-full">
                   <article
+                    data-tilt
                     className="surface lift flex h-full flex-col items-center gap-5 rounded-[28px] p-7 text-center"
                     style={{ backgroundImage: `linear-gradient(155deg, ${TINTS[i % TINTS.length]} 0%, var(--wash-80) 58%)` }}
                   >

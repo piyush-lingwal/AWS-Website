@@ -33,7 +33,7 @@ export async function TeamTeaser() {
             Our team · Cohort 2026
           </p>
           <h2 className="t-display text-[clamp(38px,6vw,84px)] text-sbg-ink">
-            Meet the <span className="t-serif text-sbg-accent">people behind it.</span>
+            Meet the people behind <span className="t-serif text-sbg-accent">the Builder Group.</span>
           </h2>
           <p className="t-lead mx-auto mt-6 max-w-xl">
             The students who set the direction and keep every wing moving.
@@ -45,6 +45,7 @@ export async function TeamTeaser() {
               <li key={m.id}>
                 <Reveal index={i % 3} className="h-full">
                   <article
+                    data-tilt
                     className="surface lift flex h-full flex-col items-center gap-4 rounded-[28px] p-5 text-center sm:p-7"
                     style={{ backgroundImage: `linear-gradient(155deg, ${TINTS[i % TINTS.length]} 0%, var(--wash-80) 58%)` }}
                   >
@@ -61,12 +62,9 @@ export async function TeamTeaser() {
             ))}
           </ul>
         )}
-        <Reveal className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <Reveal className="mt-12 flex items-center justify-center">
           <Link href="/team" className="btn btn-primary w-full sm:w-auto">
             Meet the full team <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-          <Link href="/register" className="btn btn-ghost w-full sm:w-auto">
-            Join a wing
           </Link>
         </Reveal>
       </div>

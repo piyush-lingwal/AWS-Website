@@ -1,8 +1,10 @@
 import { arrangeRoster, type PublicTeamMember } from "@/lib/team/roster";
 import { TeamHero } from "./TeamHero";
+import { SectionDivider } from "@/components/design/SectionDivider";
 import { TeamFaculty } from "./TeamFaculty";
 import { TeamLeadership } from "./TeamLeadership";
 import { TeamMembersDirectory } from "./TeamMembersDirectory";
+import { TeamFutureBuilderCTA } from "./TeamFutureBuilderCTA";
 
 // The page background (ScrollAtmosphere) lives in app/(light)/team/page.tsx.
 // Each section declares its own data-tone, so this wrapper stays transparent.
@@ -14,16 +16,24 @@ export function Team({ members }: { members: PublicTeamMember[] }) {
   return (
     <div className="relative">
       <TeamHero memberCount={new Set([...core, ...wings.flatMap((w) => w.members)].map((m) => m.id)).size} wingCount={wings.length} />
+      <SectionDivider />
       <TeamFaculty />
+      <SectionDivider />
       <TeamLeadership core={core} />
+      <SectionDivider />
       <TeamMembersDirectory wings={wings} />
       {members.length === 0 && (
+        <>
+        <SectionDivider />
         <section data-tone="bloom" className="px-[var(--gutter)] pb-24">
           <p className="surface mx-auto max-w-md rounded-[24px] p-8 text-center text-sm text-sbg-ink-2">
             The student roster is being updated. Check back soon.
           </p>
         </section>
+        </>
       )}
+      <SectionDivider />
+      <TeamFutureBuilderCTA />
     </div>
   );
 }

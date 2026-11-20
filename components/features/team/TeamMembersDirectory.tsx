@@ -53,6 +53,7 @@ export function TeamMembersDirectory({ wings }: { wings: WingGroup[] }) {
                         {lead ? (
                           // Wing lead: the Leadership card treatment (role chip, bigger avatar, rounder card), plus a lilac border.
                           <article
+                            data-tilt
                             className="surface lift flex h-full items-center gap-5 rounded-[28px] border-2 border-sbg-lilac-300 p-5 sm:p-6"
                             style={{ backgroundImage: `linear-gradient(155deg, ${LEAD_TINT} 0%, var(--wash-80) 58%)` }}
                           >

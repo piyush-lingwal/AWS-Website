@@ -1,14 +1,6 @@
 import { Reveal } from "@/components/design/Reveal";
 import { TeamAvatar } from "./TeamAvatar";
-
-// Faculty are not in team_members: they are fixed here and shown first.
-// Add a picture path to show a real photo; null shows the shared placeholder.
-const HOD = { name: "Dr. Sandeep Kumar", title: "Head of Department", picture: null };
-
-const FACULTY_COORDINATORS = [
-  { name: "Mr. Shivam Pandey", title: "Faculty Coordinator", picture: null },
-  { name: "Mr. Abhishek Rawat", title: "Faculty Coordinator", picture: null },
-] as const;
+import { FACULTY_COORDINATORS, HOD } from "@/lib/team/faculty";
 
 export function TeamFaculty() {
   return (
