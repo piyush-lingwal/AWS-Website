@@ -3,6 +3,8 @@ import { Bricolage_Grotesque, Figtree, Instrument_Serif } from "next/font/google
 import { GeistMono } from "geist/font/mono";
 import { cn } from "@/lib/utils";
 import { ThemeScope } from "@/components/design/ThemeScope";
+import { PointerFx } from "@/components/design/PointerFx";
+import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/seo/JsonLd";
 import "./daylight.css";
 
 // Pages in this route group use the light "Daylight Cloud" theme (see DESIGN.md).
@@ -29,6 +31,9 @@ export const viewport: Viewport = {
 export default function LightLayout({ children }: { children: React.ReactNode }) {
   return (
     <ThemeScope className={cn(display.variable, serif.variable, body.variable, GeistMono.variable, "sbg-light font-lt-body")}>
+      <OrganizationJsonLd />
+      <WebSiteJsonLd />
+      <PointerFx />
       {children}
     </ThemeScope>
   );
