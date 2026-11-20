@@ -107,8 +107,7 @@ app/
 ├── events/page.tsx
 ├── team/page.tsx
 ├── learning-hub/page.tsx
-├── gallery/page.tsx
-└── demo/page.tsx           # Shader experiment
+└── gallery/page.tsx
 
 components/
 ├── layout/
