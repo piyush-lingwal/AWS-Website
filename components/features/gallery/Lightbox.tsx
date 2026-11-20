@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, ExternalLink, Play, X } from "lucide-react";
 import { formatDuration } from "@/lib/media/format";
 import { isDriveUrl } from "@/lib/media/drive";
@@ -60,9 +61,22 @@ export function MediaGrid({ items }: { items: LightboxItem[] }) {
       </div>
 
       {/* In document.body so the overlay sits above the page's fixed navigation (page content has its own stacking context). */}
-      {index !== null &&
+      {/* Own MotionConfig: the portal sits outside DesignNav's, so reduced motion is honoured here too. */}
+      {typeof document !== "undefined" &&
         createPortal(
-          <LightboxOverlay items={items} index={index} onClose={() => setIndex(null)} onNavigate={setIndex} />,
+          <MotionConfig reducedMotion="user">
+            <AnimatePresence>
+              {index !== null && (
+                <LightboxOverlay
+                  key="lightbox"
+                  items={items}
+                  index={index}
+                  onClose={() => setIndex(null)}
+                  onNavigate={setIndex}
+                />
+              )}
+            </AnimatePresence>
+          </MotionConfig>,
           document.body
         )}
     </>
@@ -94,7 +108,7 @@ function MasonryTile({
         type="button"
         onClick={onOpen}
         aria-label={item.caption ?? (item.kind === "video" ? `Play video ${position}` : `View photo ${position}`)}
-        className="group relative block h-full w-full overflow-hidden rounded-[18px] border border-[var(--surface-line)] bg-sbg-lilac-100 shadow-[0_10px_30px_-18px_var(--tile-shadow)] transition-shadow duration-300 hover:shadow-[0_24px_44px_-20px_rgba(76,29,149,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sbg-accent"
+        className="group relative block h-full w-full overflow-hidden rounded-[18px] border border-[var(--surface-line)] bg-sbg-lilac-100 shadow-[0_10px_30px_-18px_var(--tile-shadow)] transition-[box-shadow,transform] duration-300 active:scale-[.985] hover:shadow-[0_24px_44px_-20px_rgba(76,29,149,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sbg-accent"
         // The grid row span sets the height; the aspect ratio only takes effect in the fallback column layout.
         style={{ aspectRatio: String(ratio) }}
       >
@@ -134,7 +148,7 @@ function MasonryTile({
 
         {item.kind === "video" && (
           <>
-            <span className="pointer-events-none absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
+            <span className="pointer-events-none absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
               <Play className="ml-0.5 h-5 w-5" aria-hidden="true" />
             </span>
             <span className="pointer-events-none absolute right-1.5 top-1.5 rounded-md bg-black/70 px-1.5 py-0.5 font-mono text-[10px] text-white">
@@ -209,16 +223,38 @@ function LightboxOverlay({
   const item = items[index];
   const closeRef = useRef<HTMLButtonElement>(null);
 
+  // Which way the user moved, so the new photo slides in from that side (0 on first open).
+  const [prevIndex, setPrevIndex] = useState(index);
+  const [dir, setDir] = useState(0);
+  if (prevIndex !== index) {
+    setPrevIndex(index);
+    setDir((index - prevIndex + items.length) % items.length === 1 ? 1 : -1);
+  }
+
   const next = useCallback(() => onNavigate((index + 1) % items.length), [index, items.length, onNavigate]);
   const prev = useCallback(() => onNavigate((index - 1 + items.length) % items.length), [index, items.length, onNavigate]);
 
+  // Lock the page once for the whole time the lightbox is open (not per photo), and put the page
+  // back exactly where it was opened from when it closes.
   useEffect(() => {
-    closeRef.current?.focus();
+    const savedY = window.scrollY;
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     // The site's smooth scrolling would otherwise keep scrolling the page behind the overlay.
-    const lenis = (window as unknown as { __lenis?: { stop(): void; start(): void } }).__lenis;
+    const lenis = (window as unknown as {
+      __lenis?: { stop(): void; start(): void; scrollTo(y: number, o: { immediate: boolean; force: boolean }): void };
+    }).__lenis;
     lenis?.stop();
+    return () => {
+      document.body.style.overflow = original;
+      lenis?.start();
+      lenis?.scrollTo(savedY, { immediate: true, force: true });
+      window.scrollTo({ top: savedY, left: 0, behavior: "instant" as ScrollBehavior });
+    };
+  }, []);
+
+  useEffect(() => {
+    closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowRight") next();
@@ -226,8 +262,6 @@ function LightboxOverlay({
     };
     window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = original;
-      lenis?.start();
       window.removeEventListener("keydown", onKey);
     };
   }, [onClose, next, prev]);
@@ -245,7 +279,10 @@ function LightboxOverlay({
   }, [index, items]);
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, transition: { duration: 0.18 } }}
+      exit={{ opacity: 0, transition: { duration: 0.15 } }}
       role="dialog"
       aria-modal="true"
       aria-label={item.caption ?? (item.kind === "video" ? "Video" : "Photo")}
@@ -259,9 +296,9 @@ function LightboxOverlay({
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 transition-colors hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+        className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center group rounded-full bg-black/40 text-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] ring-1 ring-white/40 backdrop-blur-md transition-[color,background-color,transform] hover:bg-black/55 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
       >
-        <X className="h-5 w-5" aria-hidden="true" />
+        <X className="h-5 w-5 transition-transform duration-200 group-hover:rotate-90 motion-reduce:transition-none motion-reduce:group-hover:rotate-0" aria-hidden="true" />
       </button>
 
       {items.length > 1 && (
@@ -270,22 +307,32 @@ function LightboxOverlay({
             type="button"
             onClick={prev}
             aria-label="Previous"
-            className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 transition-colors hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white sm:left-4"
+            className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center group rounded-full bg-black/40 text-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] ring-1 ring-white/40 backdrop-blur-md transition-[color,background-color,transform] hover:bg-black/55 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white sm:left-4"
           >
-            <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+            <ChevronLeft className="h-6 w-6 transition-transform duration-200 group-hover:-translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={next}
             aria-label="Next"
-            className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 transition-colors hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white sm:right-4"
+            className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center group rounded-full bg-black/40 text-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] ring-1 ring-white/40 backdrop-blur-md transition-[color,background-color,transform] hover:bg-black/55 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white sm:right-4"
           >
-            <ChevronRight className="h-6 w-6" aria-hidden="true" />
+            <ChevronRight className="h-6 w-6 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
           </button>
         </>
       )}
 
-      <div className="relative flex flex-col items-center gap-3">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.22, ease: [0.23, 1, 0.32, 1] } }}
+        exit={{ opacity: 0, scale: 0.98, y: 4, transition: { duration: 0.15 } }}
+        className="relative flex flex-col items-center gap-3"
+      >
+        <motion.div
+          key={item.id}
+          initial={{ opacity: dir ? 0 : 1, x: dir * 16 }}
+          animate={{ opacity: 1, x: 0, transition: { duration: 0.18, ease: [0.23, 1, 0.32, 1] } }}
+        >
         {item.embedUrl ? (
           <iframe
             key={item.id}
@@ -311,6 +358,7 @@ function LightboxOverlay({
         ) : (
           <FullImage key={item.id} item={item} />
         )}
+        </motion.div>
 
         {item.caption && <p className="max-w-xl text-center text-sm text-white/80">{item.caption}</p>}
         <div className="flex items-center gap-3 font-mono text-xs text-[#D9C8FF]">
@@ -335,7 +383,7 @@ function LightboxOverlay({
             </a>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

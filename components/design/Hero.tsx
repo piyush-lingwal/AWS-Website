@@ -33,7 +33,7 @@ export function Hero() {
 
   return (
     <section id="top" ref={ref} data-tone="dawn" className="scene relative h-[230svh]" style={cssVars({ "--t": 0 })}>
-      <div className="pin flex items-center">
+      <div className="pin flex items-center" data-parallax>
         <div className="mx-auto grid w-full max-w-[1240px] items-center gap-4 px-[var(--gutter)] pt-24 sm:pt-28 lg:grid-cols-[1.02fr_0.98fr] lg:gap-10 lg:pt-20">
           {/* ── copy ── */}
           <div className="hero-copy relative z-10 text-center lg:text-left">
@@ -66,9 +66,16 @@ export function Hero() {
             </p>
 
             <div className="rise mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start" style={cssVars({ "--d": 380 })}>
-              <Link href="/register" className="btn btn-primary w-full sm:w-auto">
+              <a
+                href="https://www.meetup.com/tulas-university-dehradun/"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-magnetic
+                className="btn btn-primary w-full sm:w-auto"
+              >
                 Join Group <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
               <Link href="/about" className="btn btn-ghost w-full sm:w-auto">
                 About us
               </Link>
@@ -102,9 +109,9 @@ export function Hero() {
               ))}
             </div>
 
-            {SERVICE_CHIPS.map((chip) => (
+            {SERVICE_CHIPS.map((chip, i) => (
               <div key={chip.name} className="chip-float" style={cssVars({ "--x": chip.x, "--y": chip.y, "--at": chip.at })}>
-                <div className="surface flex items-center gap-2.5 rounded-2xl py-2 pl-2 pr-4" style={cssVars({ "--bob": chip.bob })}>
+                <div className="surface flex items-center gap-2.5 rounded-2xl py-2 pl-2 pr-4" style={cssVars({ "--bob": chip.bob, "--depth": 12 + i * 2 })}>
                   <Image src={chip.src} alt="" width={36} height={36} className="h-8 w-8 sm:h-9 sm:w-9" />
                   <span className="leading-tight">
                     <span className="block text-[13px] font-semibold text-sbg-ink">{chip.name}</span>
@@ -115,7 +122,7 @@ export function Hero() {
             ))}
 
             <div className="kio">
-              <div>
+              <div style={cssVars({ "--depth": 8 })}>
                 <Image src="/chatbotmascot.webp" alt="" width={480} height={576} priority className="h-auto w-full" />
               </div>
             </div>

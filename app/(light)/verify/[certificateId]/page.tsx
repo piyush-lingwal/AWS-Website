@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import { isValidCertificateIdFormat } from "@/lib/certificates/id-generator";
 import { getAwardTitle } from "@/lib/certificates/award-title";
 import { getAdminClient } from "@/lib/supabase/admin";
@@ -39,11 +40,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { certificateId } = await params;
   const cleanId = (certificateId || "").trim().toUpperCase();
 
-  return {
-    title: `Verify ${cleanId} — AWS Student Builder Group`,
+  const meta = buildPageMetadata({
+    path: `/verify/${cleanId}`,
+    title: `Verify ${cleanId}`,
     description: `Official verification record for certificate ${cleanId} issued by AWS Student Builder Group at Tulas University.`,
-    robots: { index: false, follow: true },
-  };
+    noindex: true,
+  });
+  // The /verify layout sets a canonical; clear it so a noindex record page has none.
+  return { ...meta, alternates: { canonical: null } };
 }
 
 function formatDate(iso: string): string {

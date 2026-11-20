@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ArrowUpRight, Calendar, Clock, MapPin } from "lucide-react";
 import { isDriveUrl } from "@/lib/media/drive";
 import { isPreprocessedMediaUrl } from "@/lib/media/image-src";
 import { eventDateLabel, eventDayLabel, parseDay, pickHomeEvents, startOfToday, type HomeEvent } from "@/lib/design/home-events";
-import type { ApiResponse } from "@/types/certificate";
+import type { ApiResponse, DbEvent } from "@/types/certificate";
 import { Reveal } from "./Reveal";
 import { pixelWave } from "@/lib/design/pixel-cloud";
 
@@ -26,33 +26,48 @@ const COMING_SOON: HomeEvent = {
 type LoadState = { status: "loading" } | { status: "ready"; next: HomeEvent | null; past: HomeEvent[] };
 
 /**
- * Section 01. The live "What's next?" card and the most recent past events, from /api/events.
+ * Section 01. The live "What's next?" card and the most recent past events.
+ * The server passes the events (initialEvents) so the HTML already holds them; without them
+ * (database outage) they load from /api/events after mount.
  * Until the data arrives a placeholder of the same size holds the space, so the page never jumps.
  */
-export function UpcomingEvents() {
-  const [state, setState] = useState<LoadState>({ status: "loading" });
+export function UpcomingEvents({ initialEvents, todayIso }: { initialEvents?: DbEvent[] | null; todayIso?: string } = {}) {
+  const hasInitial = Array.isArray(initialEvents);
+  // undefined = loading, null = could not load
+  const [data, setData] = useState<HomeEvent[] | null | undefined>(hasInitial ? initialEvents : undefined);
+  const [today, setToday] = useState<Date>(() => parseDay(todayIso) ?? startOfToday());
+
+  // The server's day can differ from the visitor's: re-pick with the browser's day after mount.
+  useEffect(() => {
+    const browserToday = startOfToday();
+    setToday((prev) => (prev.getTime() === browserToday.getTime() ? prev : browserToday));
+  }, []);
 
   useEffect(() => {
+    if (hasInitial) return;
     let alive = true;
     (async () => {
       try {
         const res = await fetch("/api/events", { cache: "no-store" });
         const json: ApiResponse<HomeEvent[]> = res.ok ? await res.json() : { success: false };
         if (!alive) return;
-        if (json.success && Array.isArray(json.data)) {
-          const { next, past } = pickHomeEvents(json.data, startOfToday());
-          setState({ status: "ready", next, past: past.slice(0, 3) });
-        } else {
-          setState({ status: "ready", next: null, past: [] });
-        }
+        setData(json.success && Array.isArray(json.data) ? json.data : null);
       } catch {
-        if (alive) setState({ status: "ready", next: null, past: [] });
+        if (alive) setData(null);
       }
     })();
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const state = useMemo<LoadState>(() => {
+    if (data === undefined) return { status: "loading" };
+    if (data === null) return { status: "ready", next: null, past: [] };
+    const { next, past } = pickHomeEvents(data, today);
+    return { status: "ready", next, past: past.slice(0, 3) };
+  }, [data, today]);
 
   const ready = state.status === "ready";
   const upcoming = ready ? state.next : null;

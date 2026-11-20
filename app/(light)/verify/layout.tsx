@@ -1,23 +1,12 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Verify Certificate — AWS Student Builder Group",
+export const metadata: Metadata = buildPageMetadata({
+  path: "/verify",
+  title: "Verify a Certificate",
   description:
-    "Official credential verification portal for AWS Student Builder Group at Tulas University. Verify authenticity of session participation and workshop certificates.",
-  keywords: [
-    "AWS SBG",
-    "Certificate Verification",
-    "Tulas University",
-    "Credentials",
-    "AWS",
-  ],
-  openGraph: {
-    title: "Verify Certificate — AWS Student Builder Group",
-    description:
-      "Official certificate verification system for AWS Student Builder Group.",
-    type: "website",
-  },
-};
+    "Check that a certificate issued by AWS Student Builder Group at Tulas University is genuine by entering its certificate ID.",
+});
 
 export default function VerifyLayout({
   children,

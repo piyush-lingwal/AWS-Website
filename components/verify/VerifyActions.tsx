@@ -67,7 +67,7 @@ export function VerifyActions({ certificateId, eventName }: { certificateId: str
         }}
         className={`${BTN} btn-ghost`}
       >
-        {copied ? <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" /> : <Link2 className="h-4 w-4" aria-hidden="true" />}
+        {copied ? <span className="pop-in inline-flex"><Check className="h-4 w-4 text-emerald-600" aria-hidden="true" /></span> : <Link2 className="h-4 w-4" aria-hidden="true" />}
         <span>{copied ? "Link copied" : "Copy link"}</span>
       </button>
       {canShare && (
@@ -109,7 +109,7 @@ export function CopyId({ value }: { value: string }) {
     >
       <span className="min-w-0 break-all font-mono text-sm font-bold text-sbg-lilac-700">{value}</span>
       {done ? (
-        <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+        <span className="pop-in inline-flex"><Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" /></span>
       ) : (
         <Copy className="h-3.5 w-3.5 shrink-0 text-sbg-ink-3 transition-colors group-hover:text-sbg-ink" aria-hidden="true" />
       )}

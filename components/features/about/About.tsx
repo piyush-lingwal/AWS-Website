@@ -19,7 +19,7 @@ export function About() {
             <span className="t-serif text-sbg-accent">We build on it.</span>
           </h1>
           <p className="t-lead mt-6 max-w-xl">
-            AWS Student Builder Group at Tulas University is a student-led community where aspiring developers, cloud
+            AWS Student Builder Group at Tulas University, Dehradun is a student-led community where aspiring developers, cloud
             engineers, AI enthusiasts, and builders come together to learn by building.
           </p>
         </Reveal>

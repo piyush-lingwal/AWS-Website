@@ -89,13 +89,13 @@ function AdminShellContent({ children }: { children: React.ReactNode }) {
                 aria-current={isActive ? "page" : undefined}
                 title={`Go to ${link.label}`}
                 className={cn(
-                  "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors duration-150",
+                  "group flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors duration-150",
                   isActive
                     ? "bg-sbg-lilac-100 font-semibold text-sbg-accent-strong"
                     : "font-medium text-sbg-ink-2 hover:bg-sbg-lilac-50 hover:text-sbg-ink"
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" aria-hidden={true} />
+                <Icon className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden={true} />
                 <span>{link.label}</span>
               </Link>
             );
@@ -188,7 +188,7 @@ function AdminShellContent({ children }: { children: React.ReactNode }) {
                       : "font-medium text-sbg-ink-2 hover:bg-sbg-lilac-50 hover:text-sbg-ink"
                   )}
                 >
-                  <Icon className="h-4 w-4 shrink-0" aria-hidden={true} />
+                  <Icon className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden={true} />
                   <span>{link.label}</span>
                 </Link>
               );

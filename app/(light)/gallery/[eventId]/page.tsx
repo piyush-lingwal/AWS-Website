@@ -8,7 +8,11 @@ import { DesignFooter } from "@/components/design/DesignFooter";
 import { Reveal } from "@/components/design/Reveal";
 import { isUuid } from "@/lib/auth/roles";
 import { getAdminClient } from "@/lib/supabase/admin";
-import { getEventMedia } from "@/lib/media/public-data";
+import { getEventCover, getEventMedia } from "@/lib/media/public-data";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
+import { getSiteUrl } from "@/lib/seo/site";
 import { formatEventDate } from "@/lib/media/format";
 import { MediaGrid, type LightboxItem } from "@/components/features/gallery/Lightbox";
 
@@ -37,14 +41,23 @@ export async function generateMetadata({
   params: Promise<{ eventId: string }>;
 }): Promise<Metadata> {
   const { eventId } = await params;
-  if (!isUuid(eventId)) return { title: "Gallery" };
+  const fallback = buildPageMetadata({
+    path: "/gallery",
+    title: "Gallery",
+    description: "Photos and videos from AWS Student Builder Group events at Tulas University.",
+    noindex: true,
+  });
+  if (!isUuid(eventId)) return fallback;
   const event = await loadEvent(eventId.toLowerCase());
-  if (!event) return { title: "Gallery" };
-  return {
-    title: `${event.name} — Gallery`,
-    description: `Photos and videos from ${event.name}, an AWS Student Builder Group event at Tula's University.`,
-    alternates: { canonical: `/gallery/${event.id}` },
-  };
+  if (!event) return fallback;
+  const cover = await getEventCover(event.id);
+  const image = cover && cover.kind === "image" && cover.url.startsWith("https://") ? cover.url : undefined;
+  return buildPageMetadata({
+    path: `/gallery/${event.id}`,
+    title: event.name,
+    description: `Photos and videos from ${event.name}, an AWS Student Builder Group event at Tulas University.`,
+    image,
+  });
 }
 
 export default async function EventGalleryPage({
@@ -65,6 +78,16 @@ export default async function EventGalleryPage({
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbJsonLd(
+          [
+            { name: "Home", path: "/" },
+            { name: "Gallery", path: "/gallery" },
+            { name: event.name, path: `/gallery/${event.id}` },
+          ],
+          getSiteUrl(),
+        )}
+      />
       <ScrollAtmosphere />
       <DesignNav />
       <div className="relative z-10">

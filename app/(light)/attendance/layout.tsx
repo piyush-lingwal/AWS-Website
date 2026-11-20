@@ -1,23 +1,13 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Attendance Portal — AWS Student Builder Group",
+export const metadata: Metadata = buildPageMetadata({
+  path: "/attendance",
+  title: "Attendance",
   description:
-    "Official attendance verification and instant certificate generation portal for AWS Student Builder Group sessions and workshops at Tulas University.",
-  keywords: [
-    "AWS SBG",
-    "Attendance",
-    "Certificate",
-    "Tulas University",
-    "Student Builder Group",
-  ],
-  openGraph: {
-    title: "Attendance Portal — AWS Student Builder Group",
-    description:
-      "Mark your attendance and generate your official AWS Student Builder Group certificate.",
-    type: "website",
-  },
-};
+    "Mark your attendance and generate your AWS Student Builder Group certificate for sessions and workshops at Tulas University.",
+  noindex: true,
+});
 
 export default function AttendanceLayout({
   children,

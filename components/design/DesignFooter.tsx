@@ -34,7 +34,7 @@ function ExternalList({ links }: { links: ReadonlyArray<{ label: string; href: s
             href={l.href}
             target={isExternal(l.href) ? "_blank" : undefined}
             rel={isExternal(l.href) ? "noopener noreferrer" : undefined}
-            className="text-[15px] text-sbg-ink-2 transition-colors hover:text-sbg-accent"
+            className="link-u text-[15px] text-sbg-ink-2 transition-colors hover:text-sbg-accent"
           >
             {l.label}
           </a>
@@ -68,7 +68,7 @@ export function DesignFooter() {
           <ul className="space-y-2.5">
             {EXPLORE.map((l) => (
               <li key={l.href}>
-                <Link href={l.href} className="text-[15px] text-sbg-ink-2 transition-colors hover:text-sbg-accent">
+                <Link href={l.href} className="link-u text-[15px] text-sbg-ink-2 transition-colors hover:text-sbg-accent">
                   {l.label}
                 </Link>
               </li>
@@ -98,7 +98,7 @@ export function DesignFooter() {
 
       <div className="relative mx-auto flex max-w-[1240px] flex-col gap-2 border-t border-[var(--line)] px-[var(--gutter)] py-6 text-[13px] text-sbg-ink-3 sm:flex-row sm:items-center sm:justify-between">
         <p>© {new Date().getFullYear()} AWS SBG, Tulas University. All rights reserved.</p>
-        <p className="text-[11px] text-sbg-ink-3/80">Created and crafted by AWS SBG Tech Lead</p>
+        <p className="text-[11px] text-sbg-ink-3/80">Created and crafted by AWS SBG Tech Team</p>
       </div>
     </footer>
   );

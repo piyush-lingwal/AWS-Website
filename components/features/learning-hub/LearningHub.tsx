@@ -136,7 +136,10 @@ export function LearningHub() {
                   <p className={`leading-relaxed text-sbg-ink-2 ${resource.featured ? "text-[15px] md:max-w-lg md:text-[17px]" : "text-[15px]"}`}>{resource.description}</p>
 
                   <span className="mt-auto text-[14px] font-medium text-sbg-accent-strong transition-colors group-hover:text-sbg-accent">
-                    {resource.linkLabel} →
+                    {resource.linkLabel}{" "}
+                    <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0">
+                      →
+                    </span>
                   </span>
                 </a>
               </Reveal>

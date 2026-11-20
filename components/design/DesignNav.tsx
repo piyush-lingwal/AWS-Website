@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "framer-motion";
 import { NAV_ITEMS as ITEMS, isActiveNav } from "@/lib/design/nav";
@@ -19,6 +19,14 @@ export function DesignNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const themable = isDarkCapablePath(pathname);
+  const navRef = useRef<HTMLElement>(null);
+  // Deepens the pill's shadow once content slides under it. Writes a data attribute, not React state.
+  useEffect(() => {
+    const sync = () => navRef.current?.setAttribute("data-scrolled", String(window.scrollY > 8));
+    sync();
+    window.addEventListener("scroll", sync, { passive: true });
+    return () => window.removeEventListener("scroll", sync);
+  }, []);
 
   useEffect(() => setOpen(false), [pathname]);
 
@@ -36,11 +44,12 @@ export function DesignNav() {
         Skip to content
       </a>
       <nav
+        ref={navRef}
         aria-label="Primary"
         className="nav-glass mx-auto flex h-14 max-w-[1240px] items-center justify-between gap-3 rounded-full pl-2 pr-2 sm:h-16 sm:pl-3"
       >
         <Link href="/" className="flex min-w-0 items-center gap-3 rounded-full pr-2" aria-label="AWS Student Builder Group, home">
-          <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl bg-sbg-on-ink sm:h-11 sm:w-11">
+          <span className="logo-tile relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl bg-sbg-on-ink sm:h-11 sm:w-11">
             <Image src="/logos/SBG_logo.png" alt="" width={26} height={26} className="relative z-10 h-[26px] w-[26px]" />
             {/* Shimmer sweep. The tile is dark navy in both themes, so a white band reads the same in each.
                 MotionConfig reducedMotion="user" disables this transform for prefers-reduced-motion. */}
@@ -91,13 +100,25 @@ export function DesignNav() {
         </LayoutGroup>
         <div className="flex items-center gap-2">
           {SHOW_DARK_MODE_TOGGLE && themable && <ThemeToggle />}
+          {/* Desktop: the Meetup CTA sits directly in the bar, no menu needed (nav links are already visible via lg:flex above). */}
+          <a
+            href={MEETUP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-magnetic
+            className="btn btn-primary !hidden !min-h-[40px] !px-4 !text-[14px] lg:!flex"
+          >
+            Join on Meetup <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+          {/* Mobile/tablet only: hamburger opens the menu panel with nav links + the Meetup CTA. */}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="nav-menu"
             aria-label={open ? "Close menu" : "Open menu"}
-            className="grid h-11 w-11 place-items-center rounded-full text-sbg-ink transition-colors hover:bg-[var(--btn-ghost-hover)] active:scale-95"
+            className="grid h-11 w-11 place-items-center rounded-full text-sbg-ink transition-colors hover:bg-[var(--btn-ghost-hover)] active:scale-95 lg:hidden"
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.span

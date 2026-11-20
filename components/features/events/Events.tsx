@@ -17,9 +17,10 @@ import {
   Zap,
 } from "lucide-react";
 import { AnimatedCountdown } from "@/components/ui/animated-countdown";
+import { SectionDivider } from "@/components/design/SectionDivider";
 import { SuggestEventSection } from "@/components/features/events/SuggestEventSection";
 import { Reveal } from "@/components/design/Reveal";
-import { eventDateLabel } from "@/lib/design/home-events";
+import { dayFromIso, mapEventRows, startOfDay, type EventStatus, type EventView } from "@/lib/design/events-view";
 import { isDriveUrl } from "@/lib/media/drive";
 import { isPreprocessedMediaUrl } from "@/lib/media/image-src";
 import type { ApiResponse, DbEvent } from "@/types/certificate";
@@ -32,51 +33,13 @@ const MEETUP_URL = "https://www.meetup.com/tulas-university-dehradun/";
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type EventStatus = "past" | "current" | "upcoming";
-
-type Event = {
-  id: string;
-  title: string;
-  date: string;
-  rawDate: string | null; // null when the event date is TBA
-  timing: string | null;
-  isoDate: string; // used for countdown target
-  speakerName: string | null;
-  attendanceOpen: boolean;
-  tag: string;
+type Event = EventView & {
   tagColor: string;
-  description: string;
-  status: EventStatus;
-  coverUrl: string | null;
 };
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
-
-/**
- * Determines event status relative to today.
- * The first non-past event is labelled "current"; the rest are "upcoming".
- */
-function computeStatus(
-  eventDate: string | null,
-  firstFutureId: string | null,
-  id: string
-): EventStatus {
-  // TBA events (empty / null date) have no confirmed date yet: treat as upcoming
-  if (!eventDate || eventDate.trim() === "") {
-    return id === firstFutureId ? "current" : "upcoming";
-  }
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const date = new Date(eventDate + "T00:00:00");
-  // If the date string is malformed, also treat as upcoming rather than concluded
-  if (isNaN(date.getTime())) return "upcoming";
-  if (date < today) return "past";
-  if (id === firstFutureId) return "current";
-  return "upcoming";
-}
-
 function getNextEvent(events: Event[]): Event | undefined {
   return events.find((e) => e.status === "current" || e.status === "upcoming");
 }
@@ -264,13 +227,24 @@ function EventCardSkeleton() {
 /*  Main component                                                     */
 /* ------------------------------------------------------------------ */
 
-export function Events() {
+export function Events({ initialEvents, todayIso }: { initialEvents?: DbEvent[] | null; todayIso?: string } = {}) {
   // ── Live data ────────────────────────────────────────────
-  const [events, setEvents] = React.useState<Event[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(true);
+  // With server data the first render already holds the events (same HTML as the server).
+  // Without it (database outage) the page loads them from /api/events after mount.
+  const hasInitial = Array.isArray(initialEvents);
+  const [rows, setRows] = React.useState<DbEvent[]>(hasInitial ? initialEvents : []);
+  const [today, setToday] = React.useState<Date>(() => dayFromIso(todayIso) ?? startOfDay(new Date()));
+  const [loading, setLoading] = React.useState<boolean>(!hasInitial);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
 
+  // The server's day can differ from the visitor's: re-label with the browser's day after mount.
   React.useEffect(() => {
+    const browserToday = startOfDay(new Date());
+    setToday((prev) => (prev.getTime() === browserToday.getTime() ? prev : browserToday));
+  }, []);
+
+  React.useEffect(() => {
+    if (hasInitial) return;
     let cancelled = false;
 
     async function loadEvents() {
@@ -285,43 +259,7 @@ export function Events() {
           throw new Error(json.error || `Server returned error (${res.status})`);
         }
 
-        const rawEvents: DbEvent[] = json.data ?? [];
-
-        // Determine the first non-past event so we can label it "current"
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const firstFutureRow = rawEvents.find((row: DbEvent) => {
-          if (!row.event_date) return false;
-          const d = new Date(row.event_date + "T00:00:00");
-          return !isNaN(d.getTime()) && d >= today;
-        });
-
-        const firstFutureId = firstFutureRow?.id ?? null;
-
-        // Map Supabase rows → UI Event shape
-        const mapped: Event[] = rawEvents.map((row: DbEvent) => {
-          const eventDate = row.event_date ?? "";
-          const status = computeStatus(eventDate, firstFutureId, row.id);
-          const eventTag = row.event_type || "Event";
-          return {
-            id: row.id,
-            title: row.name,
-            date: eventDateLabel({ event_date: eventDate, event_end_date: row.event_end_date ?? null }),
-            rawDate: eventDate,
-            timing: row.event_timing ?? "",
-            isoDate: status !== "past" && eventDate ? eventDate + "T00:00:00" : "",
-            speakerName: row.speaker_name,
-            attendanceOpen: row.attendance_open,
-            tag: eventTag,
-            tagColor: TAG_COLORS[eventTag] ?? DEFAULT_TAG_COLOR,
-            description: row.description ?? "",
-            status,
-            coverUrl: row.cover_url,
-          };
-        });
-
-        if (!cancelled) setEvents(mapped);
+        if (!cancelled) setRows(json.data ?? []);
       } catch (err: unknown) {
         if (!cancelled) {
           const message = err instanceof Error ? err.message : String(err);
@@ -336,8 +274,18 @@ export function Events() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Map database rows → UI Event shape (first non-past row is labelled "current")
+  const events = React.useMemo<Event[]>(
+    () =>
+      mapEventRows(rows, today).map((view) => ({
+        ...view,
+        tagColor: TAG_COLORS[view.tag] ?? DEFAULT_TAG_COLOR,
+      })),
+    [rows, today]
+  );
   const nextEvent = getNextEvent(events);
   const upcomingEvents = events.filter((e) => e.status !== "past");
   // Sort concluded events with most recent first
@@ -466,6 +414,8 @@ export function Events() {
 
       {/* ── Loading / error / empty ──────────────────────────── */}
       {loading && (
+        <>
+        <SectionDivider />
         <section data-tone="clear" aria-busy="true" aria-label="Loading events" className="relative py-16">
           <div className="mx-auto grid max-w-[1240px] gap-6 px-[var(--gutter)] md:grid-cols-2">
             {[0, 1, 2].map((i) => (
@@ -473,9 +423,12 @@ export function Events() {
             ))}
           </div>
         </section>
+        </>
       )}
 
       {!loading && fetchError && (
+        <>
+        <SectionDivider />
         <section data-tone="clear" className="relative py-16">
           <div className="mx-auto flex max-w-[1240px] flex-col items-center gap-3 px-[var(--gutter)] text-center">
             <p className="text-[16px] font-medium text-sbg-ink">Could not load events right now.</p>
@@ -484,9 +437,12 @@ export function Events() {
             </p>
           </div>
         </section>
+        </>
       )}
 
       {ready && events.length === 0 && (
+        <>
+        <SectionDivider />
         <section data-tone="clear" className="relative py-16">
           <div className="mx-auto max-w-[1240px] px-[var(--gutter)]">
             <div className="surface mx-auto max-w-md rounded-[28px] px-8 py-8">
@@ -501,10 +457,13 @@ export function Events() {
             </div>
           </div>
         </section>
+        </>
       )}
 
       {/* ── Upcoming sessions ────────────────────────────────── */}
       {ready && upcomingEvents.length > 0 && (
+        <>
+        <SectionDivider />
         <section data-tone="clear" aria-label="Upcoming sessions" className="relative py-16 sm:py-24">
           <div className="mx-auto max-w-[1240px] px-[var(--gutter)]">
             <Reveal className="mb-10 flex flex-col gap-4 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
@@ -532,10 +491,13 @@ export function Events() {
             </ul>
           </div>
         </section>
+        </>
       )}
 
       {/* ── Concluded sessions ───────────────────────────────── */}
       {ready && pastEvents.length > 0 && (
+        <>
+        <SectionDivider />
         <section data-tone="bloom" aria-label="Concluded sessions" className="relative py-16 sm:py-24">
           <div className="mx-auto max-w-[1240px] px-[var(--gutter)]">
             <Reveal className="mb-10 flex flex-col gap-4 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
@@ -566,8 +528,10 @@ export function Events() {
             </ul>
           </div>
         </section>
+        </>
       )}
 
+      <SectionDivider />
       {/* ── Suggest an event ─────────────────────────────────── */}
       <SuggestEventSection number={String(2 + (upcomingEvents.length > 0 ? 1 : 0) + (pastEvents.length > 0 ? 1 : 0)).padStart(2, "0")} />
     </div>

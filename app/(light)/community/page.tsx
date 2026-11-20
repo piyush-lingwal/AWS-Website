@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
 import { Users } from "@/components/ui/animate-ui/icons/users";
 import { Mail, Instagram, MessageCircle, Calendar } from "lucide-react";
@@ -8,11 +9,14 @@ import { ScrollAtmosphere } from "@/components/design/ScrollAtmosphere";
 import { DesignNav } from "@/components/design/DesignNav";
 import { DesignFooter } from "@/components/design/DesignFooter";
 import { Reveal } from "@/components/design/Reveal";
+import { SectionDivider } from "@/components/design/SectionDivider";
 
-export const metadata: Metadata = {
-  title: "Join Community | AWS Student Builder Group",
-  description: "Connect with 50+ student builder at Tulas University, attend workshops, hackathons, and build real-world cloud projects.",
-};
+export const metadata: Metadata = buildPageMetadata({
+  path: "/community",
+  title: "Join the Community",
+  description:
+    "Join the AWS Student Builder Group community at Tulas University on Meetup, WhatsApp and Instagram, or email the team, to hear about workshops and hackathons.",
+});
 
 const COMMUNITY_CHANNELS = [
   {
@@ -59,6 +63,7 @@ export default function CommunityPage() {
       <ScrollAtmosphere />
       <DesignNav />
       <div className="relative z-10">
+        <main id="main-content">
         <section data-tone="dawn" className="relative px-[var(--gutter)] pb-12 pt-36 sm:pb-16">
           <Reveal className="mx-auto flex max-w-3xl flex-col items-center text-center">
             <p className="t-eyebrow mb-5 flex items-center gap-2">
@@ -66,7 +71,7 @@ export default function CommunityPage() {
               <span>AWS SBG Builder Community</span>
             </p>
             <h1 className="t-display text-[clamp(40px,7vw,88px)] text-sbg-ink">
-              Connect with <span className="t-serif">Student Builder</span>
+              Connect with <span className="t-serif">Student Builders</span>
             </h1>
             <p className="t-lead mt-5 max-w-2xl">
               Whether registrations are currently open or closed, our community is always active. Join our channels to participate in open sessions, collaborate on projects, and level up your cloud skills.
@@ -74,6 +79,7 @@ export default function CommunityPage() {
           </Reveal>
         </section>
 
+        <SectionDivider />
         <section data-tone="violet" className="relative px-[var(--gutter)] pb-24 sm:pb-32">
           <div className="mx-auto grid w-full max-w-4xl gap-6 sm:grid-cols-2">
             {COMMUNITY_CHANNELS.map((channel, i) => {
@@ -88,7 +94,7 @@ export default function CommunityPage() {
                       >
                         <Icon size={22} />
                       </div>
-                      <h3 className="font-lt-display text-xl font-semibold text-sbg-ink">{channel.name}</h3>
+                      <h2 className="font-lt-display text-xl font-semibold text-sbg-ink">{channel.name}</h2>
                       <p className="mt-2 text-sm leading-relaxed text-sbg-ink-2">{channel.desc}</p>
                     </div>
 
@@ -115,6 +121,7 @@ export default function CommunityPage() {
             </Link>
           </div>
         </section>
+        </main>
 
         <DesignFooter />
       </div>

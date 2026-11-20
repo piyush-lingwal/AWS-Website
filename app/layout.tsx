@@ -9,7 +9,7 @@ import {
 } from "geist/font/pixel";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/seo/JsonLd";
+import { SITE_DESCRIPTION, getSiteUrl } from "@/lib/seo/site";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -20,11 +20,9 @@ const poppins = Poppins({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://awstulas.org";
-const siteName =
-  "AWS Student Builder Group at Tulas University | Official AWS Cloud Community";
-const siteDescription =
-  "Official website of AWS Student Builder Group at Tulas University, Dehradun. Join workshops, cloud events, hackathons, AWS learning programs, technical communities, and student innovation initiatives.";
+const siteUrl = getSiteUrl();
+const siteName = "AWS Student Builder Group at Tulas University, Dehradun";
+const siteDescription = SITE_DESCRIPTION;
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -51,7 +49,6 @@ export const metadata: Metadata = {
     "AWS SBG Tulas",
     "AWS SBG Dehradun",
     "AWS Student Builder Group Tulas University",
-    "AWS Cloud Club",
     "Cloud Computing",
     "AWS Community",
     "Student Builder Group",
@@ -73,10 +70,6 @@ export const metadata: Metadata = {
   category: "Education",
   referrer: "origin-when-cross-origin",
 
-  alternates: {
-    canonical: "/",
-  },
-
   robots: {
     index: true,
     follow: true,
@@ -92,25 +85,15 @@ export const metadata: Metadata = {
   openGraph: {
     title: siteName,
     description: siteDescription,
-    url: siteUrl,
     siteName: "AWS Student Builder Group",
     type: "website",
     locale: "en_US",
-    images: [
-      {
-        url: "/opengraph-image.png",
-        width: 1200,
-        height: 630,
-        alt: "AWS Student Builder Group at Tulas University",
-      },
-    ],
   },
 
   twitter: {
     card: "summary_large_image",
     title: siteName,
     description: siteDescription,
-    images: ["/opengraph-image.png"],
   },
 
   icons: {
@@ -145,10 +128,6 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={cn(poppins.variable, "font-sans")} suppressHydrationWarning>
-      <head>
-        <OrganizationJsonLd />
-        <WebSiteJsonLd />
-      </head>
       <body
         suppressHydrationWarning
         className={`${GeistPixelSquare.variable} ${GeistPixelGrid.variable} ${GeistPixelCircle.variable} ${GeistPixelTriangle.variable} ${GeistPixelLine.variable}`}
@@ -157,7 +136,7 @@ export default function RootLayout({
         <MotionConfigWrapper>
           <SmoothScroll>
             <Navbar />
-            <main>{children}</main>
+            {children}
             <Footer />
           </SmoothScroll>
         </MotionConfigWrapper>

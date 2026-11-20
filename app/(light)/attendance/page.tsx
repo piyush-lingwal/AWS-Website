@@ -70,7 +70,7 @@ const LABEL = "t-eyebrow mb-2 block";
 const ICON = "pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-sbg-ink-3";
 // 16px minimum font size keeps iOS from zooming on focus.
 const INPUT =
-  "block h-12 w-full rounded-2xl border border-sbg-ink/15 bg-white pr-4 text-base text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none focus:ring-2 focus:ring-sbg-lilac-600";
+  "block h-12 w-full rounded-2xl transition-[border-color,box-shadow] duration-200 border border-sbg-ink/15 bg-white pr-4 text-base text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none focus:ring-2 focus:ring-sbg-lilac-600";
 
 function AttendanceShell({ children }: { children: React.ReactNode }) {
   return (
@@ -384,7 +384,7 @@ export default function AttendancePortalPage() {
                 onClick={() => copyToClipboard(submittedData.certificateId, "id")}
                 className={`${FOCUS} flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-sbg-ink/15 bg-white px-3.5 text-xs font-medium text-sbg-ink-2 transition-colors hover:text-sbg-ink`}
               >
-                {copiedId ? <Check className="h-3.5 w-3.5 text-emerald-700" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+                {copiedId ? <span className="pop-in inline-flex"><Check className="h-3.5 w-3.5 text-emerald-700" aria-hidden="true" /></span> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
                 <span>{copiedId ? "ID Copied" : "Copy ID"}</span>
               </button>
 
@@ -396,7 +396,7 @@ export default function AttendancePortalPage() {
                 }}
                 className={`${FOCUS} flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-sbg-ink/15 bg-white px-3.5 text-xs font-medium text-sbg-ink-2 transition-colors hover:text-sbg-ink`}
               >
-                {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-700" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+                {copiedLink ? <span className="pop-in inline-flex"><Check className="h-3.5 w-3.5 text-emerald-700" aria-hidden="true" /></span> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
                 <span>{copiedLink ? "Link Copied" : "Copy Verification Link"}</span>
               </button>
             </div>
@@ -604,7 +604,7 @@ export default function AttendancePortalPage() {
 
           {/* ── Error Banner ─────────────────────────────────── */}
           {errorMsg && (
-            <div role="alert" className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-left">
+            <div role="alert" className="field-msg mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-left">
               <div className="flex items-start gap-3">
                 <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-700" aria-hidden="true" />
                 <div className="text-sm text-red-700">

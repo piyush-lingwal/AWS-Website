@@ -93,7 +93,7 @@ export function Gallery({ groups }: { groups: GalleryGroup[] }) {
                       </div>
                     </div>
                     <span className="mr-1 hidden h-10 w-10 shrink-0 place-items-center rounded-full bg-sbg-lilac-100 text-sbg-accent-strong transition-colors group-hover:bg-sbg-lilac-600 group-hover:text-white sm:grid">
-                      <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                      <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0" aria-hidden="true" />
                     </span>
                   </Link>
                 </Reveal>

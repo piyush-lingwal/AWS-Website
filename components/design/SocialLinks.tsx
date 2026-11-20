@@ -19,9 +19,9 @@ export function SocialLinks() {
             rel="noopener noreferrer"
             aria-label={`${s.label} (opens in a new tab)`}
             title={s.hint}
-            className="group flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 py-1.5 pl-1.5 pr-4 text-[15px] font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+            className="group flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 py-1.5 pl-1.5 pr-4 text-[15px] font-semibold text-white backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:bg-white/20 active:scale-[.97]"
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white transition-transform duration-200 group-hover:-rotate-[8deg] group-hover:scale-105">
               <Image src={s.icon} alt="" width={22} height={22} className="h-[22px] w-[22px]" />
             </span>
             {s.label}

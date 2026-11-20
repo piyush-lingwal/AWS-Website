@@ -307,7 +307,7 @@ function RegisterPageContent() {
                   Full Name <span className="text-sbg-lilac-600">*</span>
                 </label>
                 {form.fullName.trim() && (
-                  <span className="text-xs font-mono text-emerald-600 font-bold">
+                  <span className="pop-in text-xs font-mono text-emerald-600 font-bold">
                     ✓
                   </span>
                 )}
@@ -322,7 +322,7 @@ function RegisterPageContent() {
                   className="w-full rounded-2xl border border-[var(--line)] bg-white/90 pl-10 pr-4 py-3 text-[15px] text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none focus:ring-2 focus:ring-sbg-lilac-300 transition-all"
                 />
               </div>
-              {errors.fullName && <p className="text-[11px] font-mono text-red-600">✕ {errors.fullName}</p>}
+              {errors.fullName && <p className="field-msg text-[11px] font-mono text-red-600">✕ {errors.fullName}</p>}
             </div>
 
             {/* 2-col Contact row */}
@@ -335,7 +335,7 @@ function RegisterPageContent() {
                     Email Address <span className="text-sbg-lilac-600">*</span>
                   </label>
                   {EMAIL_RE.test(form.universityEmail) && (
-                    <span className="text-xs font-mono text-emerald-600 font-bold">
+                    <span className="pop-in text-xs font-mono text-emerald-600 font-bold">
                       ✓
                     </span>
                   )}
@@ -350,7 +350,7 @@ function RegisterPageContent() {
                     className="w-full rounded-2xl border border-[var(--line)] bg-white/90 pl-10 pr-4 py-3 text-[15px] text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none focus:ring-2 focus:ring-sbg-lilac-300 transition-all"
                   />
                 </div>
-                {errors.universityEmail && <p className="text-[11px] font-mono text-red-600">✕ {errors.universityEmail}</p>}
+                {errors.universityEmail && <p className="field-msg text-[11px] font-mono text-red-600">✕ {errors.universityEmail}</p>}
               </div>
 
               {/* Phone Number */}
@@ -360,7 +360,7 @@ function RegisterPageContent() {
                     Phone Number <span className="text-sbg-lilac-600">*</span>
                   </label>
                   {PHONE_RE.test(form.phoneNumber) && (
-                    <span className="text-xs font-mono text-emerald-600 font-bold">
+                    <span className="pop-in text-xs font-mono text-emerald-600 font-bold">
                       ✓
                     </span>
                   )}
@@ -381,7 +381,7 @@ function RegisterPageContent() {
                     className="w-full rounded-2xl border border-[var(--line)] bg-white/90 pl-10 pr-4 py-3 text-[15px] text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none focus:ring-2 focus:ring-sbg-lilac-300 transition-all font-mono"
                   />
                 </div>
-                {errors.phoneNumber && <p className="text-[11px] font-mono text-red-600">✕ {errors.phoneNumber}</p>}
+                {errors.phoneNumber && <p className="field-msg text-[11px] font-mono text-red-600">✕ {errors.phoneNumber}</p>}
               </div>
             </div>
 
@@ -392,7 +392,7 @@ function RegisterPageContent() {
                   Roll no. <span className="text-sbg-lilac-600">*</span>
                 </label>
                 {form.rollNumber.trim() && (
-                  <span className="text-xs font-mono text-emerald-600 font-bold">
+                  <span className="pop-in text-xs font-mono text-emerald-600 font-bold">
                     ✓
                   </span>
                 )}
@@ -407,7 +407,7 @@ function RegisterPageContent() {
                   className="w-full rounded-2xl border border-[var(--line)] bg-white/90 pl-10 pr-4 py-3 text-[15px] text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none focus:ring-2 focus:ring-sbg-lilac-300 transition-all font-mono"
                 />
               </div>
-              {errors.rollNumber && <p className="text-[11px] font-mono text-red-600">✕ {errors.rollNumber}</p>}
+              {errors.rollNumber && <p className="field-msg text-[11px] font-mono text-red-600">✕ {errors.rollNumber}</p>}
             </div>
           </motion.div>
 
@@ -438,7 +438,7 @@ function RegisterPageContent() {
                 <label className="t-eyebrow !text-[11px] !text-sbg-lilac-700">
                   Year of Study <span className="text-sbg-lilac-600">*</span>
                 </label>
-                {errors.year && <span className="text-[11px] font-mono text-red-600">✕ {errors.year}</span>}
+                {errors.year && <span className="field-msg text-[11px] font-mono text-red-600">✕ {errors.year}</span>}
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -467,7 +467,7 @@ function RegisterPageContent() {
                 <label className="t-eyebrow !text-[11px] !text-sbg-lilac-700">
                   Course <span className="text-sbg-lilac-600">*</span>
                 </label>
-                {errors.course && <span className="text-[11px] font-mono text-red-600">✕ {errors.course}</span>}
+                {errors.course && <span className="field-msg text-[11px] font-mono text-red-600">✕ {errors.course}</span>}
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -507,7 +507,7 @@ function RegisterPageContent() {
                     className="w-full rounded-2xl border border-[var(--line)] bg-white/90 px-4 py-2.5 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none focus:ring-2 focus:ring-sbg-lilac-300 transition-all"
                   />
                   {errors.customCourse && (
-                    <p className="text-[11px] font-mono text-red-600 mt-1">✕ {errors.customCourse}</p>
+                    <p className="field-msg text-[11px] font-mono text-red-600 mt-1">✕ {errors.customCourse}</p>
                   )}
                 </motion.div>
               )}
@@ -526,7 +526,7 @@ function RegisterPageContent() {
                     <label className="t-eyebrow !text-[11px] !text-sbg-lilac-700">
                       B.Tech Specialization / Branch <span className="text-sbg-lilac-600">*</span>
                     </label>
-                    {errors.branch && <span className="text-[11px] font-mono text-red-600">✕ {errors.branch}</span>}
+                    {errors.branch && <span className="field-msg text-[11px] font-mono text-red-600">✕ {errors.branch}</span>}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -579,7 +579,7 @@ function RegisterPageContent() {
             </div>
 
             {errors.wings && (
-              <p className="text-xs font-mono text-red-600 mb-3 flex items-center gap-1">
+              <p className="field-msg text-xs font-mono text-red-600 mb-3 flex items-center gap-1">
                 ✕ {errors.wings}
               </p>
             )}
@@ -738,7 +738,7 @@ function RegisterPageContent() {
                 showHeader={false}
                 className="bg-transparent border-none shadow-none p-0 overflow-visible"
               />
-              {errors.resume && <p className="text-[11px] font-mono text-red-600 mt-1">✕ {errors.resume}</p>}
+              {errors.resume && <p className="field-msg text-[11px] font-mono text-red-600 mt-1">✕ {errors.resume}</p>}
             </div>
           </motion.div>
 

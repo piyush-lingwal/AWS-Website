@@ -17,6 +17,7 @@ const STATS = [
 function Counter({ to, suffix }: { to: number; suffix: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [value, setValue] = useState(0);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -36,6 +37,7 @@ function Counter({ to, suffix }: { to: number; suffix: string }) {
           const t = Math.min(1, (now - start) / 1400);
           setValue(Math.round(to * (1 - Math.pow(1 - t, 4))));
           if (t < 1) raf = requestAnimationFrame(run);
+          else setDone(true);
         };
         raf = requestAnimationFrame(run);
       },
@@ -49,7 +51,7 @@ function Counter({ to, suffix }: { to: number; suffix: string }) {
   }, [to]);
 
   return (
-    <span ref={ref} className="tabular-nums">
+    <span ref={ref} className="counter tabular-nums" data-done={done || undefined}>
       {value}
       {suffix}
     </span>

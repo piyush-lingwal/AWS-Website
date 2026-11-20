@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import { ScrollAtmosphere } from "@/components/design/ScrollAtmosphere";
 import { DesignNav } from "@/components/design/DesignNav";
 import { DesignFooter } from "@/components/design/DesignFooter";
@@ -6,14 +7,12 @@ import { Gallery } from "@/components/features/gallery/Gallery";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { getGalleryGroups } from "@/lib/media/public-data";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/gallery",
   title: "Gallery",
   description:
-    "Photos and moments from AWS Student Builder Group workshops, hackathons, study jams, and community events at Tulas University.",
-  alternates: {
-    canonical: "/gallery",
-  },
-};
+    "Photos and videos from AWS Student Builder Group workshops, hackathons, and community events at Tulas University.",
+});
 
 // Media is moderated by admins/media members; stay fresh rather than caching
 // a hidden/deleted item. The item API also explicitly revalidates this path.
@@ -40,7 +39,9 @@ export default async function GalleryPage() {
       <ScrollAtmosphere />
       <DesignNav />
       <div className="relative z-10">
-        <Gallery groups={groups} />
+        <main id="main-content">
+          <Gallery groups={groups} />
+        </main>
         <DesignFooter />
       </div>
     </>

@@ -91,7 +91,7 @@ export function VerifyIdForm({
         You can also paste the verification link printed under the QR code.
       </p>
       {error && (
-        <p id={errorId} role="alert" className="mt-3 rounded-xl border border-red-300 bg-red-50 p-3 text-xs text-red-700">
+        <p id={errorId} role="alert" className="field-msg mt-3 rounded-xl border border-red-300 bg-red-50 p-3 text-xs text-red-700">
           {error}
         </p>
       )}

@@ -288,6 +288,78 @@ html:has(.sbg-light)::-webkit-scrollbar-thumb:hover {
   background: #fff;
   box-shadow: 0 10px 28px -10px rgba(0, 0, 0, 0.35);
 }
+/* Micro-interactions (pass A). Only transform/opacity; hover-only effects sit behind (hover: hover) and (pointer: fine). */
+.sbg-light .btn-primary {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sbg-light .btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.38) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+.sbg-light .btn .lucide-arrow-right,
+.sbg-light .btn .lucide-arrow-up-right,
+.sbg-light .btn .lucide-arrow-left {
+  transition: translate 220ms var(--ease-out);
+}
+.sbg-light .btn[data-magnetic] {
+  translate: var(--tx, 0px) var(--ty, 0px);
+  transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out), background-color 220ms var(--ease-out), color 220ms,
+    translate 200ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sbg-light .btn-primary:hover::after {
+    transform: translateX(120%);
+    transition: transform 600ms var(--ease-out);
+  }
+  .sbg-light .btn:hover .lucide-arrow-right {
+    translate: 3px 0;
+  }
+  .sbg-light .btn:hover .lucide-arrow-up-right {
+    translate: 2px -2px;
+  }
+}
+.sbg-light .nav-glass[data-scrolled="true"] {
+  background: color-mix(in srgb, var(--glass) 78%, var(--paper));
+  box-shadow: 0 1px 0 var(--hl) inset, 0 24px 50px -22px var(--shadow-strong), 0 2px 6px -2px var(--shadow-strong-soft);
+}
+.sbg-light .nav-glass {
+  transition: background-color 300ms var(--ease-out), box-shadow 300ms var(--ease-out);
+}
+.sbg-light .link-u {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition: background-size 250ms var(--ease-out), translate 250ms var(--ease-out), color 200ms;
+}
+@media (hover: hover) and (pointer: fine) {
+  .sbg-light .link-u:hover {
+    background-size: 100% 1px;
+    translate: 2px 0;
+  }
+  .sbg-light .btn:hover .lucide-arrow-left {
+    translate: -2px 0;
+  }
+}
+/* Hero pointer parallax: --px/--py (-1..1) are written by components/design/PointerFx.tsx */
+.sbg-light .chip-float > div {
+  translate: calc(var(--px, 0) * var(--depth, 8) * 1px) calc(var(--py, 0) * var(--depth, 8) * 1px);
+  transition: translate 500ms var(--ease-out);
+}
+.sbg-light .counter[data-done="true"] {
+  display: inline-block;
+  animation: sbg-settle 450ms var(--ease-out);
+}
+@keyframes sbg-settle {
+  50% {
+    transform: scale(1.04);
+  }
+}
+
 @media (hover: hover) {
   .sbg-light .btn-primary:hover {
     transform: translateY(-2px);
@@ -404,6 +476,50 @@ html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .atmos-
   background: radial-gradient(120% 80% at 50% 0%, transparent 40%, rgb(var(--bg) / 0.55) 100%);
 }
 
+/* ── Section divider ────────────────────────────────────────
+   Zero-height, so it never changes a section's spacing. Two hairlines fade out
+   toward the page edges and a three-pixel cluster (the brand motif) sits between
+   them. Colours come from the lilac tokens, so dark mode follows the palette. */
+.sbg-light .sec-div {
+  position: relative;
+  z-index: 1;
+  height: 0;
+  pointer-events: none;
+}
+.sbg-light .sec-div-row {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  transform: translateY(-50%);
+}
+.sbg-light .sec-div-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--lilac-400) 45%, var(--line)));
+}
+.sbg-light .sec-div-line:last-child {
+  background: linear-gradient(270deg, transparent, color-mix(in srgb, var(--lilac-400) 45%, var(--line)));
+}
+.sbg-light .sec-div-px {
+  display: grid;
+  grid-template-columns: repeat(2, 5px);
+  gap: 3px;
+}
+.sbg-light .sec-div-px i {
+  width: 5px;
+  height: 5px;
+  background: var(--lilac-400);
+  opacity: 0.35;
+}
+.sbg-light .sec-div-px i:nth-child(1) { opacity: 0.75; }
+.sbg-light .sec-div-px i:nth-child(2) { opacity: 0.2; }
+.sbg-light .sec-div-px i:nth-child(3) { opacity: 0.45; }
+.sbg-light .sec-div-px i:nth-child(4) { background: var(--spark); opacity: 0.8; }
 /* ── Scroll progress bar ────────────────────────────────── */
 .sbg-light .progress {
   position: fixed;
@@ -696,18 +812,109 @@ html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .cta-ca
 }
 
 /* ── Cards that lift ────────────────────────────────────── */
+/* Micro-interactions (pass B): cursor-tracked spotlight (--mx/--my from PointerFx), optional tilt, avatar zoom. */
+.sbg-light .lift {
+  position: relative;
+}
+.sbg-light .lift::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--lilac-400) 22%, transparent), transparent 70%);
+  transition: opacity 300ms var(--ease-out);
+}
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift::before {
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), var(--lift-line), transparent 70%);
+  opacity: 0;
+}
+.sbg-light .team-avatar img {
+  transition: scale 400ms var(--ease-out);
+}
 @media (hover: hover) {
   .sbg-light .lift {
-    transition: transform 400ms var(--ease-out), box-shadow 400ms var(--ease-out);
+    transition: transform 400ms var(--ease-out), box-shadow 400ms var(--ease-out), border-color 400ms var(--ease-out);
   }
   .sbg-light .lift:hover {
     transform: translateY(-6px);
     box-shadow: 0 1px 0 var(--hl) inset, 0 30px 60px -24px var(--shadow-strong), 0 2px 6px -2px var(--shadow-strong-soft);
   }
+  html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift:hover {
+    border-color: var(--lift-line);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .sbg-light .lift:hover::before,
+  html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift:hover::before {
+    opacity: 1;
+  }
+  .sbg-light .lift[data-tilt]:hover {
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-6px);
+  }
+  .sbg-light .lift:hover .team-avatar img {
+    scale: 1.06;
+  }
+  .sbg-light .lift:hover .team-avatar {
+    border-color: var(--lilac-300);
+  }
+}
+
+/* Micro-interactions (pass C): form focus icon, field messages, pop-in marks, toast icon. */
+.sbg-light .relative:has(> svg:first-child + :is(input, textarea, select)) > svg:first-child {
+  transition: color 200ms var(--ease-out);
+}
+.sbg-light .relative:has(> svg:first-child + :is(input, textarea, select):focus) > svg:first-child {
+  color: var(--accent);
+}
+@keyframes sbg-field-in {
+  from { opacity: 0; translate: 0 4px; }
+}
+@keyframes sbg-pop-in {
+  from { opacity: 0; scale: 0.6; }
+}
+.sbg-light .field-msg {
+  animation: sbg-field-in 180ms var(--ease-out) backwards;
+}
+.sbg-light .pop-in {
+  display: inline-block;
+  animation: sbg-pop-in 200ms var(--ease-out) backwards;
+}
+body:has(.sbg-light) [data-sonner-toast] [data-icon] {
+  animation: sbg-pop-in 300ms var(--ease-out) backwards;
+}
+
+@keyframes sbg-page-in {
+  from { opacity: 0.4; }
+}
+.sbg-light .page-in {
+  animation: sbg-page-in 260ms var(--ease-out) backwards;
 }
 
 /* ── Reduced motion: show the finished state, no travel ───── */
 @media (prefers-reduced-motion: reduce) {
+  .sbg-light .page-in {
+    animation: none;
+  }
+  .sbg-light .relative:has(> svg:first-child + :is(input, textarea, select)) > svg:first-child,
+  .sbg-light .field-msg,
+  .sbg-light .pop-in,
+  body:has(.sbg-light) [data-sonner-toast] [data-icon] {
+    transition: none;
+    animation: none;
+  }
+  .sbg-light .lift[data-tilt]:hover {
+    transform: translateY(-6px);
+  }
+  .sbg-light .lift:hover .team-avatar img {
+    scale: none;
+  }
+  .sbg-light .lift::before,
+  html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift:hover::before {
+    display: none;
+  }
   .sbg-light .rise,
   .sbg-light .kio {
     animation: none;
@@ -728,6 +935,31 @@ html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .cta-ca
   .sbg-light .atmos-blob,
   .sbg-light .atmos-px {
     transform: none;
+  }
+  .sbg-light .btn-primary::after {
+    display: none;
+  }
+  .sbg-light .btn .lucide-arrow-right,
+  .sbg-light .btn .lucide-arrow-up-right,
+  .sbg-light .btn .lucide-arrow-left,
+  .sbg-light .link-u,
+  .sbg-light .logo-tile,
+  .sbg-light .nav-glass,
+  .sbg-light .kio > *,
+  .sbg-light .chip-float > div {
+    transition: none;
+  }
+  .sbg-light .btn[data-magnetic],
+  .sbg-light .kio > *,
+  .sbg-light .chip-float > div,
+  .sbg-light .link-u:hover,
+  .sbg-light .btn:hover .lucide-arrow-right,
+  .sbg-light .btn:hover .lucide-arrow-up-right,
+  .sbg-light .btn:hover .lucide-arrow-left {
+    translate: none;
+  }
+  .sbg-light .counter[data-done="true"] {
+    animation: none;
   }
   /* the horizontal rail becomes a normal swipeable row */
   .sbg-light .rail-pin {
@@ -751,4 +983,143 @@ html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .cta-ca
   -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
   box-shadow: 0 0 0 1000px #ffffff inset !important;
   border-color: rgba(27, 17, 64, 0.15) !important;
+}
+
+/* ── Loading screen (app/(light)/loading.tsx) ───────────────
+   Pure CSS so it animates before hydration. Appears after 120ms so instant loads never flash it.
+   Cloud pixels drop in (~0.8s), then a diagonal glow sweeps across while the page finishes. */
+.sbg-light .ld {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: rgb(var(--sbg-paper));
+}
+/* The paper-coloured backdrop is there from the first frame (no bare-body flash on slow client
+   navigations); only the content waits 120ms, so fast loads never flash a loader. */
+.sbg-light .ld-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  animation: ld-fade 180ms var(--ease-out) 120ms backwards;
+}
+.sbg-light .ld-stage {
+  position: relative;
+}
+/* Kio rises out of the cloud like on the hero: same mascot, same violet drop shadow, same slow bob. */
+.sbg-light .ld-kio {
+  position: absolute;
+  left: 50%;
+  bottom: -14%;
+  width: 52%;
+  translate: -50% 0;
+  filter: drop-shadow(0 14px 16px rgba(76, 29, 149, 0.28));
+  pointer-events: none;
+  animation: ld-kio-in 700ms cubic-bezier(0.34, 1.4, 0.64, 1) 0.75s backwards;
+}
+.sbg-light .ld-kio img {
+  display: block;
+  width: 100%;
+  height: auto;
+  animation: sbg-bob 2.4s ease-in-out 1.45s infinite;
+}
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .ld-kio {
+  filter: drop-shadow(0 10px 24px rgba(139, 92, 246, 0.45));
+}
+.sbg-light .ld-cloud {
+  --s: clamp(7px, 2.3vw, 11px);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--s));
+  grid-auto-rows: var(--s);
+  gap: 2px;
+  animation: ld-bloom 700ms cubic-bezier(0.34, 1.5, 0.64, 1) 0.85s backwards;
+}
+.sbg-light .ld-cell {
+  background: var(--c);
+  border-radius: 2px;
+  animation:
+    ld-drop 480ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--d) * 1.3s) backwards,
+    ld-sweep 1.5s ease-in-out calc(0.9s + var(--i) * 35ms) infinite;
+}
+.sbg-light .ld-cell[data-spark="true"] {
+  animation:
+    ld-drop 480ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--d) * 1.3s) backwards,
+    ld-glow 0.9s ease-in-out 0.9s infinite;
+}
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .ld-cell:not([data-spark="true"]) {
+  filter: brightness(0.6) saturate(2.4);
+}
+.sbg-light .ld-bar {
+  width: 132px;
+  height: 3px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgb(var(--sbg-lilac-200));
+}
+.sbg-light .ld-bar span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: 3px;
+  background: rgb(var(--sbg-spark));
+  animation: ld-slide 1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.sbg-light .ld-label {
+  margin: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(var(--sbg-ink-3));
+}
+@keyframes ld-fade {
+  from { opacity: 0; }
+}
+@keyframes ld-drop {
+  from {
+    opacity: 0;
+    translate: calc(var(--dx) * 1px) -22px;
+    scale: 0.4;
+  }
+}
+@keyframes ld-sweep {
+  0%, 45%, 100% { opacity: 1; scale: 1; }
+  18% { opacity: 0.3; scale: 0.7; }
+}
+@keyframes ld-glow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; scale: 1; }
+  50% { box-shadow: 0 0 16px 5px var(--px-glow); scale: 1.65; }
+}
+@keyframes ld-bloom {
+  from { scale: 1; }
+  45% { scale: 1.07; }
+  to { scale: 1; }
+}
+@keyframes ld-kio-in {
+  from { opacity: 0; translate: -50% 26px; scale: 0.8; }
+}
+@keyframes ld-slide {
+  from { translate: -100%; }
+  to { translate: 250%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* finished cloud, static bar, no travel (the 120ms fade is kept off too) */
+  .sbg-light .ld-body,
+  .sbg-light .ld-cloud,
+  .sbg-light .ld-kio,
+  .sbg-light .ld-kio img,
+  .sbg-light .ld-cell,
+  .sbg-light .ld-cell[data-spark="true"] {
+    animation: none;
+  }
+  .sbg-light .ld-bar span {
+    animation: none;
+    width: 100%;
+    opacity: 0.55;
+  }
 }

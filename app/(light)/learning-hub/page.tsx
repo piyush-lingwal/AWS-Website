@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import { ScrollAtmosphere } from "@/components/design/ScrollAtmosphere";
 import { DesignNav } from "@/components/design/DesignNav";
 import { DesignFooter } from "@/components/design/DesignFooter";
 import { LearningHub } from "@/components/features/learning-hub/LearningHub";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/learning-hub",
   title: "Learning Hub",
   description:
-    "Resources to level up your cloud skills — AWS certifications, workshop archives, Skill Builder, project starter kits, and more from AWS SBG Tulas.",
-  alternates: {
-    canonical: "/learning-hub",
-  },
-};
+    "Resources to build cloud skills: AWS certification prep, AWS training, project starter kits, AWS Educate credits and a community blog from AWS SBG Tulas.",
+});
 
 export default function LearningHubPage() {
   return (
@@ -19,7 +18,9 @@ export default function LearningHubPage() {
       <ScrollAtmosphere />
       <DesignNav />
       <div className="relative z-10">
-        <LearningHub />
+        <main id="main-content">
+          <LearningHub />
+        </main>
         <DesignFooter />
       </div>
     </>
