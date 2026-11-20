@@ -332,22 +332,22 @@ export function DatePicker({
           }
         }}
         className={cn(
-          "w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border text-left flex items-center justify-between transition-all duration-200 cursor-pointer select-none",
+          "w-full h-11 px-3.5 rounded-xl text-sm bg-white/90 border text-left flex items-center justify-between transition-all duration-200 cursor-pointer select-none",
           isOpen
-            ? "border-[#6C63FF] ring-2 ring-[#6C63FF]/20 shadow-lg shadow-[#6C63FF]/10 text-white"
-            : "border-white/[0.08] hover:border-white/[0.18] text-white",
+            ? "border-[#7C3AED] ring-2 ring-[#7C3AED]/20 text-[#1B1140]"
+            : "border-[#1B1140]/15 hover:border-[#CBB5FF] text-[#1B1140]",
           disabled && "opacity-50 cursor-not-allowed",
-          !value && "text-[#52525B]"
+          !value && "text-[#6A6190]"
         )}
       >
         <div className="flex items-center gap-2.5 truncate">
           <CalendarIcon
             className={cn(
               "w-4 h-4 shrink-0 transition-colors",
-              isOpen || value ? "text-[#6C63FF]" : "text-[#71717A]"
+              isOpen || value ? "text-[#7C3AED]" : "text-[#6A6190]"
             )}
           />
-          <span className={cn("truncate", !value && "text-[#52525B]")}>
+          <span className={cn("truncate", !value && "text-[#6A6190]")}>
             {value ? formatDisplayDate(value) : placeholder}
           </span>
         </div>
@@ -355,8 +355,8 @@ export function DatePicker({
         <div className="flex items-center">
           <ChevronDown
             className={cn(
-              "w-3.5 h-3.5 text-[#71717A] transition-transform duration-200",
-              isOpen && "rotate-180 text-white"
+              "w-3.5 h-3.5 text-[#6A6190] transition-transform duration-200",
+              isOpen && "rotate-180 text-[#1B1140]"
             )}
           />
         </div>
@@ -384,7 +384,7 @@ export function DatePicker({
             }}
             className={cn(
               "fixed z-[99999] w-80 p-3.5 rounded-2xl overscroll-contain",
-              "bg-[#14141B] border border-white/[0.12] shadow-2xl shadow-black/95 backdrop-blur-2xl",
+              "bg-white border border-[#1B1140]/10 text-[#1B1140] shadow-[0_30px_80px_-24px_rgba(76,29,149,0.38)]",
               "animate-in fade-in-0 zoom-in-95 duration-150"
             )}
           >
@@ -393,15 +393,15 @@ export function DatePicker({
               <button
                 type="button"
                 onClick={() => setShowYearSelect((prev) => !prev)}
-                className="flex items-center gap-1.5 px-2 py-1 -ml-1 rounded-lg text-sm font-semibold text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 -ml-1 rounded-lg text-sm font-semibold text-[#1B1140] hover:bg-[#F4EFFF] transition-colors cursor-pointer"
               >
                 <span>
                   {MONTH_NAMES[viewMonth]} {viewYear}
                 </span>
                 <ChevronDown
                   className={cn(
-                    "w-3.5 h-3.5 text-[#A1A1AA] transition-transform",
-                    showYearSelect && "rotate-180 text-white"
+                    "w-3.5 h-3.5 text-[#4D4470] transition-transform",
+                    showYearSelect && "rotate-180 text-[#1B1140]"
                   )}
                 />
               </button>
@@ -410,7 +410,7 @@ export function DatePicker({
                 <button
                   type="button"
                   onClick={prevMonth}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+                  className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-[#4D4470] hover:text-[#1B1140] hover:bg-[#F4EFFF] transition-colors cursor-pointer"
                   title="Previous month"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -418,7 +418,7 @@ export function DatePicker({
                 <button
                   type="button"
                   onClick={nextMonth}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+                  className="w-9 h-9 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-[#4D4470] hover:text-[#1B1140] hover:bg-[#F4EFFF] transition-colors cursor-pointer"
                   title="Next month"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -429,7 +429,7 @@ export function DatePicker({
             {/* Quick Year/Month Selector View */}
             {showYearSelect ? (
               <div className="py-2 animate-in fade-in-0 duration-150">
-                <div className="text-xs font-mono uppercase text-[#71717A] px-2 mb-2 font-medium">
+                <div className="text-xs font-mono uppercase text-[#6A6190] px-2 mb-2 font-medium">
                   Select Year
                 </div>
                 <div
@@ -448,8 +448,8 @@ export function DatePicker({
                       className={cn(
                         "h-8 rounded-lg text-xs font-medium transition-colors cursor-pointer",
                         viewYear === year
-                          ? "bg-[#6C63FF] text-white font-bold"
-                          : "text-[#D4D4D8] hover:bg-white/[0.06] hover:text-white"
+                          ? "bg-[#7C3AED] text-white font-bold"
+                          : "text-[#1B1140] hover:bg-[#F4EFFF]"
                       )}
                     >
                       {year}
@@ -457,7 +457,7 @@ export function DatePicker({
                   ))}
                 </div>
 
-                <div className="text-xs font-mono uppercase text-[#71717A] px-2 mb-2 font-medium">
+                <div className="text-xs font-mono uppercase text-[#6A6190] px-2 mb-2 font-medium">
                   Select Month
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 px-1">
@@ -472,8 +472,8 @@ export function DatePicker({
                       className={cn(
                         "h-8 rounded-lg text-xs font-medium transition-colors truncate px-1 cursor-pointer",
                         viewMonth === idx
-                          ? "bg-[#6C63FF] text-white font-bold"
-                          : "text-[#D4D4D8] hover:bg-white/[0.06] hover:text-white"
+                          ? "bg-[#7C3AED] text-white font-bold"
+                          : "text-[#1B1140] hover:bg-[#F4EFFF]"
                       )}
                     >
                       {name.slice(0, 3)}
@@ -491,8 +491,8 @@ export function DatePicker({
                       className={cn(
                         "text-[11px] font-mono font-medium py-1 select-none",
                         idx === 0 || idx === 6
-                          ? "text-[#A78BFA]/70"
-                          : "text-[#71717A]"
+                          ? "text-[#6428D4]"
+                          : "text-[#6A6190]"
                       )}
                     >
                       {w}
@@ -512,12 +512,12 @@ export function DatePicker({
                         className={cn(
                           "h-8 w-8 mx-auto rounded-lg text-xs font-medium flex items-center justify-center transition-all duration-150 select-none cursor-pointer",
                           day.isSelected
-                            ? "bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] text-white font-bold shadow-md shadow-[#6C63FF]/30 scale-105"
+                            ? "bg-[#7C3AED] text-white font-bold shadow-md shadow-[#7C3AED]/30 scale-105"
                             : day.isToday
-                            ? "ring-1 ring-[#6C63FF] text-[#A78BFA] font-bold hover:bg-[#6C63FF]/15"
+                            ? "ring-1 ring-[#7C3AED] text-[#6428D4] font-bold hover:bg-[#EFE8FF]"
                             : day.isCurrentMonth
-                            ? "text-[#E4E4E7] hover:bg-white/[0.08] hover:text-white"
-                            : "text-[#3F3F46] hover:bg-white/[0.03] hover:text-[#71717A]",
+                            ? "text-[#1B1140] hover:bg-[#F4EFFF]"
+                            : "text-[#6A6190]/70 hover:bg-[#F4EFFF] hover:text-[#4D4470]",
                           day.disabled &&
                             "opacity-25 cursor-not-allowed pointer-events-none"
                         )}
@@ -529,19 +529,19 @@ export function DatePicker({
                 </div>
 
                 {/* Quick Actions Footer */}
-                <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                <div className="mt-3 pt-2.5 border-t border-[#1B1140]/10 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={handleQuickSelectToday}
-                      className="px-2 py-1 rounded-md text-[11px] font-medium text-[#A78BFA] hover:text-white hover:bg-[#6C63FF]/20 transition-colors cursor-pointer"
+                      className="px-2 py-1 rounded-md text-[11px] font-medium text-[#6428D4] hover:text-[#4A1D9E] hover:bg-[#EFE8FF] transition-colors cursor-pointer"
                     >
                       Today
                     </button>
                     <button
                       type="button"
                       onClick={handleQuickSelectTomorrow}
-                      className="px-2 py-1 rounded-md text-[11px] font-medium text-[#71717A] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                      className="px-2 py-1 rounded-md text-[11px] font-medium text-[#4D4470] hover:text-[#1B1140] hover:bg-[#F4EFFF] transition-colors cursor-pointer"
                     >
                       Tomorrow
                     </button>
@@ -552,7 +552,7 @@ export function DatePicker({
                           setIsOpen(false);
                           onSelectTBA();
                         }}
-                        className="px-2 py-1 rounded-md text-[11px] font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 transition-colors cursor-pointer"
+                        className="px-2 py-1 rounded-md text-[11px] font-medium text-[#92400E] hover:text-[#78350F] hover:bg-[#FFEBD3] transition-colors cursor-pointer"
                       >
                         To be announced
                       </button>

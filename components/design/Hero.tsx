@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useRef } from "react";
 import { ArrowRight } from "lucide-react";
-import { buildCloud } from "@/lib/design/pixel-cloud";
+import { SPARK, buildCloud } from "@/lib/design/pixel-cloud";
 import { cssVars, useScrollVar } from "./use-scroll-var";
 
 const icon = (path: string) => encodeURI(`/assets/AWS services icons/${path}`);
@@ -17,8 +17,8 @@ const SERVICE_CHIPS = [
 
 const FACTS = [
   { value: "2026", label: "Launch year" },
-  { value: "6", label: "Wings" },
-  { value: "AWS", label: "Community" },
+  { value: "4", label: "Wings" },
+  { value: "1st", label: "AWS Chapter at Tulas" },
 ] as const;
 
 /**
@@ -38,7 +38,7 @@ export function Hero() {
           {/* ── copy ── */}
           <div className="hero-copy relative z-10 text-center lg:text-left">
             <p
-              className="rise inline-flex items-center gap-2.5 rounded-full border border-[var(--line)] bg-white/70 py-1.5 pl-3 pr-4 backdrop-blur"
+              className="rise inline-flex items-center gap-2.5 rounded-full border border-[var(--line)] bg-[var(--btn-ghost-bg)] py-1.5 pl-3 pr-4 backdrop-blur"
               style={cssVars({ "--d": 0 })}
             >
               <span className="relative flex h-2 w-2">
@@ -54,7 +54,7 @@ export function Hero() {
             >
               <span className="block whitespace-nowrap">Where student</span>
               <span className="block whitespace-nowrap">
-                <span className="t-serif text-sbg-lilac-600">builders</span> shape
+                <span className="t-serif text-sbg-accent">builders</span> shape
               </span>
               <span className="block whitespace-nowrap">the cloud.</span>
             </h1>
@@ -67,11 +67,11 @@ export function Hero() {
 
             <div className="rise mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start" style={cssVars({ "--d": 380 })}>
               <Link href="/register" className="btn btn-primary w-full sm:w-auto">
-                Become a Builder <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                Join Group <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <a href="#events" className="btn btn-ghost w-full sm:w-auto">
-                Explore events
-              </a>
+              <Link href="/about" className="btn btn-ghost w-full sm:w-auto">
+                About us
+              </Link>
             </div>
 
             <dl className="hero-facts mx-auto mt-8 hidden max-w-md grid-cols-3 divide-x divide-[var(--line)] sm:grid lg:mx-0">
@@ -92,6 +92,7 @@ export function Hero() {
                 <span
                   key={`${c.x}-${c.y}`}
                   className="cloud-cell"
+                  data-spark={c.color === SPARK || undefined}
                   style={{
                     gridColumn: c.x + 1,
                     gridRow: c.y + 1,
@@ -121,7 +122,7 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="scroll-cue absolute inset-x-0 bottom-5 flex flex-col items-center gap-2" aria-hidden="true">
+        <div className="scroll-cue absolute inset-x-0 bottom-5 hidden flex-col sm:flex items-center gap-2" aria-hidden="true">
           <span className="t-eyebrow !text-[10px]">Scroll to build</span>
           <span className="relative h-9 w-px overflow-hidden bg-sbg-lilac-200">
             <span className="absolute inset-x-0 h-1/2 bg-sbg-lilac-600" style={{ animation: "sbg-cue 1.8s var(--ease-soft) infinite" }} />

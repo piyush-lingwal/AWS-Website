@@ -27,7 +27,7 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 const BTN =
-  "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]/60 active:scale-[0.98] sm:h-10";
+  "btn h-11 cursor-pointer justify-center gap-2 !px-4 text-xs sm:h-10";
 
 /** Download / copy / share actions for a verified certificate. */
 export function VerifyActions({ certificateId, eventName }: { certificateId: string; eventName: string }) {
@@ -55,7 +55,7 @@ export function VerifyActions({ certificateId, eventName }: { certificateId: str
       <a
         href={`/api/certificates/${certificateId}`}
         download={`${certificateId}.pdf`}
-        className={`${BTN} bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] text-white shadow-md shadow-[#6C63FF]/20 hover:brightness-110`}
+        className={`${BTN} btn-primary`}
       >
         <Download className="h-4 w-4" aria-hidden="true" />
         <span>Download PDF</span>
@@ -65,9 +65,9 @@ export function VerifyActions({ certificateId, eventName }: { certificateId: str
         onClick={async () => {
           if (await copyText(pageUrl())) flash();
         }}
-        className={`${BTN} border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]`}
+        className={`${BTN} btn-ghost`}
       >
-        {copied ? <Check className="h-4 w-4 text-emerald-400" aria-hidden="true" /> : <Link2 className="h-4 w-4" aria-hidden="true" />}
+        {copied ? <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" /> : <Link2 className="h-4 w-4" aria-hidden="true" />}
         <span>{copied ? "Link copied" : "Copy link"}</span>
       </button>
       {canShare && (
@@ -78,7 +78,7 @@ export function VerifyActions({ certificateId, eventName }: { certificateId: str
               .share({ title: `Verified certificate · ${eventName}`, text: `Certificate ${certificateId}`, url: pageUrl() })
               .catch(() => undefined); // The person closed the share sheet.
           }}
-          className={`${BTN} border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]`}
+          className={`${BTN} btn-ghost`}
         >
           <Share2 className="h-4 w-4" aria-hidden="true" />
           <span>Share</span>
@@ -105,13 +105,13 @@ export function CopyId({ value }: { value: string }) {
       }}
       title="Copy Certificate ID"
       aria-label={done ? "Certificate ID copied" : `Copy Certificate ID ${value}`}
-      className="group inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]/60"
+      className="group inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sbg-lilac-600"
     >
-      <span className="min-w-0 break-all font-mono text-sm font-bold text-[#A78BFA]">{value}</span>
+      <span className="min-w-0 break-all font-mono text-sm font-bold text-sbg-lilac-700">{value}</span>
       {done ? (
-        <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" aria-hidden="true" />
+        <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
       ) : (
-        <Copy className="h-3.5 w-3.5 shrink-0 text-[#71717A] transition-colors group-hover:text-white" aria-hidden="true" />
+        <Copy className="h-3.5 w-3.5 shrink-0 text-sbg-ink-3 transition-colors group-hover:text-sbg-ink" aria-hidden="true" />
       )}
     </button>
   );

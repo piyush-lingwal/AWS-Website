@@ -47,10 +47,10 @@ function toPreview(rows: Row[]): PreviewRow[] {
 }
 
 const STATUS_STYLE: Record<RowStatus, string> = {
-  ready: "text-emerald-400",
-  issued: "text-emerald-400",
-  already_issued: "text-amber-300",
-  error: "text-red-400",
+  ready: "text-[#047857]",
+  issued: "text-[#047857]",
+  already_issued: "text-[#92400e]",
+  error: "text-[#b91c1c]",
 };
 const STATUS_LABEL: Record<RowStatus, string> = {
   ready: "Ready",
@@ -174,16 +174,16 @@ export function OrganiserIssueDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="h-10 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer"
+        className="h-10 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/60 hover:bg-sbg-lilac-100 text-sbg-ink border border-sbg-ink/[0.14] flex items-center gap-2 transition-all cursor-pointer"
         title="Issue Certificates of Appreciation to the organising team"
       >
-        <Users className="w-4 h-4 text-[#A78BFA]" />
+        <Users className="w-4 h-4 text-sbg-lilac-600" />
         <span className="hidden sm:inline">Add Members</span>
       </button>
 
       {open && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/75 p-2 backdrop-blur-sm sm:p-4"
+          className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-sbg-ink/45 p-2 backdrop-blur-sm sm:p-4"
           role="presentation"
           onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}
         >
@@ -193,25 +193,25 @@ export function OrganiserIssueDialog({
             aria-labelledby="organiser-issue-title"
             data-lenis-prevent
             onWheel={(e) => e.stopPropagation()}
-            className="my-auto flex max-h-[95dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-white/[0.1] bg-[#0F0F16] shadow-2xl"
+            className="my-auto flex max-h-[95dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-sbg-ink/[0.14] bg-white shadow-2xl"
           >
-            <header className="flex items-start justify-between gap-4 border-b border-white/[0.08] p-4 sm:p-5">
+            <header className="flex items-start justify-between gap-4 border-b border-sbg-ink/[0.12] p-4 sm:p-5">
               <div className="min-w-0">
-                <h2 id="organiser-issue-title" className="text-lg font-bold text-white">Organising Team certificates</h2>
-                <p className="mt-1 truncate text-xs text-[#A1A1AA]">Certificates of Appreciation for <span className="font-medium text-white">{eventName}</span></p>
-                <p className="mt-1 text-xs text-[#71717A]">
+                <h2 id="organiser-issue-title" className="text-lg font-bold text-sbg-ink">Organising Team certificates</h2>
+                <p className="mt-1 truncate text-xs text-sbg-ink-2">Certificates of Appreciation for <span className="font-medium text-sbg-ink">{eventName}</span></p>
+                <p className="mt-1 text-xs text-sbg-ink-3">
                   Columns: Name, Email, Role (optional) and Wing ({ORGANISER_WINGS.join(", ")}). A specific role is printed on the certificate as the role.
                   With no role, pick the member&apos;s wing and it reads &ldquo;&lt;Wing&gt; member of the Organising Team&rdquo;.
                 </p>
               </div>
-              <button type="button" onClick={close} disabled={busy} aria-label="Close" className="rounded-lg p-2 text-[#A1A1AA] hover:bg-white/[0.06] hover:text-white disabled:opacity-40">
+              <button type="button" onClick={close} disabled={busy} aria-label="Close" className="rounded-lg p-2 text-sbg-ink-2 hover:bg-sbg-lilac-100 hover:text-sbg-ink disabled:opacity-40">
                 <X className="h-4 w-4" />
               </button>
             </header>
 
             <div className="space-y-4 overflow-y-auto p-4 sm:p-5">
               {!eventHasDate ? (
-                <p role="alert" className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-300">
+                <p role="alert" className="flex items-start gap-2 rounded-xl border border-[#92400e]/30 bg-[#92400e]/10 p-3 text-xs text-[#92400e]">
                   <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   Set this event&apos;s date before issuing certificates — they show the event date.
                 </p>
@@ -221,29 +221,29 @@ export function OrganiserIssueDialog({
                   <div className="space-y-2">
                     {manual.map((r, i) => (
                       <div key={i} className="grid grid-cols-1 gap-2 sm:grid-cols-[1.2fr_1.2fr_1fr_7.5rem_auto]">
-                        <input value={r.fullName} onChange={(e) => setManual((m) => m.map((x, j) => j === i ? { ...x, fullName: e.target.value } : x))} placeholder="Full name" className="h-10 rounded-lg border border-white/[0.1] bg-[#09090E] px-3 text-sm text-white placeholder:text-[#52525B] focus:border-[#8B5CF6] focus:outline-none" />
-                        <input value={r.email} onChange={(e) => setManual((m) => m.map((x, j) => j === i ? { ...x, email: e.target.value } : x))} placeholder="Email" className="h-10 rounded-lg border border-white/[0.1] bg-[#09090E] px-3 text-sm text-white placeholder:text-[#52525B] focus:border-[#8B5CF6] focus:outline-none" />
-                        <input value={r.role} onChange={(e) => setManual((m) => m.map((x, j) => j === i ? { ...x, role: e.target.value } : x))} placeholder="Role (optional)" className="h-10 rounded-lg border border-white/[0.1] bg-[#09090E] px-3 text-sm text-white placeholder:text-[#52525B] focus:border-[#8B5CF6] focus:outline-none" />
-                        <select value={r.wing} onChange={(e) => setManual((m) => m.map((x, j) => j === i ? { ...x, wing: e.target.value } : x))} aria-label="Wing" className={`h-10 rounded-lg border border-white/[0.1] bg-[#09090E] px-2 text-sm focus:border-[#8B5CF6] focus:outline-none ${r.wing ? "text-white" : "text-[#52525B]"}`}>
+                        <input value={r.fullName} onChange={(e) => setManual((m) => m.map((x, j) => j === i ? { ...x, fullName: e.target.value } : x))} placeholder="Full name" className="h-10 rounded-lg border border-sbg-ink/[0.14] bg-sbg-mist px-3 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none" />
+                        <input value={r.email} onChange={(e) => setManual((m) => m.map((x, j) => j === i ? { ...x, email: e.target.value } : x))} placeholder="Email" className="h-10 rounded-lg border border-sbg-ink/[0.14] bg-sbg-mist px-3 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none" />
+                        <input value={r.role} onChange={(e) => setManual((m) => m.map((x, j) => j === i ? { ...x, role: e.target.value } : x))} placeholder="Role (optional)" className="h-10 rounded-lg border border-sbg-ink/[0.14] bg-sbg-mist px-3 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none" />
+                        <select value={r.wing} onChange={(e) => setManual((m) => m.map((x, j) => j === i ? { ...x, wing: e.target.value } : x))} aria-label="Wing" className={`h-10 rounded-lg border border-sbg-ink/[0.14] bg-sbg-mist px-2 text-sm focus:border-sbg-lilac-600 focus:outline-none ${r.wing ? "text-sbg-ink" : "text-sbg-ink-3"}`}>
                           <option value="">Wing</option>
                           {ORGANISER_WINGS.map((w) => <option key={w} value={w}>{w}</option>)}
                         </select>
-                        <button type="button" onClick={() => setManual((m) => m.length > 1 ? m.filter((_, j) => j !== i) : m)} aria-label="Remove row" className="flex h-10 w-10 items-center justify-center rounded-lg text-[#71717A] hover:bg-red-500/10 hover:text-red-400">
+                        <button type="button" onClick={() => setManual((m) => m.length > 1 ? m.filter((_, j) => j !== i) : m)} aria-label="Remove row" className="flex h-10 w-10 items-center justify-center rounded-lg text-sbg-ink-3 hover:bg-[#b91c1c]/10 hover:text-[#b91c1c]">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
                     <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => setManual((m) => [...m, emptyRow()])} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05]">
+                      <button type="button" onClick={() => setManual((m) => [...m, emptyRow()])} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-sbg-ink/[0.14] px-3 text-xs font-medium text-sbg-ink hover:bg-sbg-lilac-100">
                         <Plus className="h-3.5 w-3.5" /> Add person
                       </button>
-                      <button type="button" onClick={previewManual} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-500">
+                      <button type="button" onClick={previewManual} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#047857] px-3 text-xs font-semibold text-white hover:bg-[#065f46]">
                         <Award className="h-3.5 w-3.5" /> Generate certificates
                       </button>
-                      <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#8B5CF6]/90 px-3 text-xs font-semibold text-white hover:bg-[#8B5CF6]">
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-sbg-lilac-600 px-3 text-xs font-semibold text-white hover:bg-sbg-lilac-700">
                         <Upload className="h-3.5 w-3.5" /> Upload sheet
                       </button>
-                      <button type="button" onClick={() => void downloadTemplate()} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05]">
+                      <button type="button" onClick={() => void downloadTemplate()} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-sbg-ink/[0.14] px-3 text-xs font-medium text-sbg-ink hover:bg-sbg-lilac-100">
                         <Download className="h-3.5 w-3.5" /> Download template
                       </button>
                       <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(e) => { void handleFile(e.target.files?.[0]); e.currentTarget.value = ""; }} />
@@ -252,40 +252,40 @@ export function OrganiserIssueDialog({
 
                   {/* Paste */}
                   <div className="space-y-2">
-                    <label htmlFor="organiser-paste" className="block text-xs font-semibold text-[#D4D4D8]">Or paste rows (Name, Email, Role, Wing)</label>
-                    <textarea id="organiser-paste" value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={3} placeholder={"Name\tEmail\tRole\tWing"} className="w-full rounded-xl border border-white/[0.1] bg-[#09090E] p-3 font-mono text-xs text-white placeholder:text-[#52525B] focus:border-[#8B5CF6] focus:outline-none" />
-                    <button type="button" onClick={previewPaste} disabled={!pasteText.trim()} className="h-8 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05] disabled:opacity-40">Generate from pasted rows</button>
+                    <label htmlFor="organiser-paste" className="block text-xs font-semibold text-sbg-ink">Or paste rows (Name, Email, Role, Wing)</label>
+                    <textarea id="organiser-paste" value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={3} placeholder={"Name\tEmail\tRole\tWing"} className="w-full rounded-xl border border-sbg-ink/[0.14] bg-sbg-mist p-3 font-mono text-xs text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none" />
+                    <button type="button" onClick={previewPaste} disabled={!pasteText.trim()} className="h-8 rounded-lg border border-sbg-ink/[0.14] px-3 text-xs font-medium text-sbg-ink hover:bg-sbg-lilac-100 disabled:opacity-40">Generate from pasted rows</button>
                   </div>
                 </>
               )}
 
-              {error && <p role="alert" className="flex items-start gap-2 text-xs text-red-400"><AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{error}</p>}
+              {error && <p role="alert" className="flex items-start gap-2 text-xs text-[#b91c1c]"><AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{error}</p>}
 
               {rows.length > 0 && (
                 <div ref={resultsRef} className="scroll-mt-4 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-[#A1A1AA]">
+                    <p className="text-xs text-sbg-ink-2">
                       {finished
                         ? `${count("issued")} generated, ${count("already_issued")} already had one, ${count("error")} errors`
                         : `${readyCount} ready to generate${count("error") ? `, ${count("error")} need fixing` : ""}. Check the list, then confirm.`}
                     </p>
-                    <button type="button" onClick={() => void issue()} disabled={readyCount === 0 || busy || finished} className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45">
+                    <button type="button" onClick={() => void issue()} disabled={readyCount === 0 || busy || finished} className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#047857] px-3.5 text-xs font-semibold text-white hover:bg-[#065f46] disabled:cursor-not-allowed disabled:opacity-45">
                       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                       {busy ? "Generating…" : finished ? "Certificates generated" : `Confirm & generate ${readyCount} ${readyCount === 1 ? "certificate" : "certificates"}`}
                     </button>
                   </div>
-                  <div className="max-w-full overflow-x-auto rounded-xl border border-white/[0.08]">
+                  <div className="max-w-full overflow-x-auto rounded-xl border border-sbg-ink/[0.12]">
                     <table className="w-full min-w-[720px] text-left text-xs">
-                      <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-[#71717A]">
+                      <thead className="bg-white/60 text-[10px] uppercase tracking-wider text-sbg-ink-3">
                         <tr><th className="px-3 py-2">Name</th><th className="px-3 py-2">Email</th><th className="px-3 py-2">Role</th><th className="px-3 py-2">Wing</th><th className="px-3 py-2">Status</th></tr>
                       </thead>
-                      <tbody className="divide-y divide-white/[0.05]">
+                      <tbody className="divide-y divide-sbg-ink/[0.07]">
                         {rows.map((row) => (
-                          <tr key={row.rowNumber} className="text-[#D4D4D8]">
+                          <tr key={row.rowNumber} className="text-sbg-ink">
                             <td className="px-3 py-2">{row.fullName}</td>
                             <td className="px-3 py-2">{row.email}</td>
-                            <td className="px-3 py-2">{row.role || <span className="text-[#52525B]">-</span>}</td>
-                            <td className="px-3 py-2">{row.wing || <span className="text-[#52525B]">-</span>}</td>
+                            <td className="px-3 py-2">{row.role || <span className="text-sbg-ink-3">-</span>}</td>
+                            <td className="px-3 py-2">{row.wing || <span className="text-sbg-ink-3">-</span>}</td>
                             <td className={`px-3 py-2 ${STATUS_STYLE[row.status]}`}>{STATUS_LABEL[row.status]}{row.message ? `: ${row.message}` : ""}</td>
                           </tr>
                         ))}

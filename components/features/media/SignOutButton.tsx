@@ -23,7 +23,7 @@ export function SignOutButton() {
     <button
       onClick={handleSignOut}
       disabled={busy}
-      className="h-9 px-3.5 rounded-xl text-xs font-medium text-[#71717A] hover:text-red-400 hover:bg-red-500/10 border border-white/[0.08] hover:border-red-500/20 transition-all flex items-center gap-2 cursor-pointer bg-white/[0.02] disabled:opacity-50"
+      className="h-9 px-3.5 rounded-xl text-xs font-medium text-sbg-ink-2 hover:text-red-700 hover:bg-red-50 border border-sbg-ink/15 hover:border-red-300 transition-all flex items-center gap-2 cursor-pointer bg-white disabled:opacity-50"
     >
       <LogOut className="w-3.5 h-3.5" />
       <span>{busy ? "Signing out…" : "Sign Out"}</span>

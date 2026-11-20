@@ -6,7 +6,9 @@
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
-import type { ApiResponse, DbTeamMember, AdminTeamMemberRequest } from "@/types/certificate";
+import type { ApiResponse } from "@/types/certificate";
+import type { TeamMemberRow } from "@/lib/team/types";
+import { parseTeamMemberInput, isUniqueViolation } from "@/lib/team/validate";
 
 /**
  * PUT: Updates an existing team member.
@@ -28,7 +30,7 @@ export async function PUT(
 
   const { id } = await context.params;
 
-  let body: Partial<AdminTeamMemberRequest>;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
@@ -38,16 +40,15 @@ export async function PUT(
     );
   }
 
-  // Build update payload — only include fields that were provided
-  const updatePayload: Record<string, unknown> = {};
-  if (body.name !== undefined) updatePayload.name = body.name.trim();
-  if (body.picUrl !== undefined) updatePayload.pic_url = body.picUrl?.trim() || null;
-  if (body.course !== undefined) updatePayload.course = body.course.trim();
-  if (body.branch !== undefined) updatePayload.branch = body.branch.trim();
-  if (body.year !== undefined) updatePayload.year = body.year.trim();
-  if (body.role !== undefined) updatePayload.role = body.role.trim();
-  if (body.batch !== undefined) updatePayload.batch = body.batch.trim() || "2026-27";
-  if (body.displayOrder !== undefined) updatePayload.display_order = body.displayOrder;
+  // Only fields that were sent are validated and updated
+  const parsed = parseTeamMemberInput(body ?? {}, true);
+  if (!parsed.ok) {
+    return NextResponse.json(
+      { success: false, error: "Validation failed.", data: parsed.errors } satisfies ApiResponse,
+      { status: 400 }
+    );
+  }
+  const updatePayload = parsed.fields;
 
   if (Object.keys(updatePayload).length === 0) {
     return NextResponse.json(
@@ -65,6 +66,12 @@ export async function PUT(
 
   if (updateError) {
     console.error("[API/admin/team-members/[id]] Update error:", updateError);
+    if (isUniqueViolation(updateError)) {
+      return NextResponse.json(
+        { success: false, error: "A team member with this email already exists." } satisfies ApiResponse,
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: "Failed to update team member." } satisfies ApiResponse,
       { status: 500 }
@@ -72,7 +79,7 @@ export async function PUT(
   }
 
   return NextResponse.json(
-    { success: true, data, message: "Team member updated successfully." } satisfies ApiResponse<DbTeamMember>,
+    { success: true, data, message: "Team member updated successfully." } satisfies ApiResponse<TeamMemberRow>,
   );
 }
 

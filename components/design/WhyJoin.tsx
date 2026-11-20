@@ -5,11 +5,11 @@ import { BadgeCheck, Route, Terminal, Trophy, Users, type LucideIcon } from "luc
 import { cssVars } from "./use-scroll-var";
 
 const ITEMS: ReadonlyArray<{ icon: LucideIcon; title: string; text: string; tint: string }> = [
-  { icon: Terminal, title: "Hands-on learning", text: "Gain practical experience through interactive sessions and real-world projects on AWS.", tint: "#EFE8FF" },
-  { icon: Route, title: "Career growth", text: "Develop skills that strengthen your portfolio, internship applications and campus placements.", tint: "#FFEBD3" },
-  { icon: Trophy, title: "Hackathons & challenges", text: "Collaborate, compete and solve real-world problems in exciting innovation challenges.", tint: "#FFE7F1" },
-  { icon: Users, title: "Industry exposure", text: "Connect with mentors, industry professionals and builders across the AWS community.", tint: "#DCEBFF" },
-  { icon: BadgeCheck, title: "Cloud certifications", text: "Get guidance on AWS learning paths, digital badges and certification preparation.", tint: "#DDF3E6" },
+  { icon: Terminal, title: "Hands-on learning", text: "Gain practical experience through interactive sessions and real-world projects on AWS.", tint: "var(--card-lilac)" },
+  { icon: Route, title: "Career growth", text: "Develop skills that strengthen your portfolio, internship applications and campus placements.", tint: "var(--card-peach)" },
+  { icon: Trophy, title: "Hackathons & challenges", text: "Collaborate, compete and solve real-world problems in exciting innovation challenges.", tint: "var(--card-rose)" },
+  { icon: Users, title: "Industry exposure", text: "Connect with mentors, industry professionals and builders across the AWS community.", tint: "var(--card-sky)" },
+  { icon: BadgeCheck, title: "Cloud certifications", text: "Get guidance on AWS learning paths, digital badges and certification preparation.", tint: "var(--card-mint)" },
 ];
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -41,16 +41,16 @@ export function WhyJoin() {
       <div className="mx-auto grid max-w-[1240px] gap-10 px-[var(--gutter)] lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
         <div className="self-start lg:sticky lg:top-28">
           <p className="t-eyebrow mb-4 flex items-center gap-3">
-            <span className="t-pixel text-sbg-lilac-600">03</span>
+            <span className="t-pixel text-sbg-accent">04</span>
             <span className="h-px w-10 bg-sbg-lilac-300" />
             Why join
           </p>
           <h2 className="t-display text-[clamp(34px,5.4vw,76px)] text-sbg-ink">
-            Everything a builder needs to <span className="t-serif text-sbg-lilac-600">grow.</span>
+            Everything a builder needs to <span className="t-serif text-sbg-accent">grow.</span>
           </h2>
 
           <div className="mt-8 hidden items-end gap-5 lg:flex" aria-hidden="true">
-            <span key={active} className="t-pixel text-[clamp(72px,9vw,128px)] leading-none text-sbg-lilac-600 [animation:sbg-rise_0.6s_var(--ease-out)]">
+            <span key={active} className="t-pixel text-[clamp(72px,9vw,128px)] leading-none text-sbg-accent [animation:sbg-rise_0.6s_var(--ease-out)]">
               {pad(active + 1)}
             </span>
             <span className="t-pixel mb-3 text-[20px] text-sbg-ink-3">/ {pad(ITEMS.length)}</span>
@@ -72,11 +72,11 @@ export function WhyJoin() {
               >
                 <div
                   className={`surface w-full rounded-[28px] p-6 transition-all duration-500 sm:p-8 ${on ? "scale-100 opacity-100" : "scale-[0.97] opacity-40"}`}
-                  style={{ backgroundImage: `linear-gradient(150deg, ${item.tint} 0%, rgba(255,255,255,0.78) 55%)` }}
+                  style={{ backgroundImage: `linear-gradient(150deg, ${item.tint} 0%, var(--wash-78) 55%)` }}
                 >
                   <div className="flex items-center gap-4">
-                    <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white shadow-[0_8px_24px_-10px_rgba(76,29,149,0.45)]">
-                      <Icon className="h-6 w-6 text-sbg-lilac-600" aria-hidden="true" />
+                    <span className="grid h-14 w-14 place-items-center rounded-2xl tile">
+                      <Icon className="h-6 w-6 text-sbg-accent" aria-hidden="true" />
                     </span>
                     <span className="t-pixel text-[15px] text-sbg-ink-3">{pad(i + 1)}</span>
                   </div>

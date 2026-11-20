@@ -109,35 +109,35 @@ function EventPicker({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/[0.1] bg-[#111117] px-4 py-3 text-left transition-colors hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]/60"
+        className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-sbg-ink/[0.14] bg-white px-4 py-3 text-left transition-colors hover:border-sbg-lilac-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sbg-lilac-600"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#6C63FF]/30 bg-[#6C63FF]/10 text-[#A78BFA]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sbg-lilac-300 bg-sbg-lilac-100 text-sbg-lilac-700">
           <CalendarDays className="h-5 w-5" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block font-mono text-[10px] uppercase tracking-wider text-[#71717A]">Event</span>
+          <span className="block font-mono text-[10px] uppercase tracking-wider text-sbg-ink-3">Event</span>
           <span className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-sm font-bold text-white sm:text-base">{current?.name ?? "Choose an event"}</span>
+            <span className="truncate text-sm font-bold text-sbg-ink sm:text-base">{current?.name ?? "Choose an event"}</span>
             {current && current.id === activeEventId && (
-              <span className="shrink-0 rounded-full border border-emerald-500/25 bg-emerald-500/15 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-400">
+              <span className="shrink-0 rounded-full border border-[#047857]/30 bg-[#e3f6ec] px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#047857]">
                 Active
               </span>
             )}
           </span>
           {current && (
-            <span className="block truncate text-[11px] text-[#A1A1AA]">
+            <span className="block truncate text-[11px] text-sbg-ink-2">
               {eventDate(current)}
               {current.event_type ? ` · ${current.event_type}` : ""}
             </span>
           )}
         </span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-[#71717A] transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+        <ChevronDown className={`h-4 w-4 shrink-0 text-sbg-ink-3 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#111117] shadow-2xl shadow-black/60">
-          <div className="relative border-b border-white/[0.06] p-2">
-            <Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#52525B]" aria-hidden="true" />
+        <div className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-2xl border border-sbg-ink/[0.14] bg-white shadow-2xl shadow-[rgba(76,29,149,0.28)]">
+          <div className="relative border-b border-sbg-ink/[0.08] p-2">
+            <Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-sbg-ink-3" aria-hidden="true" />
             <input
               ref={searchRef}
               value={query}
@@ -161,12 +161,12 @@ function EventPicker({
               }}
               placeholder={`Search ${events.length} events…`}
               aria-label="Search events"
-              className="h-10 w-full rounded-xl bg-[#09090E] pl-10 pr-3 text-sm text-white placeholder-[#52525B] focus:outline-none"
+              className="h-10 w-full rounded-xl bg-sbg-mist pl-10 pr-3 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:outline-none"
             />
           </div>
           <ul ref={listRef} role="listbox" aria-label="Events" className="max-h-[min(60vh,22rem)] overflow-y-auto overscroll-contain p-1.5" data-lenis-prevent>
             {shown.length === 0 ? (
-              <li className="px-3 py-6 text-center text-xs text-[#71717A]">No events match.</li>
+              <li className="px-3 py-6 text-center text-xs text-sbg-ink-3">No events match.</li>
             ) : (
               shown.map((ev, i) => {
                 const selected = ev.id === value;
@@ -178,21 +178,21 @@ function EventPicker({
                     data-index={i}
                     onMouseEnter={() => setCursor(i)}
                     onClick={() => choose(ev.id)}
-                    className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 ${i === cursor ? "bg-white/[0.06]" : ""}`}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 ${i === cursor ? "bg-sbg-lilac-50" : ""}`}
                   >
                     <span className="min-w-0 flex-1">
                       <span className="flex min-w-0 items-center gap-2">
-                        <span className={`truncate text-sm ${selected ? "font-bold text-white" : "font-medium text-[#E4E4E7]"}`}>{ev.name}</span>
+                        <span className={`truncate text-sm ${selected ? "font-bold text-sbg-ink" : "font-medium text-sbg-ink"}`}>{ev.name}</span>
                         {ev.id === activeEventId && (
-                          <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase text-emerald-400">Active</span>
+                          <span className="shrink-0 rounded-full bg-[#e3f6ec] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase text-[#047857]">Active</span>
                         )}
                       </span>
-                      <span className="block truncate text-[11px] text-[#71717A]">
+                      <span className="block truncate text-[11px] text-sbg-ink-3">
                         {eventDate(ev)}
                         {ev.event_type ? ` · ${ev.event_type}` : ""}
                       </span>
                     </span>
-                    {selected && <Check className="h-4 w-4 shrink-0 text-[#A78BFA]" aria-hidden="true" />}
+                    {selected && <Check className="h-4 w-4 shrink-0 text-sbg-lilac-700" aria-hidden="true" />}
                   </li>
                 );
               })
@@ -217,7 +217,7 @@ const TILES: {
     id: "participants",
     label: "Participants",
     icon: Users,
-    tone: "text-[#A78BFA] border-[#6C63FF]/30 bg-[#6C63FF]/10",
+    tone: "text-sbg-lilac-700 border-sbg-lilac-300 bg-sbg-lilac-100",
     count: (c) => c.participants,
     sub: (c) => (c.participationIssued === null ? null : `${c.participationIssued} certificates`),
   },
@@ -225,7 +225,7 @@ const TILES: {
     id: "top-performers",
     label: "Top Performers",
     icon: Trophy,
-    tone: "text-amber-300 border-amber-500/30 bg-amber-500/10",
+    tone: "text-[#92400e] border-[#92400e]/35 bg-[#fff1dc]",
     count: (c) => c.topPerformers,
     sub: (c) => (c.excellenceIssued === null || c.topPerformers === null ? null : `${c.excellenceIssued} of ${c.topPerformers} issued`),
   },
@@ -233,7 +233,7 @@ const TILES: {
     id: "organisers",
     label: "Organising Team",
     icon: Award,
-    tone: "text-[#C4B5FD] border-[#8B5CF6]/30 bg-[#8B5CF6]/10",
+    tone: "text-sbg-lilac-700 border-sbg-lilac-300 bg-sbg-lilac-100",
     count: (c) => c.organisers,
     sub: () => "Appreciation",
   },
@@ -241,7 +241,7 @@ const TILES: {
     id: "volunteers",
     label: "Volunteers",
     icon: HandHeart,
-    tone: "text-emerald-300 border-emerald-500/30 bg-emerald-500/10",
+    tone: "text-[#047857] border-[#047857]/30 bg-[#e3f6ec]",
     count: (c) => c.volunteers,
     sub: () => "Volunteering",
   },
@@ -276,17 +276,17 @@ export function CertificatesHeader({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <EventPicker events={events} value={selectedEventId} activeEventId={activeEventId} onChange={onSelectEvent} />
         <div className="flex items-center justify-between gap-3 lg:justify-end">
-          <p className="text-xs text-[#A1A1AA]">
-            <span className="text-lg font-bold tabular-nums text-white">{total ?? <CountBone className="h-5 w-8" />}</span> certificates issued for this event
+          <p className="text-xs text-sbg-ink-2">
+            <span className="text-lg font-bold tabular-nums text-sbg-ink">{total ?? <CountBone className="h-5 w-8" />}</span> certificates issued for this event
           </p>
           <button
             type="button"
             onClick={onExportAll}
             disabled={exporting}
-            className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-semibold text-white transition-all hover:bg-white/[0.08] disabled:cursor-wait disabled:opacity-60"
+            className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-sbg-ink/[0.12] bg-white/70 px-3.5 text-xs font-semibold text-sbg-ink transition-all hover:bg-sbg-lilac-100 disabled:cursor-wait disabled:opacity-60"
             title="Download every list of this event as one Excel file"
           >
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 text-emerald-400" />}
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 text-[#047857]" />}
             <span>Export all</span>
           </button>
         </div>
@@ -306,19 +306,19 @@ export function CertificatesHeader({
               aria-selected={selected}
               aria-controls={`cert-panel-${tile.id}`}
               onClick={() => onSection(tile.id)}
-              className={`flex min-w-0 cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]/60 sm:p-4 ${
-                selected ? "border-white/25 bg-white/[0.07] shadow-lg shadow-black/30" : "border-white/[0.07] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]"
+              className={`flex min-w-0 cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sbg-lilac-600 sm:p-4 ${
+                selected ? "border-sbg-lilac-400 bg-white shadow-lg shadow-[rgba(76,29,149,0.2)]" : "border-sbg-ink/[0.1] bg-white/60 hover:border-sbg-lilac-300 hover:bg-sbg-lilac-50"
               }`}
             >
               <span className={`hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border sm:flex ${tile.tone}`}>
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-[11px] font-medium text-[#A1A1AA] sm:text-xs">{tile.label}</span>
-                <span className="block text-xl font-bold tabular-nums leading-tight text-white sm:text-2xl">
+                <span className="block truncate text-[11px] font-medium text-sbg-ink-2 sm:text-xs">{tile.label}</span>
+                <span className="block text-xl font-bold tabular-nums leading-tight text-sbg-ink sm:text-2xl">
                   {n ?? <CountBone className="my-1 h-6 w-10 sm:h-7" />}
                 </span>
-                <span className="block truncate text-[10px] text-[#71717A] sm:text-[11px]">
+                <span className="block truncate text-[10px] text-sbg-ink-3 sm:text-[11px]">
                   {tile.sub(counts) ?? <CountBone className="h-2.5 w-20" />}
                 </span>
               </span>

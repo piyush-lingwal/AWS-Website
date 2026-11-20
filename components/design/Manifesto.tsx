@@ -38,7 +38,7 @@ export function Manifesto() {
       <div className="pin flex items-center">
         <div className="mx-auto w-full max-w-[1240px] px-[var(--gutter)]">
           <p className="t-eyebrow mb-6 flex items-center gap-3 sm:mb-8">
-            <span className="t-pixel text-sbg-lilac-600">01</span>
+            <span className="t-pixel text-sbg-accent">02</span>
             <span className="h-px w-10 bg-sbg-lilac-300" />
             Our mission
           </p>

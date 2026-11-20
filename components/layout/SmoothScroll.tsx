@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import gsap from "gsap";
@@ -62,8 +62,12 @@ export default function SmoothScroll({
     };
   }, [smooth]);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  useLayoutEffect(() => {
+    // Jump, never glide: html has `scroll-behavior: smooth`, so a plain scrollTo(0, 0)
+    // made a new page open at the (clamped) old position, e.g. the footer, and slide up.
+    const lenis = (window as any).__lenis as Lenis | undefined;
+    if (lenis) lenis.scrollTo(0, { immediate: true, force: true });
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
 

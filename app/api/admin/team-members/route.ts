@@ -6,12 +6,11 @@
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
-import type { ApiResponse, DbTeamMember, AdminTeamMemberRequest } from "@/types/certificate";
+import type { ApiResponse } from "@/types/certificate";
+import type { TeamMemberRow } from "@/lib/team/types";
+import { parseTeamMemberInput, isUniqueViolation } from "@/lib/team/validate";
 
-/**
- * GET: Returns all team members, ordered by batch, display_order then name.
- * Optional query parameter ?batch=2026-27 filters by batch.
- */
+/** GET: Returns all team members, ordered by name. */
 export async function GET(request: NextRequest) {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.response;
@@ -24,18 +23,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { searchParams } = new URL(request.url);
-  const batch = searchParams.get("batch");
-
-  let query = supabase.from("team_members").select("*");
-
-  if (batch && batch !== "ALL") {
-    query = query.eq("batch", batch);
-  }
-
-  const { data, error } = await query
-    .order("batch", { ascending: false })
-    .order("display_order", { ascending: true })
+  const { data, error } = await supabase
+    .from("team_members")
+    .select("*")
     .order("name", { ascending: true });
 
   if (error) {
@@ -46,7 +36,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ success: true, data } satisfies ApiResponse<DbTeamMember[]>);
+  return NextResponse.json({ success: true, data } satisfies ApiResponse<TeamMemberRow[]>);
 }
 
 /**
@@ -64,7 +54,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: AdminTeamMemberRequest;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
@@ -75,16 +65,10 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Validate ──────────────────────────────────────────────
-  const errors: Record<string, string> = {};
-  if (!body.name?.trim()) errors.name = "Name is required.";
-  if (!body.course?.trim()) errors.course = "Course is required.";
-  if (!body.branch?.trim()) errors.branch = "Branch is required.";
-  if (!body.year?.trim()) errors.year = "Year is required.";
-  if (!body.role?.trim()) errors.role = "Role is required.";
-
-  if (Object.keys(errors).length > 0) {
+  const parsed = parseTeamMemberInput(body ?? {});
+  if (!parsed.ok) {
     return NextResponse.json(
-      { success: false, error: "Validation failed.", data: errors } satisfies ApiResponse,
+      { success: false, error: "Validation failed.", data: parsed.errors } satisfies ApiResponse,
       { status: 400 }
     );
   }
@@ -92,21 +76,18 @@ export async function POST(request: NextRequest) {
   // ── Insert team member ──────────────────────────────────────
   const { data: newMember, error: insertError } = await supabase
     .from("team_members")
-    .insert({
-      name: body.name.trim(),
-      pic_url: body.picUrl?.trim() || null,
-      course: body.course.trim(),
-      branch: body.branch.trim(),
-      year: body.year.trim(),
-      role: body.role.trim(),
-      batch: body.batch?.trim() || "2026-27",
-      display_order: body.displayOrder ?? 0,
-    })
+    .insert(parsed.fields)
     .select("*")
     .single();
 
   if (insertError) {
     console.error("[API/admin/team-members] Insert error:", insertError);
+    if (isUniqueViolation(insertError)) {
+      return NextResponse.json(
+        { success: false, error: "A team member with this email already exists." } satisfies ApiResponse,
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: "Failed to create team member." } satisfies ApiResponse,
       { status: 500 }
@@ -114,7 +95,7 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json(
-    { success: true, data: newMember, message: "Team member added successfully." } satisfies ApiResponse<DbTeamMember>,
+    { success: true, data: newMember, message: "Team member added successfully." } satisfies ApiResponse<TeamMemberRow>,
     { status: 201 }
   );
 }

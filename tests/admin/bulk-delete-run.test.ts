@@ -141,17 +141,9 @@ test("volunteers before the organiser migration: nothing to delete, not an error
   assert.deepEqual(await runBulkDelete(db, { section: "volunteers", eventId: EVENT }), { ok: true, deleted: { certificates: 0 } });
 });
 
-test("team: one batch, the default batch (with unbatched members), or every batch", async () => {
-  let f = fakeDb(() => ({ count: 3 }));
-  assert.deepEqual(await runBulkDelete(f.db, { section: "team", batch: "2025-26" }), { ok: true, deleted: { teamMembers: 3 } });
-  assert.deepEqual(f.deletes(), ["team_members: batch=eq.2025-26"]);
-
-  f = fakeDb(() => ({ count: 2 }));
-  assert.deepEqual(await runBulkDelete(f.db, { section: "team", batch: "2026-27" }), { ok: true, deleted: { teamMembers: 4 } });
-  assert.deepEqual(f.deletes(), ["team_members: batch=eq.2026-27", "team_members: batch=is.null"]);
-
-  f = fakeDb(() => ({ count: 9 }));
-  assert.deepEqual(await runBulkDelete(f.db, { section: "team", batch: "ALL" }), { ok: true, deleted: { teamMembers: 9 } });
+test("team: deletes every member", async () => {
+  const f = fakeDb(() => ({ count: 9 }));
+  assert.deepEqual(await runBulkDelete(f.db, { section: "team" }), { ok: true, deleted: { teamMembers: 9 } });
   assert.deepEqual(f.deletes(), ["team_members: id=not.is.null"]);
 });
 

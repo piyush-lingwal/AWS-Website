@@ -45,7 +45,7 @@ const ORGANISER_COLUMNS: TeamColumn<OrganiserCertRow>[] = [
   {
     header: "Role / Wing",
     cell: (o) => (
-      <span className="inline-block rounded-lg border border-[#8B5CF6]/20 bg-[#8B5CF6]/10 px-2.5 py-1 text-[11px] font-medium text-[#C4B5FD]">
+      <span className="inline-block rounded-lg border border-sbg-lilac-300 bg-sbg-lilac-100 px-2.5 py-1 text-[11px] font-medium text-sbg-lilac-700">
         {roleLabel(o)}
       </span>
     ),
@@ -62,7 +62,7 @@ export function OrganiserSection({ eventId, eventName, eventHasDate, confirm, on
       title="Organising Team"
       description={
         <>
-          Certificates of Appreciation for the organising team of <span className="text-[#A78BFA]">{eventName}</span>.
+          Certificates of Appreciation for the organising team of <span className="text-sbg-lilac-700">{eventName}</span>.
         </>
       }
       listUrl={`/api/admin/events/${eventId}/organisers`}
@@ -75,14 +75,14 @@ export function OrganiserSection({ eventId, eventName, eventHasDate, confirm, on
       )}
       columns={ORGANISER_COLUMNS}
       mobileDetail={(o) => (
-        <span className="inline-block rounded-md border border-[#8B5CF6]/20 bg-[#8B5CF6]/10 px-2 py-0.5 font-medium text-[#C4B5FD]">{roleLabel(o)}</span>
+        <span className="inline-block rounded-md border border-sbg-lilac-300 bg-sbg-lilac-100 px-2 py-0.5 font-medium text-sbg-lilac-700">{roleLabel(o)}</span>
       )}
       searchFields={organiserSearch}
       searchPlaceholder="Search name, email, role, wing or certificate…"
       exportRows={organiserExportRows}
       exportKind="Appreciation"
       emptyText="No organising team members added for this event yet."
-      linkClass="text-[#A78BFA]"
+      linkClass="text-sbg-lilac-700"
       confirm={confirm}
       onCountChange={onCountChange}
     />
@@ -90,8 +90,8 @@ export function OrganiserSection({ eventId, eventName, eventHasDate, confirm, on
 }
 
 const VOLUNTEER_COLUMNS: TeamColumn<VolunteerCertRow>[] = [
-  { header: "College ID", cell: (v) => <span className="font-mono text-[11px] text-[#A1A1AA]">{v.collegeId || "—"}</span> },
-  { header: "Course", cell: (v) => <span className="text-[#D4D4D8]">{v.course || "—"}</span> },
+  { header: "College ID", cell: (v) => <span className="font-mono text-[11px] text-sbg-ink-2">{v.collegeId || "—"}</span> },
+  { header: "Course", cell: (v) => <span className="text-sbg-ink">{v.course || "—"}</span> },
 ];
 
 const volunteerSearch = (v: VolunteerCertRow) => [v.fullName, v.email, v.collegeId, v.course, v.certificateId];
@@ -104,7 +104,7 @@ export function VolunteerSection({ eventId, eventName, eventHasDate, confirm, on
       title="Volunteers"
       description={
         <>
-          Certificates of Volunteering for <span className="text-emerald-300">{eventName}</span>. Each certificate is for this event only.
+          Certificates of Volunteering for <span className="text-[#047857]">{eventName}</span>. Each certificate is for this event only.
         </>
       }
       listUrl={`/api/admin/events/${eventId}/volunteers`}
@@ -122,7 +122,7 @@ export function VolunteerSection({ eventId, eventName, eventHasDate, confirm, on
       exportRows={volunteerExportRows}
       exportKind="Volunteers"
       emptyText="No volunteers added for this event yet."
-      linkClass="text-emerald-300"
+      linkClass="text-[#047857]"
       confirm={confirm}
       onCountChange={onCountChange}
     />

@@ -14,6 +14,8 @@
 // with the scroll position (--t, from 0 to 1).
 // ============================================================
 
+import type { CSSProperties } from "react";
+
 export const CLOUD_MASK: readonly string[] = [
   "........XXXXXXXX..........",
   "......XXXXXXXXXXXX..XXXX..",
@@ -99,5 +101,12 @@ export function buildCloud(mask: readonly string[] = CLOUD_MASK, seed = 7): Clou
  */
 export const CLOUD_HEAD_START = 0.2;
 
+/**
+ * Style for one tile of a small decorative pixel grid: its step in the ambient
+ * diagonal wave (--i = column + row), read by .px-tile in daylight.css.
+ */
+export function pixelWave(index: number, cols: number): CSSProperties {
+  return { "--i": (index % cols) + Math.floor(index / cols) } as CSSProperties;
+}
 /** Scroll position (0..1) at which the last square has fully landed (each square's ramp is 1/5 wide). */
 export const CLOUD_BUILT_AT = 0.5 + 1 / 5 - CLOUD_HEAD_START;

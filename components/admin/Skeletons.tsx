@@ -4,8 +4,8 @@
 // Loading skeletons for the admin panel
 // ============================================================
 //
-// Grey placeholder blocks in the shape of what is loading (tiles, table rows,
-// cards), with a shimmer (.admin-skeleton in app/globals.css). Each loading area
+// Light placeholder blocks in the shape of what is loading (tiles, table rows,
+// cards), with a shimmer (.admin-skeleton, light override in app/admin/admin-daylight.css). Each loading area
 // is announced once to screen readers ("Loading participants"), and the blocks
 // themselves are hidden from them.
 // ============================================================
@@ -43,7 +43,7 @@ export function AdminPageSkeleton({ label = "Loading the admin panel" }: { label
         <Bone className="h-7 w-44" />
         <Bone className="h-3 w-72 max-w-full" />
       </div>
-      <div className="flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.015] p-5 sm:p-6">
+      <div className="flex items-center gap-4 rounded-2xl border border-sbg-ink/10 bg-white/70 p-5 sm:p-6">
         <Bone className="h-12 w-12 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1 space-y-2">
           <Bone className="h-3 w-24" />
@@ -54,7 +54,7 @@ export function AdminPageSkeleton({ label = "Loading the admin panel" }: { label
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-4 sm:p-5">
+          <div key={i} className="rounded-2xl border border-sbg-ink/10 bg-white/70 p-4 sm:p-5">
             <Bone className="h-3 w-20" />
             <Bone className="mt-3 h-7 w-14" />
           </div>
@@ -62,7 +62,7 @@ export function AdminPageSkeleton({ label = "Loading the admin panel" }: { label
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {Array.from({ length: 2 }, (_, i) => (
-          <div key={i} className="space-y-3 rounded-2xl border border-white/[0.06] bg-white/[0.015] p-5">
+          <div key={i} className="space-y-3 rounded-2xl border border-sbg-ink/10 bg-white/70 p-5">
             <Bone className="h-4 w-32" />
             <Bone className="h-10 w-full rounded-xl" />
             <Bone className="h-10 w-full rounded-xl" />
@@ -78,7 +78,7 @@ export function AdminPageSkeleton({ label = "Loading the admin panel" }: { label
 export function ListSkeleton({ rows = 6, label = "Loading" }: { rows?: number; label?: string }) {
   return (
     <Loading label={label}>
-      <ul className="divide-y divide-white/[0.05] md:hidden" aria-hidden="true">
+      <ul className="divide-y divide-sbg-ink/[0.06] md:hidden" aria-hidden="true">
         {Array.from({ length: Math.min(rows, 4) }, (_, i) => (
           <li key={i} className="space-y-3 p-4">
             <div className="flex items-center gap-3">
@@ -93,12 +93,12 @@ export function ListSkeleton({ rows = 6, label = "Loading" }: { rows?: number; l
         ))}
       </ul>
       <div className="hidden md:block" aria-hidden="true">
-        <div className="flex items-center gap-6 border-b border-white/[0.06] bg-[#13131a] px-5 py-3.5">
+        <div className="flex items-center gap-6 border-b border-sbg-ink/10 bg-sbg-mist px-5 py-3.5">
           {["w-6", "w-24", "w-20", "w-28", "w-20", "w-24"].map((w, i) => (
             <Bone key={i} className={`h-2.5 ${w}`} />
           ))}
         </div>
-        <div className="divide-y divide-white/[0.04]">
+        <div className="divide-y divide-sbg-ink/[0.06]">
           {Array.from({ length: rows }, (_, i) => (
             <div key={i} className="flex items-center gap-6 px-5 py-4" style={{ opacity: 1 - i * (0.6 / rows) }}>
               <Bone className="h-3 w-6" />
@@ -165,7 +165,7 @@ export function CardsSkeleton({ count = 3, label = "Loading" }: { count?: number
   return (
     <Loading label={label} className="space-y-3">
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="space-y-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4" aria-hidden="true">
+        <div key={i} className="space-y-3 rounded-2xl border border-sbg-ink/10 bg-white/70 p-4" aria-hidden="true">
           <div className="space-y-2">
             <Bone className="h-3 w-20" />
             <Bone className={`h-4 ${NAME_WIDTHS[i % NAME_WIDTHS.length]}`} />
@@ -188,7 +188,7 @@ export function CardsSkeleton({ count = 3, label = "Loading" }: { count?: number
 export function TeamGridSkeleton({ label = "Loading the team" }: { label?: string }) {
   return (
     <Loading label={label} className="space-y-4">
-      <div className="flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.015] p-4 sm:p-5" aria-hidden="true">
+      <div className="flex items-center gap-3.5 rounded-2xl border border-sbg-ink/10 bg-white/70 p-4 sm:p-5" aria-hidden="true">
         <Bone className="h-10 w-10 shrink-0 rounded-xl" />
         <div className="space-y-2">
           <Bone className="h-4 w-32" />
@@ -197,7 +197,7 @@ export function TeamGridSkeleton({ label = "Loading the team" }: { label?: strin
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-hidden="true">
         {Array.from({ length: 8 }, (_, i) => (
-          <div key={i} className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.015] p-4">
+          <div key={i} className="flex items-center gap-3 rounded-2xl border border-sbg-ink/10 bg-white/70 p-4">
             <Bone className="h-12 w-12 shrink-0 rounded-full" />
             <div className="min-w-0 flex-1 space-y-2">
               <Bone className={`h-3.5 ${NAME_WIDTHS[i % NAME_WIDTHS.length]} max-w-full`} />

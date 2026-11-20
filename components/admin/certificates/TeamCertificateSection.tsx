@@ -181,16 +181,6 @@ export function TeamCertificateSection<T extends TeamRow>({
       <SectionHeading title={title} description={description}>
         {renderAdd(load)}
         <ExportButton onClick={exportCsv} disabled={loading || shown.length === 0} label={query.trim() ? "Export matches" : "Export"} />
-        <DeleteAllButton
-          section={bulkSection}
-          noun={`${noun}' certificates`}
-          count={rows.length}
-          eventId={eventId}
-          scope={`for "${eventName}"`}
-          disabled={loading}
-          consequences="Their verification links stop working. Participants and other certificates are kept."
-          onDeleted={load}
-        />
       </SectionHeading>
 
       <SearchField value={query} onChange={setQuery} placeholder={searchPlaceholder} shown={shown.length} total={rows.length} />
@@ -200,21 +190,21 @@ export function TeamCertificateSection<T extends TeamRow>({
         {loading ? (
           <CardsSkeleton count={3} label={`Loading ${title}`} />
         ) : shown.length === 0 ? (
-          <p className="rounded-2xl border border-white/[0.08] px-4 py-8 text-center text-xs text-[#71717A]">
+          <p className="rounded-2xl border border-sbg-ink/[0.12] px-4 py-8 text-center text-xs text-sbg-ink-3">
             {rows.length === 0 ? emptyText : "Nobody matches this search."}
           </p>
         ) : (
           <ul className="space-y-3">
             {shown.map((row, i) => (
-              <li key={`m-${row.certificateId}`} className="space-y-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+              <li key={`m-${row.certificateId}`} className="space-y-3 rounded-2xl border border-sbg-ink/[0.12] bg-white/60 p-4">
                 <div className="flex items-start gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">
-                      <span className="mr-1.5 font-mono text-[11px] text-[#52525B]">{i + 1}.</span>
+                    <p className="truncate text-sm font-semibold text-sbg-ink">
+                      <span className="mr-1.5 font-mono text-[11px] text-sbg-ink-3">{i + 1}.</span>
                       {row.fullName}
                     </p>
-                    {row.email && <p className="truncate font-mono text-[11px] text-[#71717A]">{row.email}</p>}
-                    {mobileDetail && <div className="mt-1 text-[11px] text-[#A1A1AA]">{mobileDetail(row)}</div>}
+                    {row.email && <p className="truncate font-mono text-[11px] text-sbg-ink-3">{row.email}</p>}
+                    {mobileDetail && <div className="mt-1 text-[11px] text-sbg-ink-2">{mobileDetail(row)}</div>}
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-3">
@@ -226,7 +216,7 @@ export function TeamCertificateSection<T extends TeamRow>({
                       href={`/api/certificates/${row.certificateId}`}
                       download={`${row.certificateId}.pdf`}
                       aria-label={`Download certificate ${row.certificateId}`}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-[#A1A1AA]"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-sbg-ink/[0.08] bg-white/60 text-sbg-ink-2"
                     >
                       <Download className="h-4 w-4" />
                     </a>
@@ -235,7 +225,7 @@ export function TeamCertificateSection<T extends TeamRow>({
                       onClick={() => revoke(row)}
                       disabled={busyId === row.certificateId}
                       aria-label={`Remove certificate ${row.certificateId}`}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-[#71717A] disabled:opacity-40"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-sbg-ink/[0.08] bg-white/60 text-sbg-ink-3 disabled:opacity-40"
                     >
                       {busyId === row.certificateId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     </button>
@@ -247,9 +237,9 @@ export function TeamCertificateSection<T extends TeamRow>({
         )}
       </div>
 
-      <div className="hidden max-h-[70vh] max-w-full overflow-auto rounded-2xl border border-white/[0.08] md:block">
+      <div className="hidden max-h-[70vh] max-w-full overflow-auto rounded-2xl border border-sbg-ink/[0.12] md:block">
         <table className="w-full min-w-[720px] text-left text-xs">
-          <thead className="sticky top-0 z-10 bg-[#13131a] text-[10px] uppercase tracking-wider text-[#71717A]">
+          <thead className="sticky top-0 z-10 bg-sbg-mist text-[10px] uppercase tracking-wider text-sbg-ink-3">
             <tr>
               <th className="w-12 px-4 py-3">#</th>
               <th className="px-4 py-3">Name</th>
@@ -260,22 +250,22 @@ export function TeamCertificateSection<T extends TeamRow>({
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.05]">
+          <tbody className="divide-y divide-sbg-ink/[0.07]">
             {loading ? (
               <TableRowsSkeleton rows={4} columns={colSpan} label={`Loading ${title}`} />
             ) : shown.length === 0 ? (
               <tr>
-                <td colSpan={colSpan} className="px-4 py-8 text-center text-[#71717A]">
+                <td colSpan={colSpan} className="px-4 py-8 text-center text-sbg-ink-3">
                   {rows.length === 0 ? emptyText : "Nobody matches this search."}
                 </td>
               </tr>
             ) : (
               shown.map((row, i) => (
-                <tr key={row.certificateId} className="text-[#D4D4D8] hover:bg-white/[0.02]">
-                  <td className="px-4 py-3 font-mono text-[11px] tabular-nums text-[#52525B]">{i + 1}</td>
+                <tr key={row.certificateId} className="text-sbg-ink hover:bg-sbg-lilac-50">
+                  <td className="px-4 py-3 font-mono text-[11px] tabular-nums text-sbg-ink-3">{i + 1}</td>
                   <td className="px-4 py-3">
-                    <span className="block font-semibold text-white">{row.fullName}</span>
-                    {row.email && <span className="font-mono text-[10px] text-[#71717A]">{row.email}</span>}
+                    <span className="block font-semibold text-sbg-ink">{row.fullName}</span>
+                    {row.email && <span className="font-mono text-[10px] text-sbg-ink-3">{row.email}</span>}
                   </td>
                   {columns.map((c) => (
                     <td key={c.header} className="px-4 py-3">{c.cell(row)}</td>
@@ -284,14 +274,14 @@ export function TeamCertificateSection<T extends TeamRow>({
                     <Link href={`/verify/${row.certificateId}`} target="_blank" className={`font-mono text-[11px] hover:underline ${linkClass}`}>
                       {row.certificateId}
                     </Link>
-                    <span className="block font-mono text-[10px] text-[#52525B]">{formatIssued(row.issueDate)}</span>
+                    <span className="block font-mono text-[10px] text-sbg-ink-3">{formatIssued(row.issueDate)}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1.5">
                       <a
                         href={`/api/certificates/${row.certificateId}`}
                         download={`${row.certificateId}.pdf`}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-[#A1A1AA] transition-colors hover:bg-white/[0.08] hover:text-white"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-sbg-ink/[0.08] bg-white/60 text-sbg-ink-2 transition-colors hover:bg-sbg-lilac-100 hover:text-sbg-ink"
                         title="Download PDF"
                       >
                         <Download className="h-3.5 w-3.5" />
@@ -300,7 +290,7 @@ export function TeamCertificateSection<T extends TeamRow>({
                         type="button"
                         onClick={() => revoke(row)}
                         disabled={busyId === row.certificateId}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-[#71717A] transition-colors hover:border-red-500/30 hover:bg-red-500/20 hover:text-red-400 disabled:opacity-40"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-sbg-ink/[0.08] bg-white/60 text-sbg-ink-3 transition-colors hover:border-[#b91c1c]/40 hover:bg-[#ffe1e1] hover:text-[#b91c1c] disabled:opacity-40"
                         title="Remove certificate"
                       >
                         {busyId === row.certificateId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
@@ -313,6 +303,19 @@ export function TeamCertificateSection<T extends TeamRow>({
           </tbody>
         </table>
       </div>
+
+      <div className="ad-danger-zone flex flex-wrap items-center justify-end gap-3 p-3 sm:p-4">
+        <DeleteAllButton
+          section={bulkSection}
+          noun={`${noun}' certificates`}
+          count={rows.length}
+          eventId={eventId}
+          scope={`for "${eventName}"`}
+          disabled={loading}
+          consequences="Their verification links stop working. Participants and other certificates are kept."
+          onDeleted={load}
+        />
+</div>
     </section>
   );
 }

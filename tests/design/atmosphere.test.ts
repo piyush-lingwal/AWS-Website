@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { HOLD, TONES, hex, isToneName, mixRgb, rgbTriplet, smoothstep, toneAtY, type ToneStop } from "../../lib/design/atmosphere.ts";
+import { HOLD, TONES, TONES_DARK, toneSet, hex, isToneName, mixRgb, rgbTriplet, smoothstep, toneAtY, type ToneStop } from "../../lib/design/atmosphere.ts";
 
 const stops: ToneStop[] = [
   { at: 1000, tone: "dawn" },
@@ -76,6 +76,20 @@ test("isToneName only accepts real tones (no prototype tricks)", () => {
   assert.equal(isToneName("night"), false);
   assert.equal(isToneName("toString"), false);
   assert.equal(isToneName(undefined), false);
+});
+
+test("TONES_DARK has the same tone names as TONES and toneSet picks by theme", () => {
+  assert.deepEqual(Object.keys(TONES_DARK).sort(), Object.keys(TONES).sort());
+  assert.equal(toneSet("dark"), TONES_DARK);
+  assert.equal(toneSet("light"), TONES);
+});
+
+test("toneAtY with the dark palette uses dark tones at the edges and the midpoint between", () => {
+  assert.deepEqual(toneAtY(stops, -5, TONES_DARK), TONES_DARK.dawn);
+  assert.deepEqual(toneAtY(stops, 99999, TONES_DARK), TONES_DARK.clear);
+  const mid = toneAtY(stops, 2000, TONES_DARK);
+  assert.deepEqual(mid.base, mixRgb(TONES_DARK.dawn.base, TONES_DARK.violet.base, 0.5));
+  assert.deepEqual(toneAtY([], 1, TONES_DARK), TONES_DARK.dawn);
 });
 
 test("rgbTriplet rounds to the space-separated form CSS rgb() wants", () => {

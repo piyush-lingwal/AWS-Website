@@ -2,7 +2,7 @@
 
 import React, { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { FileText, ClipboardCheck, Rocket, ArrowRight, Sparkles } from "lucide-react";
+import { FileText, ClipboardCheck, Rocket } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -13,10 +13,8 @@ const STEPS = [
   {
     number: "01",
     icon: FileText,
-    color: "text-primary-light",
-    glowColor: "rgba(124,58,237,0.6)",
-    bg: "from-primary/20 via-primary/5 to-transparent",
-    border: "border-primary/30",
+    color: "text-sbg-accent-strong",
+    tint: "var(--card-lilac)",
     title: "Pick Your Wing",
     description:
       "Browse the 6 Builder Wings, understand what each does, and identify the one that resonates with your interests.",
@@ -25,10 +23,8 @@ const STEPS = [
   {
     number: "02",
     icon: ClipboardCheck,
-    color: "text-accent",
-    glowColor: "rgba(192,132,252,0.6)",
-    bg: "from-accent/20 via-accent/5 to-transparent",
-    border: "border-accent/30",
+    color: "text-sbg-accent-strong",
+    tint: "var(--card-peach)",
     title: "Submit Application",
     description:
       "Fill out a fast registration form in under 2 minutes. Select your wings and tell us your academic year.",
@@ -37,10 +33,8 @@ const STEPS = [
   {
     number: "03",
     icon: Rocket,
-    color: "text-emerald-400",
-    glowColor: "rgba(52,211,153,0.6)",
-    bg: "from-emerald-500/20 via-emerald-500/5 to-transparent",
-    border: "border-emerald-500/30",
+    color: "text-sbg-accent-strong",
+    tint: "var(--card-mint)",
     title: "Join the Reveal",
     description:
       "Shortlisted candidates receive interview slots and are officially announced as part of the 2026 Core Team.",
@@ -49,7 +43,7 @@ const STEPS = [
 ];
 
 export function TeamSelectionRoadmap() {
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const mobileListRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
 
@@ -120,113 +114,105 @@ export function TeamSelectionRoadmap() {
   }, { scope: sectionRef });
 
   return (
-    <section ref={sectionRef} className="py-16 sm:py-20 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto overflow-hidden">
-      
-      {/* Header */}
-      <div ref={headerRef} className="text-center max-w-xl mx-auto mb-10 sm:mb-16">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] uppercase tracking-[0.2em] text-primary-light font-mono mb-3">
-          <Sparkles className="w-3 h-3 text-primary-light" />
-          <span>How Selection Works</span>
-        </div>
-        <h2 className="text-3xl sm:text-4xl font-bold font-display text-text-primary tracking-tight">
-          3 Steps to Secure Your Wing
-        </h2>
-        <p className="text-xs sm:text-sm text-text-secondary mt-2">
-          From application submission to official cohort induction
-        </p>
-      </div>
-
-      {/* Desktop horizontal timeline */}
-      <div className="hidden md:block relative">
-        {/* Animated connecting line */}
-        <div className="absolute top-[52px] left-[calc(100%/6)] right-[calc(100%/6)] h-px bg-border overflow-hidden">
-          <motion.div
-            style={{ width: lineWidth }}
-            className="h-full bg-gradient-to-r from-primary via-accent to-emerald-400"
-          />
+    <section ref={sectionRef} data-tone="bloom" className="relative overflow-hidden">
+      <div className="relative mx-auto max-w-[1240px] px-[var(--gutter)] py-24 md:py-32">
+        {/* Header */}
+        <div ref={headerRef} className="mx-auto mb-14 max-w-2xl text-center sm:mb-20">
+          <p className="t-eyebrow flex items-center justify-center gap-3">
+            <span className="t-pixel text-sbg-accent">01</span>
+            <span className="h-px w-10 bg-sbg-lilac-300" />
+            How Selection Works
+          </p>
+          <h2 className="t-display mt-5 text-[clamp(34px,5vw,68px)] text-sbg-ink">
+            3 Steps to Secure <span className="t-serif text-sbg-accent">Your Wing</span>
+          </h2>
+          <p className="t-lead mt-5">
+            From application submission to official cohort induction
+          </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
-          {STEPS.map((step, idx) => {
-            const Icon = step.icon;
-            const transform = stepTransforms[idx];
-            return (
-              <motion.div
-                key={step.number}
-                style={{
-                  opacity: transform.opacity,
-                  y: transform.y,
-                  scale: transform.scale,
-                }}
-                className="relative group"
-              >
-                {/* Step circle */}
-                <div className="relative flex justify-center mb-8">
-                  <div
-                    className={`relative w-[104px] h-[104px] rounded-3xl bg-bg-card border ${step.border} flex flex-col items-center justify-center gap-1 group-hover:scale-105 transition-transform duration-300`}
-                    style={{ boxShadow: `0 0 0 0 ${step.glowColor}` }}
-                  >
-                    <div
-                      className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                      style={{ boxShadow: `0 0 30px -5px ${step.glowColor}` }}
-                    />
-                    <Icon className={`w-6 h-6 ${step.color} relative z-10`} />
-                    <span className={`text-xs font-mono font-bold ${step.color} relative z-10`}>
-                      {step.number}
-                    </span>
+        {/* Desktop horizontal timeline */}
+        <div className="relative hidden md:block">
+          {/* Animated connecting line */}
+          <div className="absolute left-[calc(100%/6)] right-[calc(100%/6)] top-[52px] h-px overflow-hidden bg-sbg-lilac-200">
+            <motion.div
+              style={{ width: lineWidth }}
+              className="h-full bg-gradient-to-r from-sbg-lilac-400 via-sbg-lilac-600 to-sbg-spark"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-6">
+            {STEPS.map((step, idx) => {
+              const Icon = step.icon;
+              const transform = stepTransforms[idx];
+              return (
+                <motion.div
+                  key={step.number}
+                  style={{
+                    opacity: transform.opacity,
+                    y: transform.y,
+                    scale: transform.scale,
+                  }}
+                  className="group relative"
+                >
+                  {/* Step badge */}
+                  <div className="relative mb-8 flex justify-center">
+                    <div className="surface relative flex h-[104px] w-[104px] flex-col items-center justify-center gap-1 rounded-[28px] transition-transform duration-300 group-hover:scale-105">
+                      <Icon className={`relative z-10 h-6 w-6 ${step.color}`} />
+                      <span className="t-pixel relative z-10 text-[13px] text-sbg-ink">
+                        {step.number}
+                      </span>
+                    </div>
                   </div>
-                  {idx < STEPS.length - 1 && (
-                    <ArrowRight className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-border opacity-0 group-hover:opacity-60 transition-opacity" />
-                  )}
-                </div>
 
-                {/* Card */}
-                <div className={`relative rounded-2xl bg-gradient-to-br ${step.bg} border ${step.border} p-6 overflow-hidden shadow-lg`}>
-                  <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${step.bg}`} />
-                  <div className="relative z-10">
-                    <h3 className="text-lg font-bold font-display text-text-primary mb-2">{step.title}</h3>
-                    <p className="text-sm text-text-secondary leading-relaxed mb-4">{step.description}</p>
-                    <span className={`inline-block text-[10px] font-mono ${step.color} bg-bg-surface/50 border ${step.border} px-3 py-1 rounded-full`}>
+                  {/* Card */}
+                  <div
+                    className="surface lift relative overflow-hidden rounded-[26px] p-7"
+                    style={{ backgroundImage: `linear-gradient(155deg, ${step.tint} 0%, var(--wash-80) 58%)` }}
+                  >
+                    <h3 className="t-display mb-2 text-[24px] text-sbg-ink">{step.title}</h3>
+                    <p className="mb-5 text-[15px] leading-relaxed text-sbg-ink-2">{step.description}</p>
+                    <span className="inline-block rounded-full bg-[var(--chip-bg)] px-3.5 py-1.5 text-[11px] font-medium text-sbg-accent-strong">
                       {step.detail}
                     </span>
                   </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mobile vertical timeline (GSAP on-view stagger) */}
+        <div ref={mobileListRef} className="space-y-4 md:hidden">
+          {STEPS.map((step) => {
+            const Icon = step.icon;
+            return (
+              <div
+                key={step.number}
+                className="gsap-mobile-step surface relative overflow-hidden rounded-[24px] p-5"
+                style={{ backgroundImage: `linear-gradient(155deg, ${step.tint} 0%, var(--wash-80) 58%)` }}
+              >
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--chip-bg)]">
+                    <Icon className={`h-5 w-5 ${step.color}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="t-eyebrow text-sbg-accent-strong">STEP {step.number}</span>
+                    <h3 className="t-display text-[22px] leading-tight text-sbg-ink">{step.title}</h3>
+                  </div>
                 </div>
-              </motion.div>
+
+                <p className="mb-4 text-[15px] leading-relaxed text-sbg-ink-2">
+                  {step.description}
+                </p>
+
+                <span className="inline-block rounded-full bg-[var(--chip-bg)] px-3 py-1 text-[11px] font-medium text-sbg-accent-strong">
+                  {step.detail}
+                </span>
+              </div>
             );
           })}
         </div>
-      </div>
-
-      {/* Mobile vertical timeline (GSAP on-view stagger) */}
-      <div ref={mobileListRef} className="md:hidden space-y-4">
-        {STEPS.map((step, idx) => {
-          const Icon = step.icon;
-          return (
-            <div
-              key={step.number}
-              className={`gsap-mobile-step relative rounded-2xl bg-gradient-to-br ${step.bg} border ${step.border} p-4 sm:p-5 shadow-lg overflow-hidden`}
-            >
-              {/* Header inside card */}
-              <div className="flex items-center gap-3 mb-2.5">
-                <div className={`w-9 h-9 rounded-xl bg-bg-card/90 border ${step.border} flex items-center justify-center shrink-0`}>
-                  <Icon className={`w-4 h-4 ${step.color}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className={`text-[10px] font-mono font-bold ${step.color}`}>STEP {step.number}</span>
-                  <h3 className="text-base font-bold font-display text-text-primary leading-tight">{step.title}</h3>
-                </div>
-              </div>
-
-              <p className="text-xs text-text-secondary leading-relaxed mb-3">
-                {step.description}
-              </p>
-
-              <span className={`inline-block text-[9px] font-mono ${step.color} bg-bg-surface/60 border ${step.border} px-2.5 py-0.5 rounded-full`}>
-                {step.detail}
-              </span>
-            </div>
-          );
-        })}
       </div>
     </section>
   );

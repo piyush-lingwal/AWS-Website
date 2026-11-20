@@ -7,7 +7,7 @@ import { toast } from "sonner";
 // papaparse (~6 KB), xlsx (~135 KB) and the Supabase browser client (~48 KB) are
 // loaded on demand inside the handlers that need them, so they are not part of
 // the /admin first-load bundle.
-import type { DbEvent, DbPortalConfig, AdminParticipantRow, DbTeamMember } from "@/types/certificate";
+import type { DbEvent, DbPortalConfig, AdminParticipantRow } from "@/types/certificate";
 import { parseAdminTab, adminTabHref, type AdminTab } from "@/lib/admin/tabs";
 import { clampPage, pageCount, pageRange, pageSlice } from "@/lib/admin/pagination";
 import { useAdminPortal } from "@/components/admin/AdminPortalProvider";
@@ -18,7 +18,9 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { TopPerformerImportDialog } from "@/components/features/TopPerformerImportDialog";
 import { AttendeeImportDialog } from "@/components/features/AttendeeImportDialog";
 import { DeleteAllButton } from "@/components/admin/DeleteAllButton";
-import { AdminPageSkeleton, CardsSkeleton, ListSkeleton, TableRowsSkeleton, TeamGridSkeleton } from "@/components/admin/Skeletons";
+import { TeamTab } from "@/components/admin/team/TeamTab";
+import type { TeamMemberRow } from "@/lib/team/types";
+import { AdminPageSkeleton, CardsSkeleton, ListSkeleton, TableRowsSkeleton } from "@/components/admin/Skeletons";
 import { OrganiserSection, VolunteerSection } from "@/components/admin/certificates/TeamSections";
 import { CertificatesHeader, parseCertSection, type CertSection, type SectionCounts } from "@/components/admin/certificates/CertificatesHeader";
 import { ExportButton, SearchField, SectionHeading, TOOLBAR_BUTTON } from "@/components/admin/certificates/ListControls";
@@ -132,8 +134,9 @@ interface TopPerformerRow {
 function PageHeading({ title, description }: { title: string; description?: string }) {
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
-      {description && <p className="mt-1 text-sm text-[#A1A1AA]">{description}</p>}
+      <p className="ad-eyebrow mb-1">Admin Portal</p>
+      <h1 className="font-lt-display text-2xl font-semibold tracking-[-0.035em] text-sbg-ink sm:text-3xl">{title}</h1>
+      {description && <p className="mt-1 text-sm text-sbg-ink-2">{description}</p>}
     </div>
   );
 }
@@ -259,43 +262,8 @@ function AdminPageContent() {
   });
 
   // Section C — Team Members state
-  const [teamMembers, setTeamMembers] = useState<DbTeamMember[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberRow[]>([]);
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
-  const [showTeamForm, setShowTeamForm] = useState(false);
-  const [editingTeamMember, setEditingTeamMember] = useState<DbTeamMember | null>(null);
-  const [selectedTeamBatch, setSelectedTeamBatch] = useState<string>("2026-27");
-  const [customBatches, setCustomBatches] = useState<string[]>([]);
-  const [teamFormData, setTeamFormData] = useState({
-    name: "",
-    picUrl: "",
-    course: "",
-    branch: "",
-    year: "",
-    role: "",
-    batch: "2026-27",
-    displayOrder: 0,
-  });
-  const [teamFormSubmitting, setTeamFormSubmitting] = useState(false);
-  const [teamFormError, setTeamFormError] = useState("");
-  const [teamSearch, setTeamSearch] = useState("");
-  const [deletingTeamMemberId, setDeletingTeamMemberId] = useState<string | null>(null);
-  const [imageInputMode, setImageInputMode] = useState<"upload" | "url">("upload");
-  const [uploadingPic, setUploadingPic] = useState(false);
-  const [picUploadError, setPicUploadError] = useState("");
-  const [picDragActive, setPicDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // ── Bulk Import State ──────────────────────────────────────
-  const [showBulkImport, setShowBulkImport] = useState(false);
-  const [bulkImportBatch, setBulkImportBatch] = useState("2026-27");
-  const [bulkImportRows, setBulkImportRows] = useState<any[]>([]);
-  const [bulkImportErrors, setBulkImportErrors] = useState<string[]>([]);
-  const [bulkImportFileName, setBulkImportFileName] = useState("");
-  const [bulkImporting, setBulkImporting] = useState(false);
-  const [bulkDragActive, setBulkDragActive] = useState(false);
-  const bulkFileInputRef = useRef<HTMLInputElement>(null);
-  const [bulkImportMode, setBulkImportMode] = useState<"append" | "overwrite">("append");
-
   // ── Custom Confirmation Modal State ───────────────────────
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -897,443 +865,6 @@ function AdminPageContent() {
     toast.success(`${label} copied to clipboard`);
   };
 
-  // ── Team Member Form Handlers ─────────────────────────────
-  const resetTeamForm = () => {
-    setTeamFormData({
-      name: "",
-      picUrl: "",
-      course: "",
-      branch: "",
-      year: "",
-      role: "",
-      batch: selectedTeamBatch || "2026-27",
-      displayOrder: 0,
-    });
-    setEditingTeamMember(null);
-    setTeamFormError("");
-    setPicUploadError("");
-    setUploadingPic(false);
-    setImageInputMode("upload");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setShowTeamForm(false);
-  };
-
-  const startCreateTeamMember = (batchToUse?: string) => {
-    resetTeamForm();
-    const targetBatch = batchToUse || selectedTeamBatch || "2026-27";
-    setTeamFormData((prev) => ({
-      ...prev,
-      batch: targetBatch,
-      displayOrder: teamMembers.filter((m) => (m.batch || "2026-27") === targetBatch).length,
-    }));
-    setShowTeamForm(true);
-  };
-
-  const startEditTeamMember = (member: DbTeamMember) => {
-    setEditingTeamMember(member);
-    setTeamFormData({
-      name: member.name,
-      picUrl: member.pic_url || "",
-      course: member.course,
-      branch: member.branch,
-      year: member.year,
-      role: member.role,
-      batch: member.batch || "2026-27",
-      displayOrder: member.display_order,
-    });
-    setTeamFormError("");
-    setPicUploadError("");
-    setUploadingPic(false);
-    setImageInputMode("upload");
-    setShowTeamForm(true);
-  };
-
-  const handleImageUpload = async (file: File) => {
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setPicUploadError("Please select a valid image file (PNG, JPG, WebP, etc.).");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setPicUploadError("Image size must be less than 5MB.");
-      return;
-    }
-
-    setUploadingPic(true);
-    setPicUploadError("");
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/admin/team-members/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!data.success) {
-        setPicUploadError(data.error || "Failed to upload image.");
-        toast.error(data.error || "Failed to upload image");
-        return;
-      }
-
-      setTeamFormData((prev) => ({
-        ...prev,
-        picUrl: data.url,
-      }));
-      toast.success("Profile image uploaded successfully");
-    } catch (err: any) {
-      setPicUploadError(err.message || "Failed to upload image.");
-      toast.error("Failed to upload image");
-    } finally {
-      setUploadingPic(false);
-    }
-  };
-
-  const handlePicDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setPicDragActive(true);
-  };
-
-  const handlePicDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setPicDragActive(false);
-  };
-
-  const handlePicDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setPicDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleImageUpload(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleTeamFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setTeamFormSubmitting(true);
-    setTeamFormError("");
-
-    if (!teamFormData.name.trim()) { setTeamFormError("Name is required."); setTeamFormSubmitting(false); return; }
-    if (!teamFormData.course.trim()) { setTeamFormError("Course is required."); setTeamFormSubmitting(false); return; }
-    if (!teamFormData.branch.trim()) { setTeamFormError("Branch is required."); setTeamFormSubmitting(false); return; }
-    if (!teamFormData.year.trim()) { setTeamFormError("Year is required."); setTeamFormSubmitting(false); return; }
-    if (!teamFormData.role.trim()) { setTeamFormError("Role is required."); setTeamFormSubmitting(false); return; }
-    const targetBatch = (teamFormData.batch || selectedTeamBatch || "2026-27").trim();
-
-    try {
-      const url = editingTeamMember
-        ? `/api/admin/team-members/${editingTeamMember.id}`
-        : "/api/admin/team-members";
-      const method = editingTeamMember ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...teamFormData, batch: targetBatch }),
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        setTeamFormError(data.error || "Operation failed.");
-        return;
-      }
-
-      toast.success(editingTeamMember ? "Team member updated" : "Team member added");
-      resetTeamForm();
-      await fetchTeamMembers();
-    } catch (e: any) {
-      setTeamFormError("Request failed: " + (e.message || "Unknown error"));
-    } finally {
-      setTeamFormSubmitting(false);
-    }
-  };
-
-  const handleDeleteTeamMember = (member: DbTeamMember) => {
-    showConfirm({
-      title: "Remove Team Member",
-      message: `Are you sure you want to remove "${member.name}" from Batch ${member.batch || "2026-27"}?\n\nThis will permanently delete their profile from the team .`,
-      confirmLabel: "Remove Member",
-      variant: "danger",
-      onConfirm: async () => {
-        setDeletingTeamMemberId(member.id);
-        toast.loading(`Removing "${member.name}"…`, { id: "delete-team-member" });
-
-        try {
-          const res = await fetch(`/api/admin/team-members/${member.id}`, {
-            method: "DELETE",
-          });
-          const json = await res.json();
-
-          if (json.success) {
-            toast.success(`"${member.name}" has been removed from the team.`, { id: "delete-team-member" });
-            if (editingTeamMember?.id === member.id) resetTeamForm();
-            await fetchTeamMembers();
-          } else {
-            toast.error(json.error || "Failed to remove team member", { id: "delete-team-member" });
-          }
-        } catch (err: any) {
-          toast.error(err.message || "Failed to remove team member", { id: "delete-team-member" });
-        } finally {
-          setDeletingTeamMemberId(null);
-        }
-      },
-    });
-  };
-
-  // Lock body scroll when team form modal is open
-  useEffect(() => {
-    if (showTeamForm) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-  }, [showTeamForm]);
-
-  // Lock body scroll when bulk import modal is open
-  useEffect(() => {
-    if (showBulkImport) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-  }, [showBulkImport]);
-
-  // ── Parse Excel/CSV file on client ────────────────────────
-  const parseImportFile = (file: File) => {
-    setBulkImportRows([]);
-    setBulkImportErrors([]);
-    setBulkImportFileName(file.name);
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const data = e.target?.result;
-        const XLSX = await import("xlsx");
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const json: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-        if (json.length === 0) {
-          setBulkImportErrors(["The file appears to be empty or has no data rows."]);
-          return;
-        }
-
-        // Normalize column names (case-insensitive, trim)
-        const normalized = json.map((row, i) => {
-          const lower: Record<string, any> = {};
-          Object.keys(row).forEach((k) => {
-            lower[k.toLowerCase().trim().replace(/\s+/g, "_")] = row[k];
-          });
-          return {
-            _rowIndex: i + 2,
-            name: (lower["name"] ?? lower["full_name"] ?? "").toString().trim(),
-            course: (lower["course"] ?? lower["program"] ?? "").toString().trim(),
-            branch: (lower["branch"] ?? lower["department"] ?? lower["dept"] ?? "").toString().trim(),
-            year: (lower["year"] ?? lower["academic_year"] ?? "").toString().trim(),
-            role: (lower["role"] ?? lower["position"] ?? lower["designation"] ?? "").toString().trim(),
-            pic_url: (lower["pic_url"] ?? lower["pic"] ?? lower["photo"] ?? lower["image"] ?? lower["image_url"] ?? "").toString().trim() || null,
-            batch: (lower["batch"] ?? lower["cohort"] ?? "").toString().trim() || selectedTeamBatch || "2026-27",
-            display_order: Number(lower["display_order"] ?? lower["order"] ?? i) || i,
-          };
-        });
-
-        // Client-side validation preview
-        const errors: string[] = [];
-        normalized.forEach((m) => {
-          if (!m.name) errors.push(`Row ${m._rowIndex}: Name is missing`);
-          if (!m.course) errors.push(`Row ${m._rowIndex}: Course is missing`);
-          if (!m.branch) errors.push(`Row ${m._rowIndex}: Branch is missing`);
-          if (!m.year) errors.push(`Row ${m._rowIndex}: Year is missing`);
-          if (!m.role) errors.push(`Row ${m._rowIndex}: Role is missing`);
-        });
-
-        setBulkImportErrors(errors);
-        setBulkImportRows(normalized);
-      } catch (err: any) {
-        setBulkImportErrors(["Failed to parse file: " + (err.message || "Unknown error")]);
-      }
-    };
-    reader.readAsBinaryString(file);
-  };
-
-  const handleBulkFileSelect = (file: File) => {
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!["xlsx", "xls", "csv", "ods"].includes(ext || "")) {
-      setBulkImportErrors(["Unsupported file type. Please upload .xlsx, .xls, .csv, or .ods"]);
-      return;
-    }
-    parseImportFile(file);
-  };
-
-  const handleBulkImportSubmit = async () => {
-    if (bulkImportRows.length === 0) return;
-    if (bulkImportErrors.length > 0) {
-      toast.error("Please fix validation errors before importing.");
-      return;
-    }
-
-    const targetBatch = bulkImportBatch || (selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27");
-    const existingCount = teamMembers.filter((m) => (m.batch || "2026-27") === targetBatch).length;
-
-    const executeImport = async () => {
-      setBulkImporting(true);
-      toast.loading(
-        bulkImportMode === "overwrite"
-          ? `Overwriting & importing ${bulkImportRows.length} members…`
-          : `Importing ${bulkImportRows.length} members…`,
-        { id: "bulk-import" }
-      );
-
-      try {
-        // Strip internal _rowIndex before sending
-        const members = bulkImportRows.map(({ _rowIndex, ...rest }) => ({
-          ...rest,
-          batch: rest.batch || targetBatch,
-        }));
-
-        const res = await fetch("/api/admin/team-members/bulk-import", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            members,
-            batch: targetBatch,
-            mode: bulkImportMode,
-            overwriteScope: "batch",
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!data.success) {
-          const serverErrors = Array.isArray(data.data) ? data.data : [data.error];
-          setBulkImportErrors(serverErrors);
-          toast.error(data.error || "Import failed.", { id: "bulk-import" });
-          return;
-        }
-
-        toast.success(
-          bulkImportMode === "overwrite"
-            ? `✓ Overwritten and imported ${data.data?.length ?? bulkImportRows.length} members into Batch ${targetBatch}!`
-            : `✓ Added ${data.data?.length ?? bulkImportRows.length} team members successfully!`,
-          { id: "bulk-import", duration: 5000 }
-        );
-        setShowBulkImport(false);
-        setBulkImportRows([]);
-        setBulkImportErrors([]);
-        setBulkImportFileName("");
-        setBulkImportMode("append");
-        if (bulkFileInputRef.current) bulkFileInputRef.current.value = "";
-        await fetchTeamMembers();
-      } catch (err: any) {
-        toast.error(err.message || "Import request failed.", { id: "bulk-import" });
-      } finally {
-        setBulkImporting(false);
-      }
-    };
-
-    if (bulkImportMode === "overwrite") {
-      showConfirm({
-        title: `Overwrite Batch ${targetBatch} Data?`,
-        message: `Are you sure you want to overwrite all members in Batch "${targetBatch}"?\n\nThis will permanently delete ${existingCount} existing member(s) and replace them with ${bulkImportRows.length} member(s) from "${bulkImportFileName || "uploaded file"}".\n\nThis action cannot be undone.`,
-        confirmLabel: "Yes, Overwrite & Import",
-        cancelLabel: "Cancel",
-        variant: "danger",
-        onConfirm: async () => {
-          await executeImport();
-        },
-      });
-      return;
-    }
-
-    await executeImport();
-  };
-
-  // Unique available batches from team members and custom created batches
-  const availableBatches = useMemo(() => {
-    const set = new Set<string>();
-    set.add("2026-27");
-    if (selectedTeamBatch?.trim()) set.add(selectedTeamBatch.trim());
-    customBatches.forEach((b) => set.add(b));
-    teamMembers.forEach((m) => {
-      if (m.batch?.trim()) set.add(m.batch.trim());
-    });
-    return Array.from(set).sort((a, b) => b.localeCompare(a));
-  }, [teamMembers, selectedTeamBatch, customBatches]);
-
-  // Helper to calculate next batch automatically (e.g. 2026-27 -> 2027-28)
-  const getNextBatchName = useCallback(() => {
-    let maxStartYear = 2026;
-
-    const allBatches = new Set<string>(["2026-27", ...customBatches]);
-    if (selectedTeamBatch) allBatches.add(selectedTeamBatch);
-    teamMembers.forEach((m) => {
-      if (m.batch?.trim()) allBatches.add(m.batch.trim());
-    });
-
-    allBatches.forEach((b) => {
-      const match = b.match(/^(\d{4})-(\d{2,4})$/);
-      if (match) {
-        const yr = parseInt(match[1], 10);
-        if (yr > maxStartYear) {
-          maxStartYear = yr;
-        }
-      }
-    });
-
-    const nextStart = maxStartYear + 1;
-    const nextEnd = (nextStart + 1) % 100;
-    return `${nextStart}-${nextEnd.toString().padStart(2, "0")}`;
-  }, [customBatches, selectedTeamBatch, teamMembers]);
-
-  const handleCreateNewBatch = () => {
-    const nextBatch = getNextBatchName();
-    showConfirm({
-      title: "Initialize New Batch",
-      message: `Create new cohort "${nextBatch}" and switch active view to it?`,
-      confirmLabel: `Create Batch ${nextBatch}`,
-      variant: "create",
-      onConfirm: () => {
-        setCustomBatches((prev) => Array.from(new Set([...prev, nextBatch])));
-        setSelectedTeamBatch(nextBatch);
-        toast.success(`Batch ${nextBatch} created and selected.`);
-      },
-    });
-  };
-
-  // Grouped members for the currently selected batch with search filtering
-  const groupedTeamMembers = useMemo(() => {
-    const activeBatch = selectedTeamBatch || "2026-27";
-    const q = teamSearch.toLowerCase().trim();
-
-    const members = teamMembers.filter((m) => {
-      const matchBatch = (m.batch || "2026-27") === activeBatch;
-      if (!matchBatch) return false;
-      if (!q) return true;
-      return (
-        m.name.toLowerCase().includes(q) ||
-        m.role.toLowerCase().includes(q) ||
-        m.course.toLowerCase().includes(q) ||
-        m.branch.toLowerCase().includes(q) ||
-        m.year.toLowerCase().includes(q) ||
-        (m.batch || "").toLowerCase().includes(q)
-      );
-    });
-
-    return [{ batch: activeBatch, members }];
-  }, [teamMembers, selectedTeamBatch, teamSearch]);
-
   // ── Export Participants to CSV ────────────────────────────
   const handleExportCSV = async () => {
     // Exports what the list shows: everyone, or only the rows matching the search / course filter.
@@ -1579,7 +1110,7 @@ function AdminPageContent() {
                                       <a
                                         href={`/api/certificates/${p.certificateId}`}
                                         download={`${p.certificateId}.pdf`}
-                                        className={`${size} rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-[#A1A1AA] hover:text-white border border-white/[0.06] flex items-center justify-center transition-colors cursor-pointer`}
+                                        className={`${size} rounded-lg bg-white/60 hover:bg-sbg-lilac-100 text-sbg-ink-2 hover:text-sbg-ink border border-sbg-ink/[0.08] flex items-center justify-center transition-colors cursor-pointer`}
                                         title="Download PDF Certificate"
                                       >
                                         <Download className="w-3.5 h-3.5" />
@@ -1588,7 +1119,7 @@ function AdminPageContent() {
                                       {/* Send email button */}
                                       <button
                                         onClick={() => handleSendSingleEmail(p.certificateId!, p.email)}
-                                        className={`${size} rounded-lg bg-white/[0.03] hover:bg-[#6C63FF]/20 text-[#A1A1AA] hover:text-[#6C63FF] border border-white/[0.06] hover:border-[#6C63FF]/30 flex items-center justify-center transition-colors cursor-pointer`}
+                                        className={`${size} rounded-lg bg-white/60 hover:bg-sbg-lilac-100 text-sbg-ink-2 hover:text-sbg-lilac-700 border border-sbg-ink/[0.08] hover:border-sbg-lilac-400 flex items-center justify-center transition-colors cursor-pointer`}
                                         title="Email Certificate with PDF Attachment"
                                       >
                                         <Send className="w-3.5 h-3.5" />
@@ -1599,7 +1130,7 @@ function AdminPageContent() {
                                   {/* Assign as Top Performer */}
                                   <button
                                     onClick={() => setRankModal({ participant: p, rank: "" })}
-                                    className={`${size} rounded-lg bg-white/[0.03] hover:bg-amber-500/20 text-[#71717A] hover:text-amber-400 border border-white/[0.06] hover:border-amber-500/30 flex items-center justify-center transition-colors cursor-pointer`}
+                                    className={`${size} rounded-lg bg-white/60 hover:bg-[#ffe6c2] text-sbg-ink-3 hover:text-[#92400e] border border-sbg-ink/[0.08] hover:border-[#92400e]/40 flex items-center justify-center transition-colors cursor-pointer`}
                                     title="Assign as Top Performer"
                                   >
                                     <Trophy className="w-3.5 h-3.5" />
@@ -1609,7 +1140,7 @@ function AdminPageContent() {
                                   <button
                                     onClick={() => handleRemoveParticipant(p)}
                                     disabled={deletingParticipantKey === (p.attendanceId || p.email)}
-                                    className={`${size} rounded-lg bg-white/[0.03] hover:bg-red-500/20 text-[#71717A] hover:text-red-400 border border-white/[0.06] hover:border-red-500/30 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40`}
+                                    className={`${size} rounded-lg bg-white/60 hover:bg-[#ffe1e1] text-sbg-ink-3 hover:text-[#b91c1c] border border-sbg-ink/[0.08] hover:border-[#b91c1c]/40 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40`}
                                     title="Remove Participant & Certificate"
                                   >
                                     {deletingParticipantKey === (p.attendanceId || p.email) ? (
@@ -1628,21 +1159,12 @@ function AdminPageContent() {
 
   return (
     <div
-      className="admin-responsive min-h-screen w-full overflow-x-clip text-[#F4F4F6] selection:bg-[#6C63FF]/30 pb-24"
-      style={{
-        background: `
-          radial-gradient(1000px 500px at 15% 0%, rgba(108,99,255,0.14), transparent 70%),
-          radial-gradient(800px 400px at 85% 10%, rgba(255,153,0,0.06), transparent 70%),
-          linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px) 0 0/48px 48px,
-          linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px) 0 0/48px 48px,
-          #08080B
-        `,
-      }}
+      className="admin-responsive w-full overflow-x-clip pb-8 text-sbg-ink selection:bg-sbg-lilac-200"
     >
       {/* ── Main Operations Container ───────────────────────── */}
-      <main className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 pt-24 sm:pt-28 space-y-8">
+      <main className="mx-auto w-full min-w-0 space-y-8">
         {error && (
-          <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs sm:text-sm text-red-400 flex items-center gap-3">
+          <div className="p-4 rounded-2xl bg-[#ffe1e1] border border-[#b91c1c]/30 text-xs sm:text-sm text-[#b91c1c] flex items-center gap-3">
             <XCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -1657,13 +1179,13 @@ function AdminPageContent() {
               <section className="space-y-6">
                 <PageHeading title="Overview" description="What is live right now, and where to go next." />
 
-                <div className="flex flex-col gap-4 rounded-2xl border border-white/[0.08] bg-[#0E0E13] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div className="ad-card ad-card-tint-lilac flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                   <div className="min-w-0">
-                    <p className="text-xs text-[#71717A]">Active event</p>
-                    <h2 className="mt-1 truncate text-xl font-bold text-white sm:text-2xl">
+                    <p className="text-xs font-semibold text-sbg-ink-2">Active event</p>
+                    <h2 className="mt-1 truncate font-lt-display text-xl font-semibold tracking-[-0.035em] text-sbg-ink sm:text-2xl">
                       {activeEvent?.name || "No active event"}
                     </h2>
-                    <p className="mt-1 text-sm text-[#A1A1AA]">
+                    <p className="mt-1 text-sm text-sbg-ink-2">
                       {activeEvent
                         ? [formatDate(activeEvent.event_date, activeEvent.event_end_date), activeEvent.event_timing, activeEvent.speaker_name]
                             .filter(Boolean)
@@ -1673,10 +1195,10 @@ function AdminPageContent() {
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${
+                      className={`ad-chip ${
                         activeEvent && portalConfig?.attendance_enabled && activeEvent.attendance_open
-                          ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
-                          : "border-amber-500/25 bg-amber-500/10 text-amber-300"
+                          ? "ad-chip-ok"
+                          : "ad-chip-warn"
                       }`}
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -1684,10 +1206,7 @@ function AdminPageContent() {
                         ? "Attendance open"
                         : "Attendance closed"}
                     </span>
-                    <button
-                      onClick={() => setActiveTab("events")}
-                      className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl bg-[#6C63FF] px-3.5 text-xs font-semibold text-white hover:brightness-110"
-                    >
+                    <button onClick={() => setActiveTab("events")} className="ad-btn ad-btn-primary">
                       Manage event <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -1695,72 +1214,64 @@ function AdminPageContent() {
 
                 <div className="grid grid-cols-3 gap-2 sm:gap-4">
                   {[
-                    { label: "Events", value: events.length, tab: "events" as AdminTab },
+                    { label: "Events", value: events.length, tab: "events" as AdminTab, tint: "ad-card-tint-sky" },
                     {
                       label: "Checked in",
                       value: currentViewEvent?.id === activeEvent?.id ? totalAttended : "—",
                       tab: "registrations" as AdminTab,
+                      tint: "ad-card-tint-mint",
                     },
-                    { label: "Team members", value: teamMembers.length, tab: "team" as AdminTab },
+                    { label: "Team members", value: teamMembers.length, tab: "team" as AdminTab, tint: "ad-card-tint-peach" },
                   ].map((stat) => (
                     <button
                       key={stat.label}
                       onClick={() => setActiveTab(stat.tab)}
-                      className="cursor-pointer rounded-2xl border border-white/[0.08] bg-[#0E0E13] p-3 text-left transition-colors hover:border-[#6C63FF]/40 sm:p-5"
+                      className={`ad-card ${stat.tint} cursor-pointer p-3 text-left transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:p-5`}
                     >
-                      <p className="text-xs text-[#71717A]">{stat.label}</p>
-                      <p className="mt-1 font-mono text-3xl font-bold text-white">{stat.value}</p>
+                      <p className="text-xs font-semibold text-sbg-ink-2">{stat.label}</p>
+                      <p className="mt-1 font-lt-display text-3xl font-semibold tracking-[-0.035em] text-sbg-ink">{stat.value}</p>
                     </button>
                   ))}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  <div className="rounded-2xl border border-white/[0.08] bg-[#0E0E13] p-5">
-                    <h3 className="text-sm font-semibold text-white">Quick actions</h3>
+                  <div className="ad-card p-5">
+                    <h3 className="font-lt-display text-base font-semibold tracking-[-0.02em] text-sbg-ink">Quick actions</h3>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        onClick={startCreate}
-                        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 text-xs font-semibold text-white hover:bg-white/[0.08]"
-                      >
+                      <button onClick={startCreate} className="ad-btn ad-btn-primary">
                         <Plus className="h-3.5 w-3.5" /> New event
                       </button>
-                      <button
-                        onClick={() => setActiveTab("registrations")}
-                        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 text-xs font-semibold text-white hover:bg-white/[0.08]"
-                      >
+                      <button onClick={() => setActiveTab("registrations")} className="ad-btn ad-btn-ghost">
                         <Users className="h-3.5 w-3.5" /> View attendees
                       </button>
-                      <button
-                        onClick={() => startCreateTeamMember()}
-                        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 text-xs font-semibold text-white hover:bg-white/[0.08]"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Add team member
+                      <button onClick={() => setActiveTab("team")} className="ad-btn ad-btn-ghost">
+                        <Users className="h-3.5 w-3.5" /> Manage team
                       </button>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-white/[0.08] bg-[#0E0E13] p-5">
-                    <h3 className="text-sm font-semibold text-white">Public links</h3>
+                  <div className="ad-card p-5">
+                    <h3 className="font-lt-display text-base font-semibold tracking-[-0.02em] text-sbg-ink">Public links</h3>
                     <div className="mt-3 space-y-2 text-xs">
-                      <div className="flex items-center justify-between rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-2">
-                        <span className="text-[#A1A1AA]">
-                          Student check-in <code className="text-[#A78BFA]">/attendance</code>
+                      <div className="flex items-center justify-between rounded-2xl border border-sbg-ink/10 bg-white/70 px-3 py-2">
+                        <span className="text-sbg-ink-2">
+                          Student check-in <code className="font-lt-mono text-sbg-lilac-700">/attendance</code>
                         </span>
                         <button
                           onClick={() => handleCopy(`${window.location.origin}/attendance`, "attendance-link", "Check-in link")}
-                          className="inline-flex min-h-10 cursor-pointer items-center gap-1 pl-3 text-[#A78BFA] hover:text-white"
+                          className="inline-flex min-h-10 cursor-pointer items-center gap-1 pl-3 font-semibold text-sbg-lilac-700 transition-colors hover:text-sbg-ink"
                         >
                           <Copy className="h-3 w-3" /> Copy
                         </button>
                       </div>
-                      <div className="flex items-center justify-between rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-2">
-                        <span className="text-[#A1A1AA]">
-                          Certificate check <code className="text-[#A78BFA]">/verify</code>
+                      <div className="flex items-center justify-between rounded-2xl border border-sbg-ink/10 bg-white/70 px-3 py-2">
+                        <span className="text-sbg-ink-2">
+                          Certificate check <code className="font-lt-mono text-sbg-lilac-700">/verify</code>
                         </span>
                         <Link
                           href="/verify"
                           target="_blank"
-                          className="inline-flex min-h-10 items-center gap-1 pl-3 text-[#A78BFA] hover:text-white"
+                          className="inline-flex min-h-10 items-center gap-1 pl-3 font-semibold text-sbg-lilac-700 transition-colors hover:text-sbg-ink"
                         >
                           <ExternalLink className="h-3 w-3" /> Open
                         </Link>
@@ -1779,56 +1290,54 @@ function AdminPageContent() {
               <PageHeading title="Events" description="Choose which event students can check in to, and manage your event list." />
 
               {activeEvent ? (
-                /* Double-Bezel Hardware Card */
-                <div className="p-1 rounded-[2rem] bg-white/[0.04] border border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]">
-                  <div className="p-6 sm:p-8 rounded-[calc(2rem-4px)] bg-[#0E0E13] space-y-6">
+                <div className="ad-card ad-card-tint-lilac space-y-6 p-5 sm:p-7">
                     {/* Header Row */}
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                       <div className="space-y-3 max-w-2xl">
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                          <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#1fa35b] animate-pulse" />
+                          <span className="font-lt-mono text-[11px] uppercase tracking-[0.16em] text-[#047857] font-semibold">
                             Live Active Portal Event
                           </span>
                           {activeEvent.event_type && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-mono font-medium uppercase tracking-wider bg-[#6C63FF]/20 border border-[#6C63FF]/40 text-[#A78BFA]">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full font-lt-mono text-[10.5px] font-medium uppercase tracking-wider bg-sbg-lilac-100 border border-sbg-lilac-300 text-sbg-lilac-700">
                               {activeEvent.event_type}
                             </span>
                           )}
                         </div>
 
-                        <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                        <h3 className="font-lt-display text-2xl sm:text-3xl font-semibold text-sbg-ink tracking-[-0.035em]">
                           {activeEvent.name}
                         </h3>
 
                         {activeEvent.description && (
-                          <p className="text-sm text-[#A1A1AA] leading-relaxed">
+                          <p className="text-sm text-sbg-ink-2 leading-relaxed">
                             {activeEvent.description}
                           </p>
                         )}
 
                         {/* Metadata Pills */}
                         <div className="flex flex-wrap gap-2.5 pt-2">
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
-                            <Calendar className="w-3.5 h-3.5 text-[#6C63FF]" />
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-sbg-ink/10 text-xs text-sbg-ink">
+                            <Calendar className="w-3.5 h-3.5 text-sbg-lilac-600" />
                             <span>{formatDate(activeEvent.event_date, activeEvent.event_end_date)}</span>
                           </div>
 
                           {activeEvent.event_timing ? (
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
-                              <Clock className="w-3.5 h-3.5 text-[#FF9900]" />
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-sbg-ink/10 text-xs text-sbg-ink">
+                              <Clock className="w-3.5 h-3.5 text-sbg-lilac-600" />
                               <span>{activeEvent.event_timing}</span>
                             </div>
                           ) : (
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#71717A]">
-                              <Clock className="w-3.5 h-3.5 text-[#71717A]" />
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-sbg-ink/10 text-xs text-sbg-ink-3">
+                              <Clock className="w-3.5 h-3.5 text-sbg-ink-3" />
                               <span>Timing TBA</span>
                             </div>
                           )}
 
                           {activeEvent.speaker_name && (
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-[#D4D4D8]">
-                              <User className="w-3.5 h-3.5 text-[#34D399]" />
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-sbg-ink/10 text-xs text-sbg-ink">
+                              <User className="w-3.5 h-3.5 text-sbg-lilac-600" />
                               <span>{activeEvent.speaker_name}</span>
                             </div>
                           )}
@@ -1836,18 +1345,18 @@ function AdminPageContent() {
 
                         {/* Cover Photo */}
                         {activeEvent.cover_id && (
-                          <div className="flex items-center gap-2.5 p-2 pr-3 rounded-xl bg-white/[0.03] border border-white/[0.08] w-fit">
-                            <div className="w-9 h-9 rounded-lg overflow-hidden bg-black/30 border border-white/[0.08] shrink-0 flex items-center justify-center">
+                          <div className="flex items-center gap-2.5 p-2 pr-3 rounded-xl bg-white/80 border border-sbg-ink/10 w-fit">
+                            <div className="w-9 h-9 rounded-lg overflow-hidden bg-sbg-mist border border-sbg-ink/10 shrink-0 flex items-center justify-center">
                               {activeEvent.cover_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={activeEvent.cover_url} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                <Loader2 className="w-3.5 h-3.5 text-[#71717A] animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 text-sbg-ink-3 animate-spin" />
                               )}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-[11px] font-medium text-[#D4D4D8]">Cover photo</p>
-                              <p className="text-[10px] text-[#71717A]">
+                              <p className="text-[11px] font-semibold text-sbg-ink">Cover photo</p>
+                              <p className="text-[10px] text-sbg-ink-2">
                                 {activeEvent.cover_status === "pending"
                                   ? "Upload not finished"
                                   : activeEvent.cover_status === "processing"
@@ -1862,7 +1371,7 @@ function AdminPageContent() {
                               onClick={() => handleRemoveCover(activeEvent)}
                               disabled={removingCoverId === activeEvent.cover_id}
                               title="Remove cover photo"
-                              className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                              className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-sbg-ink-3 hover:text-[#b91c1c] hover:bg-[#ffe1e1] transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                             >
                               {removingCoverId === activeEvent.cover_id ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1877,47 +1386,40 @@ function AdminPageContent() {
                       {/* Right Action Stack */}
                       <div className="flex flex-wrap lg:flex-col items-center lg:items-end gap-2.5 shrink-0">
 
-                        <button
-                          onClick={() => startEdit(activeEvent)}
-                          className="h-10 px-4 rounded-xl text-xs font-medium whitespace-nowrap text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] transition-all flex items-center gap-2 cursor-pointer"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-[#A78BFA]" />
+                        <button onClick={() => startEdit(activeEvent)} className="ad-btn ad-btn-ghost">
+                          <Edit3 className="w-3.5 h-3.5 text-sbg-lilac-600" />
                           <span>Edit Details</span>
                         </button>
 
-                        <Link
-                          href="/attendance"
-                          target="_blank"
-                          className="h-10 px-4 rounded-xl text-xs font-medium whitespace-nowrap text-[#A1A1AA] hover:text-white bg-transparent hover:bg-white/[0.04] border border-white/[0.06] transition-all flex items-center gap-2"
-                        >
+                        <Link href="/attendance" target="_blank" className="ad-btn ad-btn-ghost">
                           <ExternalLink className="w-3.5 h-3.5" />
                           <span>Preview Portal</span>
                         </Link>
                       </div>
                     </div>
 
-                    {/* Master Switch Bar (Nested Island) */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-[#14141A] border border-white/[0.06] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    {/* Master Switch Bar */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white/80 border border-sbg-ink/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
                             portalConfig?.attendance_enabled
-                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                              : "bg-zinc-800/50 border-zinc-700 text-zinc-400"
+                              ? "bg-[#ddf3e6] border-[#047857]/30 text-[#047857]"
+                              : "bg-sbg-mist border-sbg-ink/10 text-sbg-ink-3"
                           }`}
                         >
                           <Radio className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-white">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-sbg-ink">
                               Live Attendance Collection
                             </span>
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold tracking-wider ${
+                              className={`px-2 py-0.5 rounded font-lt-mono text-[10px] uppercase font-semibold tracking-wider ${
                                 portalConfig?.attendance_enabled
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                  : "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                                  ? "bg-[#ddf3e6] text-[#047857] border border-[#047857]/30"
+                                  : "bg-sbg-mist text-sbg-ink-2 border border-sbg-ink/10"
                               }`}
                             >
                               {portalConfig?.attendance_enabled ? "OPEN & ACCEPTING" : "CLOSED / PAUSED"}
@@ -1926,42 +1428,38 @@ function AdminPageContent() {
                         </div>
                       </div>
 
-                      {/* Machined Toggle Switch */}
+                      {/* Toggle switch */}
                       <button
                         type="button"
                         onClick={() => setAttendanceEnabled(!portalConfig?.attendance_enabled)}
                         className={`
-                          relative w-14 h-8 rounded-full transition-all duration-300 cursor-pointer shrink-0 p-1
-                          ${portalConfig?.attendance_enabled ? "bg-emerald-500 shadow-lg shadow-emerald-500/25" : "bg-[#27272A]"}
+                          relative w-14 h-8 rounded-full transition-colors duration-200 cursor-pointer shrink-0 p-1
+                          ${portalConfig?.attendance_enabled ? "bg-[#1fa35b] shadow-lg shadow-[#1fa35b]/25" : "bg-sbg-ink/25"}
                         `}
                       >
                         <span
                           className={`
-                            block w-6 h-6 rounded-full bg-white transition-transform duration-300 shadow-md
+                            block w-6 h-6 rounded-full bg-white transition-transform duration-200 shadow-md
                             ${portalConfig?.attendance_enabled ? "translate-x-6" : "translate-x-0"}
                           `}
                         />
                       </button>
                     </div>
 
-                  </div>
                 </div>
               ) : (
                 /* Empty Active Event State */
-                <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-dashed border-white/10 p-12 text-center">
-                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#71717A]">
+                <div className="ad-card border-dashed border-sbg-lilac-300 p-12 text-center">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-sbg-lilac-100 border border-sbg-lilac-200 flex items-center justify-center text-sbg-lilac-700">
                     <Calendar className="w-6 h-6" />
                   </div>
-                  <h3 className="text-base font-semibold text-white mb-1">
+                  <h3 className="font-lt-display text-base font-semibold text-sbg-ink mb-1">
                     No active portal event configured
                   </h3>
-                  <p className="text-xs text-[#71717A] max-w-sm mx-auto mb-5">
+                  <p className="text-xs text-sbg-ink-2 max-w-sm mx-auto mb-5">
                     Select an event from the catalog below or create a new session to activate the Attendance Portal.
                   </p>
-                  <button
-                    onClick={startCreate}
-                    className="h-10 px-5 rounded-xl text-xs font-semibold bg-[#6C63FF] hover:brightness-110 text-white transition-all cursor-pointer shadow-lg shadow-[#6C63FF]/20"
-                  >
+                  <button onClick={startCreate} className="ad-btn ad-btn-primary">
                     Create Your First Event
                   </button>
                 </div>
@@ -1976,30 +1474,15 @@ function AdminPageContent() {
             <section className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-bold text-white tracking-tight">
+                    <h3 className="font-lt-display text-lg font-semibold text-sbg-ink tracking-[-0.02em]">
                       All Events Catalog
                     </h3>
-                    <p className="text-xs text-[#71717A]">
+                    <p className="text-xs text-sbg-ink-2">
                       Select an event to inspect attendee records or switch the active session
                     </p>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <DeleteAllButton
-                      section="events"
-                      noun="events"
-                      count={events.length}
-                      consequences="Every event's participants, certificates (participation, Excellence and Appreciation), top performers and gallery entries go with them, and the attendance portal is switched off. Team members are not affected."
-                      onDeleted={async () => {
-                        setInspectingEventId(null);
-                        setSelectedEventId("");
-                        resetForm();
-                        await fetchData();
-                      }}
-                    />
-                    <button
-                      onClick={startCreate}
-                      className="h-10 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-2 shadow-md shadow-[#6C63FF]/20 active:scale-[0.98]"
-                    >
+                    <button onClick={startCreate} className="ad-btn ad-btn-primary">
                       <Plus className="w-4 h-4" />
                       <span>Create New Event</span>
                     </button>
@@ -2015,13 +1498,13 @@ function AdminPageContent() {
                       <div
                         key={event.id}
                         className={`
-                          group relative p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between
+                          ad-card group relative p-5 transition-[transform,box-shadow,border-color] duration-200 flex flex-col justify-between
                           ${
                             isActive
-                              ? "bg-[#6C63FF]/[0.06] border-[#6C63FF]/30 shadow-lg shadow-[#6C63FF]/5"
+                              ? "ad-card-tint-lilac !border-sbg-lilac-400"
                               : isViewing
-                              ? "bg-white/[0.05] border-white/20"
-                              : "bg-[#0E0E13] border-white/[0.06] hover:border-white/15"
+                              ? "!border-sbg-lilac-300 !bg-white"
+                              : "hover:-translate-y-0.5"
                           }
                         `}
                       >
@@ -2029,30 +1512,30 @@ function AdminPageContent() {
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-wrap">
                               {isActive ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                <span className="ad-chip ad-chip-ok font-lt-mono !text-[10px] uppercase tracking-wider">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#1fa35b] animate-pulse" />
                                   Active
                                 </span>
                               ) : null}
 
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-white/5 text-[#A1A1AA] border border-white/5">
+                              <span className="ad-chip font-lt-mono !text-[10px] uppercase tracking-wider">
                                 {event.event_type || "Event"}
                               </span>
 
                               {isViewing && (
-                                <span className="text-[10px] font-mono text-[#A78BFA] bg-[#6C63FF]/10 px-2 py-0.5 rounded whitespace-nowrap">
+                                <span className="font-lt-mono text-[10px] text-sbg-lilac-700 bg-sbg-lilac-100 px-2 py-0.5 rounded whitespace-nowrap">
                                   Viewing
                                 </span>
                               )}
                             </div>
 
                             {/* Card Utility Actions (Media Portal link, Edit & Delete) */}
-                            <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-1">
                                 <a
                                   href={`/media/events/${encodeURIComponent(event.id)}`}
                                   onClick={(e) => e.stopPropagation()}
                                   title="Manage photos & videos in the Media Portal"
-                                  className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-[#A78BFA] hover:bg-[#6C63FF]/10 transition-colors cursor-pointer"
+                                  className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-sbg-ink-3 hover:text-sbg-lilac-700 hover:bg-sbg-lilac-100 transition-colors cursor-pointer"
                                 >
                                   <Camera className="w-3.5 h-3.5" />
                                 </a>
@@ -2062,7 +1545,7 @@ function AdminPageContent() {
                                     startEdit(event);
                                   }}
                                   title="Edit Event Details"
-                                  className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                  className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-sbg-ink-3 hover:text-sbg-ink hover:bg-sbg-ink/10 transition-colors cursor-pointer"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
                                 </button>
@@ -2072,7 +1555,7 @@ function AdminPageContent() {
                                     handleDeleteEvent(event);
                                   }}
                                   title="Delete Event"
-                                  className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer"
+                                  className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-sbg-ink-3 hover:text-[#b91c1c] hover:bg-[#ffe1e1] transition-colors cursor-pointer"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -2080,29 +1563,29 @@ function AdminPageContent() {
                           </div>
 
                           <div>
-                            <h4 className="text-base font-bold text-white group-hover:text-[#A78BFA] transition-colors line-clamp-1">
+                            <h4 className="font-lt-display text-base font-semibold tracking-[-0.02em] text-sbg-ink group-hover:text-sbg-lilac-700 transition-colors line-clamp-1">
                               {event.name}
                             </h4>
                             {event.description && (
-                              <p className="text-xs text-[#71717A] line-clamp-2 mt-1 leading-relaxed">
+                              <p className="text-xs text-sbg-ink-2 line-clamp-2 mt-1 leading-relaxed">
                                 {event.description}
                               </p>
                             )}
                           </div>
 
                           {event.cover_id && (
-                            <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                              <div className="w-9 h-9 rounded-lg overflow-hidden bg-black/30 border border-white/[0.08] shrink-0 flex items-center justify-center">
+                            <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/70 border border-sbg-ink/10">
+                              <div className="w-9 h-9 rounded-lg overflow-hidden bg-sbg-mist border border-sbg-ink/10 shrink-0 flex items-center justify-center">
                                 {event.cover_url ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img src={event.cover_url} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                  <Loader2 className="w-3.5 h-3.5 text-[#71717A] animate-spin" />
+                                  <Loader2 className="w-3.5 h-3.5 text-sbg-ink-3 animate-spin" />
                                 )}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="text-[11px] font-medium text-[#D4D4D8]">Cover photo</p>
-                                <p className="text-[10px] text-[#71717A]">
+                                <p className="text-[11px] font-semibold text-sbg-ink">Cover photo</p>
+                                <p className="text-[10px] text-sbg-ink-2">
                                   {event.cover_status === "pending"
                                     ? "Upload not finished"
                                     : event.cover_status === "processing"
@@ -2120,7 +1603,7 @@ function AdminPageContent() {
                                 }}
                                 disabled={removingCoverId === event.cover_id}
                                 title="Remove cover photo"
-                                className="h-8 w-8 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                                className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-sbg-ink-3 hover:text-[#b91c1c] hover:bg-[#ffe1e1] transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                               >
                                 {removingCoverId === event.cover_id ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2131,25 +1614,25 @@ function AdminPageContent() {
                             </div>
                           )}
 
-                          <div className="space-y-1.5 text-xs text-[#A1A1AA] pt-2 border-t border-white/[0.04]">
+                          <div className="space-y-1.5 text-xs text-sbg-ink-2 pt-2 border-t border-sbg-ink/10">
                             <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                              <Calendar className="w-3.5 h-3.5 text-sbg-ink-3 shrink-0" />
                               <span className="truncate">{formatDate(event.event_date, event.event_end_date)}</span>
                             </div>
                             {event.event_timing ? (
                               <div className="flex items-center gap-2">
-                                <Clock className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                                <Clock className="w-3.5 h-3.5 text-sbg-ink-3 shrink-0" />
                                 <span className="truncate">{event.event_timing}</span>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 text-[#71717A]">
-                                <Clock className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                              <div className="flex items-center gap-2 text-sbg-ink-3">
+                                <Clock className="w-3.5 h-3.5 text-sbg-ink-3 shrink-0" />
                                 <span className="truncate">Timing to be announced</span>
                               </div>
                             )}
                             {event.speaker_name && (
                               <div className="flex items-center gap-2">
-                                <User className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
+                                <User className="w-3.5 h-3.5 text-sbg-ink-3 shrink-0" />
                                 <span className="truncate">{event.speaker_name}</span>
                               </div>
                             )}
@@ -2157,13 +1640,13 @@ function AdminPageContent() {
                         </div>
 
                         {/* Card Actions Footer */}
-                        <div className="pt-4 mt-4 border-t border-white/[0.04]">
+                        <div className="pt-4 mt-4 border-t border-sbg-ink/10">
                           {!isActive ? (
                             <div className="flex items-center gap-2">
                               {/* Set Active Button */}
                               <button
                                 onClick={() => handleSetActiveEvent(event)}
-                                className="flex-1 h-9 px-3 rounded-xl text-xs font-semibold whitespace-nowrap text-center flex items-center justify-center text-[#6C63FF] hover:bg-[#6C63FF] hover:text-white bg-[#6C63FF]/10 border border-[#6C63FF]/25 hover:border-[#6C63FF] transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+                                className="ad-btn flex-1 border-sbg-lilac-300 bg-sbg-lilac-100 text-sbg-lilac-700 hover:bg-sbg-lilac-600 hover:text-white"
                               >
                                 Set Active
                               </button>
@@ -2171,10 +1654,8 @@ function AdminPageContent() {
                               {/* View Attendees Trigger */}
                               <button
                                 onClick={() => handleInspectAttendees(event.id)}
-                                className={`flex-1 h-9 px-3 rounded-xl text-xs font-semibold whitespace-nowrap text-center flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
-                                  inspectingEventId === event.id
-                                    ? "bg-[#6C63FF] text-white shadow-md shadow-[#6C63FF]/25"
-                                    : "text-[#D4D4D8] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08]"
+                                className={`ad-btn flex-1 gap-1.5 ${
+                                  inspectingEventId === event.id ? "ad-btn-primary" : "ad-btn-ghost"
                                 }`}
                               >
                                 <Users className="w-3.5 h-3.5 shrink-0" />
@@ -2184,10 +1665,8 @@ function AdminPageContent() {
                           ) : (
                             <button
                               onClick={() => handleInspectAttendees(event.id)}
-                              className={`w-full h-9 px-4 rounded-xl text-xs font-semibold whitespace-nowrap text-center flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] ${
-                                inspectingEventId === event.id
-                                  ? "bg-[#6C63FF] text-white shadow-md shadow-[#6C63FF]/25"
-                                  : "text-white bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1]"
+                              className={`ad-btn w-full gap-2 ${
+                                inspectingEventId === event.id ? "ad-btn-primary" : "ad-btn-ghost"
                               }`}
                             >
                               <Users className="w-3.5 h-3.5 shrink-0" />
@@ -2198,6 +1677,22 @@ function AdminPageContent() {
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Danger zone: bulk delete lives apart from the everyday actions */}
+                <div className="ad-danger-zone flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <DeleteAllButton
+                    section="events"
+                    noun="events"
+                    count={events.length}
+                    consequences="Every event's participants, certificates (participation, Excellence and Appreciation), top performers and gallery entries go with them, and the attendance portal is switched off. Team members are not affected."
+                    onDeleted={async () => {
+                      setInspectingEventId(null);
+                      setSelectedEventId("");
+                      resetForm();
+                      await fetchData();
+                    }}
+                  />
                 </div>
               </section>
             )}
@@ -2221,14 +1716,14 @@ function AdminPageContent() {
                   />
 
                   {/* ── PARTICIPANTS ─────────────────────────────── */}
-                  <div id="cert-panel-participants" role="tabpanel" aria-labelledby="cert-tab-participants" className={certSection === "participants" ? "rounded-3xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5 lg:p-6" : "hidden"}>
+                  <div id="cert-panel-participants" role="tabpanel" aria-labelledby="cert-tab-participants" className={certSection === "participants" ? "ad-card p-3 sm:p-5 lg:p-6" : "hidden"}>
                   <section
                     ref={attendeesSectionRef}
                 className="space-y-4 scroll-mt-24"
               >
                 <SectionHeading
                   title="Participants"
-                  description={<>Attendance submissions and Certificates of Participation for <span className="text-[#A78BFA]">{currentViewEvent.name}</span>.</>}
+                  description={<>Attendance submissions and Certificates of Participation for <span className="text-sbg-lilac-700">{currentViewEvent.name}</span>.</>}
                 >
                   <AttendeeImportDialog
                     key={currentViewEvent.id}
@@ -2250,20 +1745,9 @@ function AdminPageContent() {
                     className={TOOLBAR_BUTTON}
                     title="Email every participant their certificate"
                   >
-                    <Send className="h-4 w-4 text-[#A78BFA]" />
+                    <Send className="h-4 w-4 text-sbg-lilac-700" />
                     <span>Email all</span>
                   </button>
-                  <DeleteAllButton
-                    section="registrations"
-                    noun="participants"
-                    count={participants.length}
-                    eventId={currentViewEvent.id}
-                    scope={`for "${currentViewEvent.name}"`}
-                    consequences="Their attendance records and the certificates issued through them are deleted, so those certificate links stop verifying. Certificates of Appreciation are kept."
-                    onDeleted={async () => {
-                      await Promise.all([fetchParticipants(currentViewEvent.id), fetchTopPerformers()]);
-                    }}
-                  />
                 </SectionHeading>
 
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
@@ -2290,8 +1774,8 @@ function AdminPageContent() {
                           aria-pressed={selectedCourseFilter === c}
                           className={`h-8 shrink-0 cursor-pointer whitespace-nowrap rounded-lg px-3 font-mono text-[11px] uppercase transition-all ${
                             selectedCourseFilter === c
-                              ? "bg-[#6C63FF] font-bold text-white"
-                              : "border border-white/[0.06] bg-white/[0.03] text-[#71717A] hover:bg-white/[0.06] hover:text-white"
+                              ? "bg-sbg-lilac-600 font-bold text-white"
+                              : "border border-sbg-ink/[0.08] bg-white/60 text-sbg-ink-3 hover:bg-sbg-lilac-100 hover:text-sbg-ink"
                           }`}
                         >
                           {c === "ALL" ? "All courses" : c}
@@ -2302,21 +1786,21 @@ function AdminPageContent() {
                 </div>
 
               {/* ── PARTICIPANTS TABLE CONTAINER ────────────── */}
-              <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-white/10 shadow-2xl overflow-hidden">
-                <div className="rounded-[calc(2rem-4px)] bg-[#0C0C10] overflow-hidden">
+              <div className="ad-card overflow-hidden bg-white">
+                <div className="overflow-hidden">
                   {loadingParticipants ? (
                     <ListSkeleton rows={8} label="Loading participants" />
                   ) : filteredParticipants.length === 0 ? (
                     <div className="py-24 text-center px-4 max-w-md mx-auto space-y-3">
-                      <div className="w-14 h-14 mx-auto rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-[#71717A]">
+                      <div className="w-14 h-14 mx-auto rounded-2xl bg-white/60 border border-sbg-ink/[0.08] flex items-center justify-center text-sbg-ink-3">
                         <Users className="w-6 h-6" />
                       </div>
-                      <h4 className="text-base font-bold text-white">
+                      <h4 className="text-base font-bold text-sbg-ink">
                         {participantSearch || selectedCourseFilter !== "ALL"
                           ? "No matching attendees found"
                           : "No participants attended yet"}
                       </h4>
-                      <p className="text-xs text-[#71717A] leading-relaxed">
+                      <p className="text-xs text-sbg-ink-3 leading-relaxed">
                         {participantSearch || selectedCourseFilter !== "ALL"
                           ? "Try clearing your search query or selecting a different course filter."
                           : "When students mark their attendance using the session QR code, their verified records will appear in this directory."}
@@ -2325,22 +1809,22 @@ function AdminPageContent() {
                   ) : (
                     <>
                     {/* Phones: one card per attendee (a 6-column table cannot fit) */}
-                    <ul className="divide-y divide-white/[0.05] md:hidden">
+                    <ul className="divide-y divide-sbg-ink/[0.07] md:hidden">
                       {visibleParticipants.map((p, idx) => (
                         <li key={`m-${p.email}-${idx}`} className="space-y-3 p-4">
                           <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#6C63FF]/30 bg-gradient-to-tr from-[#6C63FF]/20 to-[#A78BFA]/20 font-mono text-xs font-bold text-[#A78BFA]">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-sbg-lilac-300 bg-gradient-to-tr from-sbg-lilac-100 to-sbg-lilac-200 font-mono text-xs font-bold text-sbg-lilac-700">
                               {getInitials(p.name)}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-white">
-                                <span className="mr-1.5 font-mono text-[11px] font-normal text-[#52525B]">{participantRange.from + idx}.</span>
+                              <p className="truncate text-sm font-semibold text-sbg-ink">
+                                <span className="mr-1.5 font-mono text-[11px] font-normal text-sbg-ink-3">{participantRange.from + idx}.</span>
                                 {p.name}
                               </p>
-                              <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#71717A]">
+                              <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-sbg-ink-3">
                                 <span className="font-mono">Roll: {p.rollNo}</span>
                                 {p.course && (
-                                  <span className="rounded-md border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 text-[#D4D4D8]">
+                                  <span className="rounded-md border border-sbg-ink/[0.08] bg-white/60 px-1.5 py-0.5 text-sbg-ink">
                                     {p.course}
                                   </span>
                                 )}
@@ -2350,29 +1834,29 @@ function AdminPageContent() {
                           <button
                             type="button"
                             onClick={() => handleCopy(p.email, `email-${idx}`, "Email")}
-                            className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 text-left font-mono text-[11.5px] text-[#A1A1AA] active:bg-white/[0.08]"
+                            className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-sbg-ink/[0.08] bg-white/60 px-3 text-left font-mono text-[11.5px] text-sbg-ink-2 active:bg-sbg-lilac-100"
                             aria-label={`Copy email ${p.email}`}
                           >
                             <span className="truncate">{p.email}</span>
                             {copiedKey === `email-${idx}` ? (
-                              <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                              <Check className="h-3.5 w-3.5 shrink-0 text-[#047857]" />
                             ) : (
                               <Copy className="h-3.5 w-3.5 shrink-0" />
                             )}
                           </button>
-                          <div className="flex items-center justify-between gap-3 text-[11px] text-[#71717A]">
+                          <div className="flex items-center justify-between gap-3 text-[11px] text-sbg-ink-3">
                             <span className="font-mono">{formatDateTime(p.submittedAt)}</span>
                             {p.certificateId ? (
                               <Link
                                 href={`/verify/${p.certificateId}`}
                                 target="_blank"
-                                className="flex min-h-10 items-center gap-1 truncate font-mono text-xs font-bold text-[#A78BFA]"
+                                className="flex min-h-10 items-center gap-1 truncate font-mono text-xs font-bold text-sbg-lilac-700"
                               >
                                 <span className="truncate">{p.certificateId}</span>
-                                <ExternalLink className="h-3 w-3 shrink-0 text-[#71717A]" />
+                                <ExternalLink className="h-3 w-3 shrink-0 text-sbg-ink-3" />
                               </Link>
                             ) : (
-                              <span className="font-mono text-[#52525B]">No certificate</span>
+                              <span className="font-mono text-sbg-ink-3">No certificate</span>
                             )}
                           </div>
                           {renderParticipantActions(p, "h-10 w-10")}
@@ -2382,7 +1866,7 @@ function AdminPageContent() {
                     <div className="hidden max-h-[70vh] max-w-full overflow-auto md:block">
                       <table className="w-full min-w-[760px] text-left text-xs border-collapse">
                         <thead>
-                          <tr className="sticky top-0 z-10 border-b border-white/[0.06] bg-[#13131a] text-[#71717A] font-mono text-[10.5px] uppercase tracking-wider">
+                          <tr className="sticky top-0 z-10 border-b border-sbg-ink/[0.08] bg-sbg-mist text-sbg-ink-3 font-mono text-[10.5px] uppercase tracking-wider">
                             <th className="w-12 py-3.5 pl-5 pr-2">#</th>
                             <th className="py-3.5 px-4">Participant</th>
                             <th className="py-3.5 px-4">Contact</th>
@@ -2392,24 +1876,24 @@ function AdminPageContent() {
                             <th className="py-3.5 px-4 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/[0.04]">
+                        <tbody className="divide-y divide-sbg-ink/[0.07]">
                           {visibleParticipants.map((p, idx) => (
                             <tr
                               key={`${p.email}-${idx}`}
-                              className="hover:bg-white/[0.025] transition-colors group"
+                              className="hover:bg-sbg-lilac-50 transition-colors group"
                             >
-                              <td className="py-4 pl-5 pr-2 font-mono text-[11px] tabular-nums text-[#52525B]">{participantRange.from + idx}</td>
+                              <td className="py-4 pl-5 pr-2 font-mono text-[11px] tabular-nums text-sbg-ink-3">{participantRange.from + idx}</td>
                               {/* Name with Avatar Initials */}
                               <td className="py-4 px-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#6C63FF]/20 to-[#A78BFA]/20 border border-[#6C63FF]/30 flex items-center justify-center text-[10px] font-bold text-[#A78BFA] shrink-0 font-mono">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-sbg-lilac-100 to-sbg-lilac-200 border border-sbg-lilac-300 flex items-center justify-center text-[10px] font-bold text-sbg-lilac-700 shrink-0 font-mono">
                                     {getInitials(p.name)}
                                   </div>
                                   <div className="min-w-0">
-                                    <span className="font-semibold text-white block truncate">
+                                    <span className="font-semibold text-sbg-ink block truncate">
                                       {p.name}
                                     </span>
-                                    <span className="text-[10px] text-[#71717A] font-mono">
+                                    <span className="text-[10px] text-sbg-ink-3 font-mono">
                                       Roll: {p.rollNo}
                                     </span>
                                   </div>
@@ -2417,16 +1901,16 @@ function AdminPageContent() {
                               </td>
 
                               {/* Email */}
-                              <td className="py-4 px-4 text-[#A1A1AA] font-mono text-[11.5px]">
+                              <td className="py-4 px-4 text-sbg-ink-2 font-mono text-[11.5px]">
                                 <div className="flex items-center gap-1.5">
                                   <span className="truncate max-w-[190px]">{p.email}</span>
                                   <button
                                     onClick={() => handleCopy(p.email, `email-${idx}`, "Email")}
-                                    className="opacity-0 group-hover:opacity-100 text-[#71717A] hover:text-white transition-opacity cursor-pointer"
+                                    className="opacity-0 group-hover:opacity-100 text-sbg-ink-3 hover:text-sbg-ink transition-opacity cursor-pointer"
                                     title="Copy Email"
                                   >
                                     {copiedKey === `email-${idx}` ? (
-                                      <Check className="w-3 h-3 text-emerald-400" />
+                                      <Check className="w-3 h-3 text-[#047857]" />
                                     ) : (
                                       <Copy className="w-3 h-3" />
                                     )}
@@ -2436,13 +1920,13 @@ function AdminPageContent() {
 
                               {/* Course */}
                               <td className="py-4 px-4">
-                                <span className="inline-block px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[#D4D4D8] font-medium text-[11px]">
+                                <span className="inline-block px-2.5 py-1 rounded-lg bg-white/60 border border-sbg-ink/[0.08] text-sbg-ink font-medium text-[11px]">
                                   {p.course}
                                 </span>
                               </td>
 
                               {/* Submitted At */}
-                              <td className="py-4 px-4 text-[#71717A] font-mono text-[11px] whitespace-nowrap">
+                              <td className="py-4 px-4 text-sbg-ink-3 font-mono text-[11px] whitespace-nowrap">
                                 {formatDateTime(p.submittedAt)}
                               </td>
 
@@ -2453,28 +1937,28 @@ function AdminPageContent() {
                                     <Link
                                       href={`/verify/${p.certificateId}`}
                                       target="_blank"
-                                      className="font-mono text-xs font-bold text-[#A78BFA] hover:underline flex items-center gap-1"
+                                      className="font-mono text-xs font-bold text-sbg-lilac-700 hover:underline flex items-center gap-1"
                                       title="Open Verification Page"
                                     >
                                       <span>{p.certificateId}</span>
-                                      <ExternalLink className="w-3 h-3 text-[#71717A]" />
+                                      <ExternalLink className="w-3 h-3 text-sbg-ink-3" />
                                     </Link>
                                     <button
                                       onClick={() =>
                                         handleCopy(p.certificateId!, `cert-${idx}`, "Certificate ID")
                                       }
-                                      className="opacity-0 group-hover:opacity-100 text-[#71717A] hover:text-white transition-opacity cursor-pointer"
+                                      className="opacity-0 group-hover:opacity-100 text-sbg-ink-3 hover:text-sbg-ink transition-opacity cursor-pointer"
                                       title="Copy ID"
                                     >
                                       {copiedKey === `cert-${idx}` ? (
-                                        <Check className="w-3 h-3 text-emerald-400" />
+                                        <Check className="w-3 h-3 text-[#047857]" />
                                       ) : (
                                         <Copy className="w-3 h-3" />
                                       )}
                                     </button>
                                   </div>
                                 ) : (
-                                  <span className="text-[#52525B] font-mono text-xs">—</span>
+                                  <span className="text-sbg-ink-3 font-mono text-xs">—</span>
                                 )}
                               </td>
 
@@ -2490,7 +1974,7 @@ function AdminPageContent() {
                     </>
                   )}
                   {!loadingParticipants && filteredParticipants.length > PARTICIPANTS_PER_PAGE && (
-                    <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-3 text-xs text-[#A1A1AA]">
+                    <div className="flex items-center justify-between gap-3 border-t border-sbg-ink/[0.08] px-4 py-3 text-xs text-sbg-ink-2">
                       <span>
                         Showing {participantRange.from}–{participantRange.to} of {filteredParticipants.length}
                       </span>
@@ -2499,7 +1983,7 @@ function AdminPageContent() {
                           type="button"
                           onClick={() => setParticipantPage(currentParticipantPage - 1)}
                           disabled={currentParticipantPage <= 1}
-                          className="h-10 cursor-pointer rounded-lg border border-white/10 px-3.5 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:px-3"
+                          className="h-10 cursor-pointer rounded-lg border border-sbg-ink/[0.14] px-3.5 hover:bg-sbg-lilac-100 disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:px-3"
                         >
                           Previous
                         </button>
@@ -2510,7 +1994,7 @@ function AdminPageContent() {
                           type="button"
                           onClick={() => setParticipantPage(currentParticipantPage + 1)}
                           disabled={currentParticipantPage >= participantPages}
-                          className="h-10 cursor-pointer rounded-lg border border-white/10 px-3.5 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:px-3"
+                          className="h-10 cursor-pointer rounded-lg border border-sbg-ink/[0.14] px-3.5 hover:bg-sbg-lilac-100 disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:px-3"
                         >
                           Next
                         </button>
@@ -2519,16 +2003,29 @@ function AdminPageContent() {
                   )}
                 </div>
               </div>
+<div className="ad-danger-zone flex flex-wrap items-center justify-end gap-3 p-3 sm:p-4">
+                  <DeleteAllButton
+                    section="registrations"
+                    noun="participants"
+                    count={participants.length}
+                    eventId={currentViewEvent.id}
+                    scope={`for "${currentViewEvent.name}"`}
+                    consequences="Their attendance records and the certificates issued through them are deleted, so those certificate links stop verifying. Certificates of Appreciation are kept."
+                    onDeleted={async () => {
+                      await Promise.all([fetchParticipants(currentViewEvent.id), fetchTopPerformers()]);
+                    }}
+                  />
+</div>
             </section>
 
                   </div>
 
                   {/* ── TOP PERFORMERS ───────────────────────────── */}
-                  <div id="cert-panel-top-performers" role="tabpanel" aria-labelledby="cert-tab-top-performers" className={certSection === "top-performers" ? "rounded-3xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5 lg:p-6" : "hidden"}>
+                  <div id="cert-panel-top-performers" role="tabpanel" aria-labelledby="cert-tab-top-performers" className={certSection === "top-performers" ? "ad-card p-3 sm:p-5 lg:p-6" : "hidden"}>
             <section className="space-y-4">
               <SectionHeading
                 title="Top Performers"
-                description={<>Certificates of Excellence for <span className="text-amber-300">{currentViewEvent.name}</span>. The rank becomes the award, e.g. 1st Position.</>}
+                description={<>Certificates of Excellence for <span className="text-[#92400e]">{currentViewEvent.name}</span>. The rank becomes the award, e.g. 1st Position.</>}
               >
                 <button
                   type="button"
@@ -2536,7 +2033,7 @@ function AdminPageContent() {
                   aria-expanded={showAddTopPerformer}
                   className={TOOLBAR_BUTTON}
                 >
-                  {showAddTopPerformer ? <X className="h-4 w-4" /> : <UserPlus className="h-4 w-4 text-amber-400" />}
+                  {showAddTopPerformer ? <X className="h-4 w-4" /> : <UserPlus className="h-4 w-4 text-[#92400e]" />}
                   <span>{showAddTopPerformer ? "Close form" : "Add one"}</span>
                 </button>
                 <TopPerformerImportDialog
@@ -2560,30 +2057,20 @@ function AdminPageContent() {
                     issuingTopPerformerId !== null ||
                     topPerformers.filter((performer) => !performer.certificateId).length === 0
                   }
-                  className="inline-flex h-10 cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-amber-500/25 bg-amber-500/10 px-3.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="inline-flex h-10 cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-[#92400e]/30 bg-[#fff1dc] px-3.5 text-xs font-semibold text-[#92400e] hover:bg-[#ffe6c2] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {issuingAllTopPerformers ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Award className="h-3.5 w-3.5" />}
                   {issuingAllTopPerformers
                     ? "Issuing…"
                     : `Issue pending (${topPerformers.filter((performer) => !performer.certificateId).length})`}
                 </button>
-                <DeleteAllButton
-                  section="top-performers"
-                  noun="top performers"
-                  count={topPerformers.length}
-                  eventId={currentViewEvent.id}
-                  scope={`for "${currentViewEvent.name}"`}
-                  disabled={loadingTopPerformers || topPerformersEvent?.id !== currentViewEvent.id}
-                  consequences="Their Certificates of Excellence are deleted too, so those certificate links stop verifying."
-                  onDeleted={fetchTopPerformers}
-                />
               </SectionHeading>
 
                   {showAddTopPerformer && (
-                  <div className="rounded-2xl border border-amber-500/15 bg-amber-500/[0.03] p-3 sm:p-4">
+                  <div className="rounded-2xl border border-[#92400e]/20 bg-[#fff8ec] p-3 sm:p-4">
                   <form onSubmit={handleAddTopPerformer} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA]">Rank</span>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-sbg-ink-2">Rank</span>
                       <input
                         type="number"
                         min="1"
@@ -2591,11 +2078,11 @@ function AdminPageContent() {
                         required
                         value={topPerformerForm.rank}
                         onChange={(e) => setTopPerformerForm((current) => ({ ...current, rank: e.target.value }))}
-                        className="h-10 w-full rounded-xl bg-[#111117] border border-white/[0.1] px-3 text-sm text-white focus:outline-none focus:border-amber-500"
+                        className="h-10 w-full rounded-xl bg-white border border-sbg-ink/[0.14] px-3 text-sm text-sbg-ink focus:outline-none focus:border-sbg-lilac-600"
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA]">Name</span>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-sbg-ink-2">Name</span>
                       <input
                         type="text"
                         required
@@ -2604,11 +2091,11 @@ function AdminPageContent() {
                         value={topPerformerForm.fullName}
                         onChange={(e) => setTopPerformerForm((current) => ({ ...current, fullName: e.target.value }))}
                         placeholder="Full name"
-                        className="h-10 w-full rounded-xl bg-[#111117] border border-white/[0.1] px-3 text-sm text-white placeholder:text-[#52525B] focus:outline-none focus:border-amber-500"
+                        className="h-10 w-full rounded-xl bg-white border border-sbg-ink/[0.14] px-3 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:outline-none focus:border-sbg-lilac-600"
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA]">Email</span>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-sbg-ink-2">Email</span>
                       <input
                         type="email"
                         required
@@ -2616,36 +2103,36 @@ function AdminPageContent() {
                         value={topPerformerForm.email}
                         onChange={(e) => setTopPerformerForm((current) => ({ ...current, email: e.target.value }))}
                         placeholder="name@example.com"
-                        className="h-10 w-full rounded-xl bg-[#111117] border border-white/[0.1] px-3 text-sm text-white placeholder:text-[#52525B] focus:outline-none focus:border-amber-500"
+                        className="h-10 w-full rounded-xl bg-white border border-sbg-ink/[0.14] px-3 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:outline-none focus:border-sbg-lilac-600"
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA]">Roll No.</span>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-sbg-ink-2">Roll No.</span>
                       <input
                         type="text"
                         required
                         value={topPerformerForm.rollNo}
                         onChange={(e) => setTopPerformerForm((current) => ({ ...current, rollNo: e.target.value }))}
                         placeholder="Roll number"
-                        className="h-10 w-full rounded-xl bg-[#111117] border border-white/[0.1] px-3 text-sm text-white placeholder:text-[#52525B] focus:outline-none focus:border-amber-500"
+                        className="h-10 w-full rounded-xl bg-white border border-sbg-ink/[0.14] px-3 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:outline-none focus:border-sbg-lilac-600"
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA]">Course</span>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-sbg-ink-2">Course</span>
                       <input
                         type="text"
                         required
                         value={topPerformerForm.course}
                         onChange={(e) => setTopPerformerForm((current) => ({ ...current, course: e.target.value }))}
                         placeholder="Course"
-                        className="h-10 w-full rounded-xl bg-[#111117] border border-white/[0.1] px-3 text-sm text-white placeholder:text-[#52525B] focus:outline-none focus:border-amber-500"
+                        className="h-10 w-full rounded-xl bg-white border border-sbg-ink/[0.14] px-3 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:outline-none focus:border-sbg-lilac-600"
                       />
                     </label>
                     <div className="flex items-end">
                       <button
                         type="submit"
                         disabled={addingTopPerformer || !topPerformersEvent || topPerformersEvent.id !== currentViewEvent.id}
-                        className="h-10 w-full px-4 rounded-xl text-xs font-semibold text-white bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                        className="h-10 w-full px-4 rounded-xl text-xs font-semibold text-white bg-amber-700 hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                       >
                         {addingTopPerformer ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
                         Add Top Performer
@@ -2664,43 +2151,43 @@ function AdminPageContent() {
                   />
 
                   {topPerformersError && (
-                    <p role="alert" className="text-xs text-red-400">{topPerformersError}</p>
+                    <p role="alert" className="text-xs text-[#b91c1c]">{topPerformersError}</p>
                   )}
 
                   <div className="md:hidden">
                     {loadingTopPerformers ? (
                       <CardsSkeleton count={3} label="Loading top performers" />
                     ) : topPerformerStatus ? (
-                      <p className="rounded-xl border border-white/[0.07] px-4 py-8 text-center text-xs text-[#71717A]">
+                      <p className="rounded-xl border border-sbg-ink/[0.1] px-4 py-8 text-center text-xs text-sbg-ink-3">
                         {topPerformerStatus}
                       </p>
                     ) : (
                       <ul className="space-y-3">
                         {shownTopPerformers.map((performer) => (
-                          <li key={`m-${performer.id}`} className="space-y-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
+                          <li key={`m-${performer.id}`} className="space-y-3 rounded-xl border border-sbg-ink/[0.1] bg-white/60 p-4">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
-                                <p className="font-mono text-xs font-semibold text-amber-400">{getAwardTitle(performer.rank)}</p>
-                                <p className="mt-1 truncate text-sm font-semibold text-white">{performer.fullName}</p>
-                                <p className="text-[11px] text-[#71717A]">Roll: {performer.rollNo} · {performer.course}</p>
+                                <p className="font-mono text-xs font-semibold text-[#92400e]">{getAwardTitle(performer.rank)}</p>
+                                <p className="mt-1 truncate text-sm font-semibold text-sbg-ink">{performer.fullName}</p>
+                                <p className="text-[11px] text-sbg-ink-3">Roll: {performer.rollNo} · {performer.course}</p>
                               </div>
-                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${performer.certificateId ? "bg-emerald-500/10 text-emerald-400" : "bg-white/[0.05] text-[#A1A1AA]"}`}>
+                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${performer.certificateId ? "bg-[#e3f6ec] text-[#047857]" : "bg-sbg-lilac-50 text-sbg-ink-2"}`}>
                                 {performer.certificateId ? "Issued" : "Not issued"}
                               </span>
                             </div>
-                            <p className="truncate font-mono text-[11px] text-[#A1A1AA]">{performer.email}</p>
+                            <p className="truncate font-mono text-[11px] text-sbg-ink-2">{performer.email}</p>
                             {performer.certificateId && (
                               <div className="flex items-center gap-2">
-                                <Link href={`/verify/${performer.certificateId}`} target="_blank" className="flex min-h-10 items-center truncate font-mono text-xs text-[#A78BFA]">
+                                <Link href={`/verify/${performer.certificateId}`} target="_blank" className="flex min-h-10 items-center truncate font-mono text-xs text-sbg-lilac-700">
                                   {performer.certificateId}
                                 </Link>
                                 <button
                                   type="button"
                                   onClick={() => handleCopy(performer.certificateId!, `top-performer-cert-${performer.id}`, "Certificate ID")}
                                   aria-label="Copy certificate ID"
-                                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[#71717A] active:bg-white/[0.08]"
+                                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sbg-ink-3 active:bg-sbg-lilac-100"
                                 >
-                                  {copiedKey === `top-performer-cert-${performer.id}` ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                                  {copiedKey === `top-performer-cert-${performer.id}` ? <Check className="h-3.5 w-3.5 text-[#047857]" /> : <Copy className="h-3.5 w-3.5" />}
                                 </button>
                               </div>
                             )}
@@ -2710,7 +2197,7 @@ function AdminPageContent() {
                                   type="button"
                                   onClick={() => handleSendTopPerformerEmail(performer)}
                                   disabled={sendingTopPerformerId === performer.id || deletingTopPerformerId === performer.id}
-                                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#6C63FF]/25 bg-[#6C63FF]/10 px-3 text-xs font-medium text-[#C4B5FD] disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-sbg-lilac-300 bg-sbg-lilac-100 px-3 text-xs font-medium text-sbg-lilac-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {sendingTopPerformerId === performer.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                                   Send email
@@ -2720,7 +2207,7 @@ function AdminPageContent() {
                                   type="button"
                                   onClick={() => handleIssueTopPerformer(performer)}
                                   disabled={issuingTopPerformerId !== null || issuingAllTopPerformers || deletingTopPerformerId === performer.id}
-                                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 text-xs font-medium text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#92400e]/30 bg-[#fff1dc] px-3 text-xs font-medium text-[#92400e] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {issuingTopPerformerId === performer.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Award className="h-3.5 w-3.5" />}
                                   Issue certificate
@@ -2731,7 +2218,7 @@ function AdminPageContent() {
                                 onClick={() => handleRemoveTopPerformer(performer)}
                                 disabled={deletingTopPerformerId === performer.id || issuingAllTopPerformers || issuingTopPerformerId !== null || sendingTopPerformerId === performer.id}
                                 aria-label={`Remove ${performer.fullName}`}
-                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/[0.06] text-red-300 disabled:opacity-50"
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#b91c1c]/25 bg-[#fff3f3] text-[#b91c1c] disabled:opacity-50"
                               >
                                 {deletingTopPerformerId === performer.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                               </button>
@@ -2742,9 +2229,9 @@ function AdminPageContent() {
                     )}
                   </div>
 
-                  <div className="hidden max-w-full overflow-x-auto rounded-xl border border-white/[0.07] md:block">
+                  <div className="hidden max-w-full overflow-x-auto rounded-xl border border-sbg-ink/[0.1] md:block">
                     <table className="w-full min-w-[900px] text-left text-xs">
-                      <thead className="bg-white/[0.03] text-[10px] font-mono uppercase tracking-wider text-[#71717A]">
+                      <thead className="bg-white/60 text-[10px] font-mono uppercase tracking-wider text-sbg-ink-3">
                         <tr>
                           <th className="px-4 py-3">Rank</th>
                           <th className="px-4 py-3">Participant</th>
@@ -2754,50 +2241,50 @@ function AdminPageContent() {
                           <th className="px-4 py-3 text-right">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/[0.05]">
+                      <tbody className="divide-y divide-sbg-ink/[0.07]">
                         {loadingTopPerformers ? (
                           <TableRowsSkeleton rows={4} columns={6} label="Loading top performers" />
                         ) : topPerformersEvent?.id !== currentViewEvent.id ? (
                           <tr>
-                            <td colSpan={6} className="px-4 py-8 text-center text-[#71717A]">
+                            <td colSpan={6} className="px-4 py-8 text-center text-sbg-ink-3">
                               {topPerformersError ? "Top performers are unavailable." : "Loading event details…"}
                             </td>
                           </tr>
                         ) : shownTopPerformers.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="px-4 py-8 text-center text-[#71717A]">
+                            <td colSpan={6} className="px-4 py-8 text-center text-sbg-ink-3">
                               {topPerformers.length === 0 ? "No top performers added for this event yet." : "Nobody matches this search."}
                             </td>
                           </tr>
                         ) : shownTopPerformers.map((performer) => (
-                          <tr key={performer.id} className="text-[#D4D4D8] hover:bg-white/[0.02]">
-                            <td className="px-4 py-3 font-mono font-semibold text-amber-400">{getAwardTitle(performer.rank)}</td>
+                          <tr key={performer.id} className="text-sbg-ink hover:bg-sbg-lilac-50">
+                            <td className="px-4 py-3 font-mono font-semibold text-[#92400e]">{getAwardTitle(performer.rank)}</td>
                             <td className="px-4 py-3">
-                              <span className="block font-semibold text-white">{performer.fullName}</span>
-                              <span className="text-[10px] text-[#71717A]">Roll: {performer.rollNo}</span>
+                              <span className="block font-semibold text-sbg-ink">{performer.fullName}</span>
+                              <span className="text-[10px] text-sbg-ink-3">Roll: {performer.rollNo}</span>
                             </td>
                             <td className="px-4 py-3 font-mono text-[11px]">{performer.email}</td>
                             <td className="px-4 py-3">{performer.course}</td>
                             <td className="px-4 py-3">
                               {performer.certificateId ? (
                                 <div>
-                                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-400">Issued</span>
+                                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#047857]">Issued</span>
                                   <div className="mt-1 flex items-center gap-1.5">
-                                    <Link href={`/verify/${performer.certificateId}`} target="_blank" className="font-mono text-[11px] text-[#A78BFA] hover:underline">
+                                    <Link href={`/verify/${performer.certificateId}`} target="_blank" className="font-mono text-[11px] text-sbg-lilac-700 hover:underline">
                                       {performer.certificateId}
                                     </Link>
                                     <button
                                       type="button"
                                       onClick={() => handleCopy(performer.certificateId!, `top-performer-cert-${performer.id}`, "Certificate ID")}
                                       title="Copy Certificate ID"
-                                      className="text-[#71717A] hover:text-white"
+                                      className="text-sbg-ink-3 hover:text-sbg-ink"
                                     >
-                                      {copiedKey === `top-performer-cert-${performer.id}` ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                                      {copiedKey === `top-performer-cert-${performer.id}` ? <Check className="h-3 w-3 text-[#047857]" /> : <Copy className="h-3 w-3" />}
                                     </button>
                                   </div>
                                 </div>
                               ) : (
-                                <span className="text-[#A1A1AA]">Not issued</span>
+                                <span className="text-sbg-ink-2">Not issued</span>
                               )}
                             </td>
                             <td className="px-4 py-3">
@@ -2807,7 +2294,7 @@ function AdminPageContent() {
                                     type="button"
                                     onClick={() => handleSendTopPerformerEmail(performer)}
                                     disabled={sendingTopPerformerId === performer.id || deletingTopPerformerId === performer.id}
-                                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#6C63FF]/25 bg-[#6C63FF]/10 px-2.5 text-[11px] font-medium text-[#C4B5FD] hover:bg-[#6C63FF]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-sbg-lilac-300 bg-sbg-lilac-100 px-2.5 text-[11px] font-medium text-sbg-lilac-700 hover:bg-sbg-lilac-100 disabled:cursor-not-allowed disabled:opacity-50"
                                   >
                                     {sendingTopPerformerId === performer.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                                     Send Email
@@ -2817,7 +2304,7 @@ function AdminPageContent() {
                                     type="button"
                                     onClick={() => handleIssueTopPerformer(performer)}
                                     disabled={issuingTopPerformerId !== null || issuingAllTopPerformers || deletingTopPerformerId === performer.id}
-                                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 text-[11px] font-medium text-amber-300 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#92400e]/30 bg-[#fff1dc] px-2.5 text-[11px] font-medium text-[#92400e] hover:bg-[#ffe6c2] disabled:cursor-not-allowed disabled:opacity-50"
                                   >
                                     {issuingTopPerformerId === performer.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Award className="h-3 w-3" />}
                                     Issue Certificate of Excellence
@@ -2827,7 +2314,7 @@ function AdminPageContent() {
                                   type="button"
                                   onClick={() => handleRemoveTopPerformer(performer)}
                                   disabled={deletingTopPerformerId === performer.id || issuingAllTopPerformers || issuingTopPerformerId !== null || sendingTopPerformerId === performer.id}
-                                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/[0.06] px-2.5 text-[11px] font-medium text-red-300 hover:bg-red-500/15 disabled:opacity-50"
+                                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#b91c1c]/25 bg-[#fff3f3] px-2.5 text-[11px] font-medium text-[#b91c1c] hover:bg-[#ffe1e1] disabled:opacity-50"
                                 >
                                   {deletingTopPerformerId === performer.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                                   
@@ -2839,11 +2326,23 @@ function AdminPageContent() {
                       </tbody>
                     </table>
                   </div>
+<div className="ad-danger-zone flex flex-wrap items-center justify-end gap-3 p-3 sm:p-4">
+                <DeleteAllButton
+                  section="top-performers"
+                  noun="top performers"
+                  count={topPerformers.length}
+                  eventId={currentViewEvent.id}
+                  scope={`for "${currentViewEvent.name}"`}
+                  disabled={loadingTopPerformers || topPerformersEvent?.id !== currentViewEvent.id}
+                  consequences="Their Certificates of Excellence are deleted too, so those certificate links stop verifying."
+                  onDeleted={fetchTopPerformers}
+                />
+</div>
             </section>
                   </div>
 
                   {/* ── ORGANISING TEAM ──────────────────────────── */}
-                  <div id="cert-panel-organisers" role="tabpanel" aria-labelledby="cert-tab-organisers" className={certSection === "organisers" ? "rounded-3xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5 lg:p-6" : "hidden"}>
+                  <div id="cert-panel-organisers" role="tabpanel" aria-labelledby="cert-tab-organisers" className={certSection === "organisers" ? "ad-card p-3 sm:p-5 lg:p-6" : "hidden"}>
                     <OrganiserSection
                       key={`org-${currentViewEvent.id}`}
                       eventId={currentViewEvent.id}
@@ -2855,7 +2354,7 @@ function AdminPageContent() {
                   </div>
 
                   {/* ── VOLUNTEERS ───────────────────────────────── */}
-                  <div id="cert-panel-volunteers" role="tabpanel" aria-labelledby="cert-tab-volunteers" className={certSection === "volunteers" ? "rounded-3xl border border-white/[0.06] bg-white/[0.015] p-3 sm:p-5 lg:p-6" : "hidden"}>
+                  <div id="cert-panel-volunteers" role="tabpanel" aria-labelledby="cert-tab-volunteers" className={certSection === "volunteers" ? "ad-card p-3 sm:p-5 lg:p-6" : "hidden"}>
                     <VolunteerSection
                       key={`vol-${currentViewEvent.id}`}
                       eventId={currentViewEvent.id}
@@ -2867,19 +2366,19 @@ function AdminPageContent() {
                   </div>
                 </div>
               ) : (
-                <div className="p-12 text-center rounded-[2rem] bg-white/[0.02] border border-white/10 space-y-4">
-                  <div className="w-12 h-12 mx-auto rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-[#71717A]">
+                <div className="ad-card p-12 text-center space-y-4">
+                  <div className="w-12 h-12 mx-auto rounded-2xl bg-white/70 border border-sbg-ink/[0.14] flex items-center justify-center text-sbg-ink-3">
                     <Users className="w-6 h-6" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-base font-semibold text-white">No Events Available</h3>
-                    <p className="text-xs text-[#71717A] max-w-sm mx-auto">
+                    <h3 className="text-base font-semibold text-sbg-ink">No Events Available</h3>
+                    <p className="text-xs text-sbg-ink-3 max-w-sm mx-auto">
                       Create an event first in the Events tab to view participants and certificates.
                     </p>
                   </div>
                   <button
                     onClick={() => setActiveTab("events")}
-                    className="h-9 px-4 rounded-xl text-xs font-semibold bg-[#6C63FF] hover:brightness-110 text-white transition-all cursor-pointer inline-flex items-center gap-2"
+                    className="h-9 px-4 rounded-xl text-xs font-semibold bg-sbg-lilac-600 hover:brightness-110 text-white transition-all cursor-pointer inline-flex items-center gap-2"
                   >
                     <Calendar className="w-3.5 h-3.5" />
                     <span>Go to Events Catalog</span>
@@ -2888,346 +2387,10 @@ function AdminPageContent() {
               )
             )}
 
-            {/* ── SECTION C: TEAM MEMBERS MANAGEMENT ────────── */}
-            {/* ══════════════════════════════════════════════════ */}
+            {/* ── TEAM TAB ─────────────────────────────────────── */}
             {activeTab === "team" && (
-              <section className="space-y-6 pt-8 border-t border-white/[0.08]">
-              {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                    Team
-                  </h2>
-                  <p className="text-xs text-[#71717A] mt-1">
-                    Manage AWS Student Builder Group members organized by batch & tenure cohorts
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono text-cyan-400 px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    {teamMembers.length} Total Members
-                  </span>
-                  <button
-                    onClick={handleCreateNewBatch}
-                    className="h-10 px-3.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
-                    title="Form a new team for the next cohort"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>New Batch</span>
-                  </button>
-                  <DeleteAllButton
-                    section="team"
-                    noun="team members"
-                    count={
-                      selectedTeamBatch === "ALL"
-                        ? teamMembers.length
-                        : teamMembers.filter((m) => (m.batch || "2026-27") === selectedTeamBatch).length
-                    }
-                    batch={selectedTeamBatch}
-                    scope={selectedTeamBatch === "ALL" ? "in every batch" : `in Batch ${selectedTeamBatch}`}
-                    disabled={loadingTeamMembers}
-                    consequences="Their profiles disappear from the public Team page."
-                    onDeleted={fetchTeamMembers}
-                  />
-
-                </div>
-              </div>
-
-              {/* Batch Filter Tabs & Search Bar Row */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-2 rounded-2xl bg-[#0B0B0F] border border-white/[0.06]">
-                {/* Batch Selector Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 max-w-full no-scrollbar">
-                  <span className="text-[11px] font-mono uppercase text-[#71717A] px-2 shrink-0">
-                    Cohorts:
-                  </span>
-                  {availableBatches.map((b) => {
-                    const count = teamMembers.filter((m) => (m.batch || "2026-27") === b).length;
-                    const isSelected = selectedTeamBatch === b;
-                    const isCurrent = b === "2026-27";
-                    return (
-                      <button
-                        key={b}
-                        onClick={() => setSelectedTeamBatch(b)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-                          isSelected
-                            ? "bg-cyan-500 text-black font-bold shadow-md shadow-cyan-500/25"
-                            : "bg-[#14141C] text-[#A1A1AA] hover:text-white border border-white/[0.06] hover:border-white/[0.12]"
-                        }`}
-                      >
-                        <span>{b}</span>
-                        {isCurrent && (
-                          <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ${
-                              isSelected ? "bg-black/20 text-black" : "bg-cyan-500/20 text-cyan-300"
-                            }`}
-                          >
-                            Current
-                          </span>
-                        )}
-                        <span className={`text-[10px] ${isSelected ? "text-black/75" : "text-[#71717A]"}`}>
-                          ({count})
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Search Bar */}
-                <div className="relative w-full md:w-64 md:min-w-[200px] shrink-0">
-                  <Search className="w-4 h-4 text-[#52525B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={teamSearch}
-                    onChange={(e) => setTeamSearch(e.target.value)}
-                    placeholder="Search by name, role, branch…"
-                    className="w-full h-10 pl-9 pr-8 rounded-xl text-xs bg-[#14141C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-cyan-500 transition-colors"
-                  />
-                  {teamSearch && (
-                    <button
-                      onClick={() => setTeamSearch("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Team Members List (Grouped by Batch with Visual Separators) */}
-              {loadingTeamMembers ? (
-                <TeamGridSkeleton />
-              ) : groupedTeamMembers.length === 0 ? (
-                <div className="p-1 rounded-[2rem] bg-white/[0.03] border border-dashed border-white/10">
-                  <div className="p-12 rounded-[calc(2rem-4px)] bg-[#0D0D12] text-center">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#71717A]">
-                      <Users className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-base font-semibold text-white mb-1">
-                      {teamSearch
-                        ? "No matching team members found"
-                        : selectedTeamBatch !== "ALL"
-                        ? `No members added to Batch ${selectedTeamBatch} yet`
-                        : "No team members added yet"}
-                    </h3>
-                    <p className="text-xs text-[#71717A] max-w-sm mx-auto mb-5">
-                      {teamSearch
-                        ? "Try clearing your search query."
-                        : `Start building your ${
-                            selectedTeamBatch !== "ALL" ? selectedTeamBatch : "team"
-                          }  by adding your first member.`}
-                    </p>
-                    <button
-                      onClick={() =>
-                        startCreateTeamMember(
-                          selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27"
-                        )
-                      }
-                      className="h-10 px-5 rounded-xl text-xs font-semibold bg-cyan-500 text-black hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-cyan-500/20"
-                    >
-                      Add Member to Batch {selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27"}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-10">
-                  {groupedTeamMembers.map((group) => {
-                    const isCurrent = group.batch === "2026-27";
-                    const isUpcoming = group.batch > "2026-27";
-                    const isPrevious = group.batch < "2026-27";
-
-                    return (
-                      <div key={group.batch} className="space-y-4">
-                        {/* ── BATCH SEPARATOR BAR ────────────────────────── */}
-                        <div className="relative rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-[#12121A] via-[#101017] to-[#0D0D12] border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
-                          <div className="flex items-center gap-3.5">
-                            <div
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-bold text-sm shrink-0 border ${
-                                isCurrent
-                                  ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-400"
-                                  : isUpcoming
-                                  ? "bg-purple-500/15 border-purple-500/30 text-purple-400"
-                                  : "bg-white/[0.05] border-white/[0.1] text-[#A1A1AA]"
-                              }`}
-                            >
-                              <Users className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2.5 flex-wrap">
-                                <h3 className="text-base sm:text-lg font-bold text-white tracking-tight font-mono">
-                                  Batch {group.batch}
-                                </h3>
-                                {isCurrent && (
-                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                                    Current Active Team
-                                  </span>
-                                )}
-                                {isUpcoming && (
-                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                                    Next / Upcoming Batch
-                                  </span>
-                                )}
-                                {isPrevious && (
-                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-zinc-500/20 text-zinc-300 border border-zinc-500/30">
-                                    Previous Batch Alumni
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-[#71717A] mt-0.5">
-                                {group.members.length} {group.members.length === 1 ? "member" : "members"} registered in {group.batch} tenure
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Batch Action Buttons: Import Excel & Add Member */}
-                          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
-                            <button
-                              onClick={() => {
-                                setBulkImportBatch(group.batch);
-                                setBulkImportRows([]);
-                                setBulkImportErrors([]);
-                                setBulkImportFileName("");
-                                setBulkImportMode("append");
-                                setShowBulkImport(true);
-                              }}
-                              className="h-9 px-3.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
-                              title={`Import team members into Batch ${group.batch} from Excel or CSV file`}
-                            >
-                              <Table2 className="w-3.5 h-3.5" />
-                              <span>Import Excel</span>
-                            </button>
-                            <button
-                              onClick={() => startCreateTeamMember(group.batch)}
-                              className="h-9 px-3.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-500/20 active:scale-[0.98]"
-                              title={`Add a member to Batch ${group.batch}`}
-                            >
-                              <UserPlus className="w-3.5 h-3.5" />
-                              <span>Add Member</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Batch Members Grid */}
-                        {group.members.length === 0 ? (
-                          <div className="p-8 rounded-2xl bg-[#0D0D12] border border-dashed border-white/10 text-center space-y-3">
-                            <p className="text-xs text-[#71717A]">
-                              No team members added to Batch {group.batch} yet.
-                            </p>
-                            <div className="flex items-center justify-center gap-2.5 flex-wrap">
-                              <button
-                                onClick={() => {
-                                  setBulkImportBatch(group.batch);
-                                  setBulkImportRows([]);
-                                  setBulkImportErrors([]);
-                                  setBulkImportFileName("");
-                                  setBulkImportMode("append");
-                                  setShowBulkImport(true);
-                                }}
-                                className="h-9 px-3.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
-                              >
-                                <Table2 className="w-3.5 h-3.5" />
-                                <span>Import Excel</span>
-                              </button>
-                              <button
-                                onClick={() => startCreateTeamMember(group.batch)}
-                                className="h-9 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-cyan-500/20 active:scale-[0.98]"
-                              >
-                                <UserPlus className="w-3.5 h-3.5" />
-                                <span>Add First Member</span>
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
-                            {group.members.map((member) => (
-                              <div
-                                key={member.id}
-                                className="group relative p-4 rounded-2xl border border-white/[0.06] bg-[#0E0E13] hover:border-cyan-500/25 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:shadow-cyan-500/5"
-                              >
-                                <div>
-                                  {/* Top bar: Avatar on left, Quick Actions on right */}
-                                  <div className="flex items-center justify-between gap-2.5">
-                                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/[0.08] bg-gradient-to-tr from-cyan-500/15 to-blue-500/15 flex items-center justify-center shrink-0">
-                                      {member.pic_url ? (
-                                        <img
-                                          src={member.pic_url}
-                                          alt={member.name}
-                                          className="w-full h-full object-cover"
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = "none";
-                                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
-                                          }}
-                                        />
-                                      ) : null}
-                                      <span
-                                        className={`text-xs font-bold text-cyan-400 font-mono ${
-                                          member.pic_url ? "hidden" : ""
-                                        }`}
-                                      >
-                                        {getInitials(member.name)}
-                                      </span>
-                                    </div>
-
-                                    {/* Card Actions (Edit & Delete) */}
-                                    <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity shrink-0">
-                                      <button
-                                        onClick={() => startEditTeamMember(member)}
-                                        title="Edit Team Member"
-                                        className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                                      >
-                                        <Edit3 className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteTeamMember(member)}
-                                        disabled={deletingTeamMemberId === member.id}
-                                        title="Remove Team Member"
-                                        className="h-10 w-10 sm:h-7 sm:w-7 rounded-lg flex items-center justify-center text-[#71717A] hover:text-red-400 hover:bg-red-500/15 transition-colors cursor-pointer disabled:opacity-40"
-                                      >
-                                        {deletingTeamMemberId === member.id ? (
-                                          <div className="w-3 h-3 rounded-full border border-red-400/30 border-t-red-400 animate-spin" />
-                                        ) : (
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        )}
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  {/* Identity: Full width name & role */}
-                                  <div className="mt-3 min-w-0">
-                                    <h4 className="text-[14px] font-semibold text-white group-hover:text-cyan-300 transition-colors truncate tracking-tight">
-                                      {member.name}
-                                    </h4>
-                                    <div className="mt-1">
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 max-w-full">
-                                        <Briefcase className="w-2.5 h-2.5 shrink-0" />
-                                        <span className="truncate">{member.role}</span>
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {/* Academic Details */}
-                                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#A1A1AA] pt-3 mt-3 border-t border-white/[0.04] sm:block sm:space-y-1">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <GraduationCap className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
-                                      <span className="truncate text-[11.5px]">
-                                        {member.course} — {member.branch}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Calendar className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
-                                      <span className="truncate text-[11px] text-[#71717A] font-mono">{member.year}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-          )}
+              <TeamTab members={teamMembers} loading={loadingTeamMembers} onChanged={fetchTeamMembers} showConfirm={showConfirm} />
+            )}
         </>
       )}
     </main>
@@ -3242,22 +2405,22 @@ function AdminPageContent() {
           onWheel={(e) => e.stopPropagation()}
         >
           <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity"
+            className="ad-backdrop fixed inset-0 transition-opacity"
             onClick={resetForm}
           />
           <div
-            className="relative w-full max-w-xl p-1 rounded-[2rem] bg-white/[0.05] border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto"
+            className="ad-modal relative w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto"
             data-lenis-prevent
             onWheel={(e) => e.stopPropagation()}
           >
-            <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="overflow-hidden flex flex-col max-h-[85vh]">
               {/* Modal Header */}
-              <div className="px-6 sm:px-7 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0 flex-nowrap gap-3">
+              <div className="px-6 sm:px-7 py-5 border-b border-sbg-ink/10 flex items-center justify-between shrink-0 flex-nowrap gap-3">
                 <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">
+                  <h3 className="font-lt-display text-lg font-semibold text-sbg-ink tracking-[-0.03em]">
                     {editingEvent ? "Edit Event Session" : "Create New Event Session"}
                   </h3>
-                  <p className="text-xs text-[#71717A] mt-0.5">
+                  <p className="text-xs text-sbg-ink-3 mt-0.5">
                     {editingEvent
                       ? "Update session schedule, timing, and keynote details"
                       : "Define a new workshop or webinar for the AWS Student Builder Group"}
@@ -3265,7 +2428,7 @@ function AdminPageContent() {
                 </div>
                 <button
                   onClick={resetForm}
-                  className="h-8 w-8 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-[#71717A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="h-10 w-10 sm:h-8 sm:w-8 rounded-xl bg-sbg-ink/5 hover:bg-sbg-ink/10 text-sbg-ink-2 hover:text-sbg-ink flex items-center justify-center transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -3277,15 +2440,15 @@ function AdminPageContent() {
                   className="p-6 sm:p-7 space-y-5 overflow-y-auto overscroll-contain flex-1 min-h-0"
                   style={{
                     scrollbarWidth: "thin",
-                    scrollbarColor: "rgba(255, 255, 255, 0.2) transparent",
+                    scrollbarColor: "rgba(27, 17, 64, 0.25) transparent",
                   }}
                   data-lenis-prevent
                   onWheel={(e) => e.stopPropagation()}
                 >
                   {/* Event Name */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                      Event Title <span className="text-[#6C63FF]">*</span>
+                    <label className="block font-lt-mono text-[11px] uppercase tracking-[0.12em] text-sbg-ink-2 font-medium">
+                      Event Title <span className="text-sbg-lilac-700">*</span>
                     </label>
                     <input
                       type="text"
@@ -3293,16 +2456,16 @@ function AdminPageContent() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g. Cloud Kickstart 2026: AWS Architecture"
-                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF]/30 transition-all"
+                      className="ad-input h-11"
                     />
                   </div>
 
                   {/* Event Type / Category */}
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium flex items-center gap-1.5">
+                      <label className="block font-lt-mono text-[11px] uppercase tracking-[0.12em] text-sbg-ink-2 font-medium flex items-center gap-1.5">
                         <span>Event Type</span>
-                        <span className="text-[10px] text-[#71717A] font-normal normal-case tracking-normal">
+                        <span className="text-[10px] text-sbg-ink-3 font-normal normal-case tracking-normal">
                           (Optional)
                         </span>
                       </label>
@@ -3310,7 +2473,7 @@ function AdminPageContent() {
                         <button
                           type="button"
                           onClick={() => setFormData({ ...formData, eventType: "", customEventType: "" })}
-                          className="text-[11px] text-[#71717A] hover:text-[#EF4444] font-mono transition-colors cursor-pointer"
+                          className="text-[11px] text-sbg-ink-3 hover:text-[#b91c1c] font-mono transition-colors cursor-pointer"
                         >
                           Clear selection
                         </button>
@@ -3324,41 +2487,41 @@ function AdminPageContent() {
                           type: "Workshop",
                           icon: GraduationCap,
                           label: "Workshop",
-                          activeBg: "bg-violet-500/15 border-violet-400 text-white shadow-lg shadow-violet-500/10 ring-1 ring-violet-400/30",
-                          activeIcon: "text-violet-300",
-                          idleIcon: "text-violet-400/60 group-hover:text-violet-300",
+                          activeBg: "bg-sbg-lilac-100 border-sbg-lilac-600 text-sbg-ink ring-1 ring-sbg-lilac-600/30",
+                          activeIcon: "text-sbg-lilac-700",
+                          idleIcon: "text-sbg-lilac-600 group-hover:text-sbg-lilac-700",
                         },
                         {
                           type: "Hackathon",
                           icon: Trophy,
                           label: "Hackathon",
-                          activeBg: "bg-amber-500/15 border-amber-400 text-white shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/30",
-                          activeIcon: "text-amber-300",
-                          idleIcon: "text-amber-400/60 group-hover:text-amber-300",
+                          activeBg: "bg-[#ffebd3] border-[#d97706] text-sbg-ink ring-1 ring-[#d97706]/30",
+                          activeIcon: "text-[#92400e]",
+                          idleIcon: "text-[#d97706] group-hover:text-[#92400e]",
                         },
                         {
                           type: "Quiz",
                           icon: HelpCircle,
                           label: "Quiz",
-                          activeBg: "bg-sky-500/15 border-sky-400 text-white shadow-lg shadow-sky-500/10 ring-1 ring-sky-400/30",
-                          activeIcon: "text-sky-300",
-                          idleIcon: "text-sky-400/60 group-hover:text-sky-300",
+                          activeBg: "bg-[#dcebff] border-[#1f4f9a] text-sbg-ink ring-1 ring-[#1f4f9a]/30",
+                          activeIcon: "text-[#1f4f9a]",
+                          idleIcon: "text-[#1f4f9a]/70 group-hover:text-[#1f4f9a]",
                         },
                         {
                           type: "Event",
                           icon: Calendar,
                           label: "Event",
-                          activeBg: "bg-emerald-500/15 border-emerald-400 text-white shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-400/30",
-                          activeIcon: "text-emerald-300",
-                          idleIcon: "text-emerald-400/60 group-hover:text-emerald-300",
+                          activeBg: "bg-[#ddf3e6] border-[#047857] text-sbg-ink ring-1 ring-[#047857]/30",
+                          activeIcon: "text-[#047857]",
+                          idleIcon: "text-[#047857]/70 group-hover:text-[#047857]",
                         },
                         {
                           type: "Custom",
                           icon: PenTool,
                           label: "Custom",
-                          activeBg: "bg-pink-500/15 border-pink-400 text-white shadow-lg shadow-pink-500/10 ring-1 ring-pink-400/30",
-                          activeIcon: "text-pink-300",
-                          idleIcon: "text-pink-400/60 group-hover:text-pink-300",
+                          activeBg: "bg-[#ffe7f1] border-[#be185d] text-sbg-ink ring-1 ring-[#be185d]/30",
+                          activeIcon: "text-[#9d174d]",
+                          idleIcon: "text-[#be185d]/70 group-hover:text-[#9d174d]",
                         },
                       ].map((item) => {
                         const isSelected = formData.eventType === item.type;
@@ -3379,13 +2542,13 @@ function AdminPageContent() {
                               "group relative flex items-center justify-center gap-2 h-11 px-3 rounded-xl border text-xs font-medium transition-all duration-200 cursor-pointer select-none",
                               isSelected
                                 ? item.activeBg
-                                : "bg-[#14131C] border-white/[0.07] text-[#A1A1AA] hover:text-white hover:bg-[#1A1926] hover:border-white/15"
+                                : "bg-white/80 border-sbg-ink/15 text-sbg-ink-2 hover:text-sbg-ink hover:bg-white hover:border-sbg-lilac-300"
                             )}
                           >
                             <Icon className={cn("w-3.5 h-3.5 transition-colors", isSelected ? item.activeIcon : item.idleIcon)} />
                             <span className="font-semibold tracking-wide">{item.label}</span>
                             {isSelected && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-0.5" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse ml-0.5" />
                             )}
                           </button>
                         );
@@ -3396,7 +2559,7 @@ function AdminPageContent() {
                     {formData.eventType === "Custom" && (
                       <div className="space-y-2 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
                         <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-pink-400">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-sbg-lilac-600">
                             <PenTool className="w-3.5 h-3.5" />
                           </div>
                           <input
@@ -3404,14 +2567,14 @@ function AdminPageContent() {
                             value={formData.customEventType}
                             onChange={(e) => setFormData({ ...formData, customEventType: e.target.value })}
                             placeholder="Enter custom category (e.g. Webinar, Boot Camp, Panel Discussion)…"
-                            className="w-full h-10 pl-9 pr-8 rounded-xl text-xs sm:text-sm bg-[#15151C] border border-pink-500/30 text-white placeholder-[#52525B] focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400/30 transition-all"
+                            className="ad-input h-10 pl-9 pr-8 text-xs sm:text-sm"
                             autoFocus
                           />
                           {formData.customEventType && (
                             <button
                               type="button"
                               onClick={() => setFormData({ ...formData, customEventType: "" })}
-                              className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#71717A] hover:text-white cursor-pointer"
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center text-sbg-ink-3 hover:text-sbg-ink cursor-pointer"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -3419,7 +2582,7 @@ function AdminPageContent() {
                         </div>
                         {/* Quick Suggestions Chips */}
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-mono text-[#71717A]">Suggestions:</span>
+                          <span className="text-[10px] font-mono text-sbg-ink-3">Suggestions:</span>
                           {["Webinar", "Panel Discussion", "Boot Camp", "Study Sprint"].map((suggestion) => (
                             <button
                               key={suggestion}
@@ -3428,8 +2591,8 @@ function AdminPageContent() {
                               className={cn(
                                 "px-2 py-0.5 rounded-lg text-[10.5px] font-mono border transition-all cursor-pointer",
                                 formData.customEventType.toLowerCase() === suggestion.toLowerCase()
-                                  ? "bg-pink-500/20 border-pink-400 text-pink-300"
-                                  : "bg-white/[0.02] border-white/5 text-[#71717A] hover:text-[#D4D4D8] hover:border-white/15"
+                                  ? "bg-sbg-lilac-100 border-sbg-lilac-600 text-sbg-lilac-700"
+                                  : "bg-white/80 border-sbg-ink/15 text-sbg-ink-2 hover:text-sbg-ink hover:border-sbg-lilac-300"
                               )}
                             >
                               +{suggestion}
@@ -3450,17 +2613,17 @@ function AdminPageContent() {
                   {/* Description */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
+                      <label className="block font-lt-mono text-[11px] uppercase tracking-[0.12em] text-sbg-ink-2 font-medium">
                         Description
                       </label>
-                      <span className="text-[11px] text-[#71717A]">Optional</span>
+                      <span className="text-[11px] text-sbg-ink-3">Optional</span>
                     </div>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="Brief overview of topics covered, cloud services explored, and student takeaways."
                       rows={2}
-                      className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF]/30 transition-all resize-none leading-relaxed"
+                      className="ad-input resize-none leading-relaxed"
                     />
                   </div>
 
@@ -3469,24 +2632,24 @@ function AdminPageContent() {
                     {/* Event Date Column */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between min-h-[20px]">
-                        <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                          Event Date {!isTBA && <span className="text-[#6C63FF]">*</span>}
+                        <label className="block font-lt-mono text-[11px] uppercase tracking-[0.12em] text-sbg-ink-2 font-medium">
+                          Event Date {!isTBA && <span className="text-sbg-lilac-700">*</span>}
                         </label>
                       </div>
 
                       {isTBA ? (
                         <div
                           onClick={() => handleToggleTBA(false)}
-                          className="w-full h-11 px-3.5 rounded-xl bg-[#15151C]/80 border border-dashed border-[#6C63FF]/40 hover:border-[#6C63FF] text-white flex items-center justify-between cursor-pointer transition-all group"
+                          className="w-full h-11 px-3.5 rounded-xl bg-white/80 border border-dashed border-sbg-lilac-400 hover:border-sbg-lilac-600 text-sbg-ink flex items-center justify-between cursor-pointer transition-all group"
                           title="Click to specify date and timing"
                         >
                           <div className="flex items-center gap-2.5">
-                            <Calendar className="w-4 h-4 text-[#A78BFA]" />
-                            <span className="text-xs sm:text-sm text-[#E4E4E7] font-medium">
+                            <Calendar className="w-4 h-4 text-sbg-lilac-700" />
+                            <span className="text-xs sm:text-sm text-sbg-ink font-medium">
                               Date & Timing to be announced
                             </span>
                           </div>
-                          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#6C63FF]/15 text-[#A78BFA] border border-[#6C63FF]/30 font-semibold group-hover:bg-[#6C63FF]/25 transition-colors">
+                          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-sbg-lilac-100 text-sbg-lilac-700 border border-sbg-lilac-300 font-semibold group-hover:bg-sbg-lilac-200 transition-colors">
                             Set Date
                           </span>
                         </div>
@@ -3507,8 +2670,8 @@ function AdminPageContent() {
                     {!isTBA && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between min-h-[20px]">
-                          <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                            Timing <span className="text-[#6C63FF]">*</span>
+                          <label className="block font-lt-mono text-[11px] uppercase tracking-[0.12em] text-sbg-ink-2 font-medium">
+                            Timing <span className="text-sbg-lilac-700">*</span>
                           </label>
                         </div>
                         <input
@@ -3519,7 +2682,7 @@ function AdminPageContent() {
                             setFormData({ ...formData, eventTiming: e.target.value })
                           }
                           placeholder="e.g. 11:00 AM - 12:30 PM"
-                          className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF]/30 transition-all"
+                          className="ad-input h-11"
                         />
                       </div>
                     )}
@@ -3529,10 +2692,10 @@ function AdminPageContent() {
                   {!isTBA && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between min-h-[20px]">
-                        <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
+                        <label className="block font-lt-mono text-[11px] uppercase tracking-[0.12em] text-sbg-ink-2 font-medium">
                           End Date
                         </label>
-                        <span className="text-[11px] text-[#71717A]">Optional — for multi-day events</span>
+                        <span className="text-[11px] text-sbg-ink-3">Optional — for multi-day events</span>
                       </div>
                       <DatePicker
                         value={formData.eventEndDate}
@@ -3541,9 +2704,9 @@ function AdminPageContent() {
                         minDate={formData.eventDate || undefined}
                       />
                       {formData.eventEndDate && (
-                        <p className="text-[11px] text-[#71717A]">
+                        <p className="text-[11px] text-sbg-ink-3">
                           Certificates will show{" "}
-                          <span className="font-mono text-[#A78BFA]">
+                          <span className="font-mono text-sbg-lilac-700">
                             {formatEventDate(formData.eventDate, formData.eventEndDate) || "—"}
                           </span>
                           .
@@ -3555,10 +2718,10 @@ function AdminPageContent() {
                   {/* Speaker Name */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
+                      <label className="block font-lt-mono text-[11px] uppercase tracking-[0.12em] text-sbg-ink-2 font-medium">
                         Speaker / Lead Presenter
                       </label>
-                      <span className="text-[11px] text-[#71717A]">Optional</span>
+                      <span className="text-[11px] text-sbg-ink-3">Optional</span>
                     </div>
                     <input
                       type="text"
@@ -3567,18 +2730,18 @@ function AdminPageContent() {
                         setFormData({ ...formData, speakerName: e.target.value })
                       }
                       placeholder="e.g. Mr. Aashu Dev"
-                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-[#6C63FF] focus:ring-1 focus:ring-[#6C63FF]/30 transition-all"
+                      className="ad-input h-11"
                     />
                   </div>
 
                   {/* Set As Active Toggle */}
                   <div className="pt-1">
-                    <label className="p-3.5 sm:p-4 rounded-xl bg-[#15151C] border border-white/[0.06] hover:border-white/[0.12] flex items-center justify-between cursor-pointer transition-colors group">
+                    <label className="p-3.5 sm:p-4 rounded-xl bg-white/80 border border-sbg-ink/10 hover:border-sbg-lilac-300 flex items-center justify-between cursor-pointer transition-colors group">
                       <div className="pr-3">
-                        <span className="text-xs font-semibold text-white block group-hover:text-[#A78BFA] transition-colors">
+                        <span className="text-xs font-semibold text-sbg-ink block group-hover:text-sbg-lilac-700 transition-colors">
                           Set as Active Portal Event
                         </span>
-                        <span className="text-[11px] text-[#71717A] mt-0.5 block leading-normal">
+                        <span className="text-[11px] text-sbg-ink-3 mt-0.5 block leading-normal">
                           Immediately display this event on the student Attendance Portal
                         </span>
                       </div>
@@ -3588,25 +2751,25 @@ function AdminPageContent() {
                         onChange={(e) =>
                           setFormData({ ...formData, setAsActive: e.target.checked })
                         }
-                        className="w-4 h-4 rounded border-white/20 bg-black/40 text-[#6C63FF] focus:ring-[#6C63FF] accent-[#6C63FF] cursor-pointer shrink-0"
+                        className="w-4 h-4 rounded border-sbg-ink/30 accent-[#7C3AED] cursor-pointer shrink-0"
                       />
                     </label>
                   </div>
 
                   {formError && (
-                    <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400">
+                    <div className="p-3.5 rounded-xl bg-[#ffe1e1] border border-[#b91c1c]/30 text-xs text-[#b91c1c]">
                       {formError}
                     </div>
                   )}
                 </div>
 
                 {/* Modal Footer */}
-                <div className="px-6 py-4 border-t border-white/[0.06] bg-[#0F0F14] flex items-center justify-between gap-2.5 shrink-0">
+                <div className="px-6 py-4 border-t border-sbg-ink/10 bg-sbg-paper flex items-center justify-between gap-2.5 shrink-0">
                   {editingEvent ? (
                     <button
                       type="button"
                       onClick={() => handleDeleteEvent(editingEvent)}
-                      className="h-10 px-3.5 rounded-xl text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="ad-btn ad-btn-danger gap-1.5"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Delete Event</span>
@@ -3619,14 +2782,14 @@ function AdminPageContent() {
                     <button
                       type="button"
                       onClick={resetForm}
-                      className="h-10 px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
+                      className="ad-btn ad-btn-ghost"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={formSubmitting}
-                      className="h-10 px-5 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white transition-all cursor-pointer disabled:opacity-50 shadow-lg shadow-[#6C63FF]/20"
+                      className="ad-btn ad-btn-primary"
                     >
                       {formSubmitting
                         ? "Saving Session…"
@@ -3641,776 +2804,6 @@ function AdminPageContent() {
           </div>
         </div>
       )}
-
-      {/* ══════════════════════════════════════════════════ */}
-      {/* ── ADD / EDIT TEAM MEMBER MODAL ────────────────── */}
-      {/* ══════════════════════════════════════════════════ */}
-      {showTeamForm && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto p-2 sm:p-4 flex items-center justify-center overscroll-contain"
-          data-lenis-prevent
-          onWheel={(e) => e.stopPropagation()}
-        >
-          <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity"
-            onClick={resetTeamForm}
-          />
-          <div
-            className="relative w-full max-w-xl p-1 rounded-[2rem] bg-white/[0.05] border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto"
-            data-lenis-prevent
-            onWheel={(e) => e.stopPropagation()}
-          >
-            <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden flex flex-col max-h-[85vh]">
-              {/* Modal Header */}
-              <div className="px-6 sm:px-7 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0 flex-nowrap gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <h3 className="whitespace-nowrap text-lg font-bold text-white tracking-tight">
-                      {editingTeamMember ? "Edit Team Member" : "Add Team Member"}
-                    </h3>
-                    <span className="whitespace-nowrap px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                      Batch {teamFormData.batch || selectedTeamBatch || "2026-27"}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#71717A] mt-0.5">
-                    {editingTeamMember
-                      ? "Update member details, photo, and role"
-                      : `Add a member to Batch ${teamFormData.batch || selectedTeamBatch || "2026-27"} cohort`}
-                  </p>
-                </div>
-                <button
-                  onClick={resetTeamForm}
-                  className="h-8 w-8 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-[#71717A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Modal Form */}
-              <form onSubmit={handleTeamFormSubmit} className="flex flex-col min-h-0 flex-1 overflow-hidden">
-                <div
-                  className="p-6 sm:p-7 space-y-5 overflow-y-auto overscroll-contain flex-1 min-h-0"
-                  style={{
-                    scrollbarWidth: "thin",
-                    scrollbarColor: "rgba(255, 255, 255, 0.2) transparent",
-                  }}
-                  data-lenis-prevent
-                  onWheel={(e) => e.stopPropagation()}
-                >
-                  {/* Name */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                      Full Name <span className="text-cyan-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={teamFormData.name}
-                      onChange={(e) => setTeamFormData({ ...teamFormData, name: e.target.value })}
-                      placeholder="e.g. Piyush Rawat"
-                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all"
-                    />
-                  </div>
-
-                  {/* Profile Picture: Direct Upload or URL */}
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                        Profile Picture
-                      </label>
-
-                      {/* Segmented control for Upload vs URL */}
-                      <div className="flex items-center bg-[#15151C] p-0.5 rounded-lg border border-white/[0.08]">
-                        <button
-                          type="button"
-                          onClick={() => setImageInputMode("upload")}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${
-                            imageInputMode === "upload"
-                              ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-sm"
-                              : "text-[#71717A] hover:text-[#A1A1AA]"
-                          }`}
-                        >
-                          <Upload className="w-3 h-3" />
-                          <span>Upload File</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setImageInputMode("url")}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${
-                            imageInputMode === "url"
-                              ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-sm"
-                              : "text-[#71717A] hover:text-[#A1A1AA]"
-                          }`}
-                        >
-                          <Link2 className="w-3 h-3" />
-                          <span>Image URL</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Hidden file input */}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/avif"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          handleImageUpload(e.target.files[0]);
-                        }
-                      }}
-                    />
-
-                    {imageInputMode === "upload" ? (
-                      <div className="space-y-2">
-                        {teamFormData.picUrl ? (
-                          /* Current Image Attached Preview */
-                          <div className="p-3.5 rounded-2xl bg-[#15151C] border border-cyan-500/30 flex items-center justify-between gap-3 shadow-inner">
-                            <div className="flex items-center gap-3.5 min-w-0">
-                              <div className="w-14 h-14 rounded-xl overflow-hidden border border-cyan-500/40 bg-black/40 flex items-center justify-center shrink-0 shadow-md">
-                                <img
-                                  src={teamFormData.picUrl}
-                                  alt="Profile Preview"
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = "none";
-                                  }}
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
-                                  <Check className="w-3.5 h-3.5 text-cyan-400" />
-                                  <span>Photo Attached</span>
-                                </div>
-                                <p className="text-[11px] text-[#71717A] truncate max-w-[200px] sm:max-w-[280px] font-mono mt-0.5">
-                                  {teamFormData.picUrl}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={uploadingPic}
-                                className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-white/[0.06] hover:bg-white/[0.12] text-white border border-white/[0.08] transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                              >
-                                {uploadingPic ? (
-                                  <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />
-                                ) : (
-                                  <Camera className="w-3 h-3 text-cyan-400" />
-                                )}
-                                <span>Change</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setTeamFormData({ ...teamFormData, picUrl: "" });
-                                  if (fileInputRef.current) fileInputRef.current.value = "";
-                                }}
-                                className="p-1.5 rounded-lg text-[#71717A] hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-                                title="Remove image"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          /* Drag & Drop Upload Zone */
-                          <div
-                            onClick={() => !uploadingPic && fileInputRef.current?.click()}
-                            onDragOver={handlePicDragOver}
-                            onDragLeave={handlePicDragLeave}
-                            onDrop={handlePicDrop}
-                            className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group ${
-                              picDragActive
-                                ? "border-cyan-400 bg-cyan-500/10 scale-[1.01]"
-                                : "border-white/[0.12] bg-[#121218]/50 hover:border-cyan-500/40 hover:bg-[#151520]"
-                            }`}
-                          >
-                            {uploadingPic ? (
-                              <div className="py-2 flex flex-col items-center gap-2">
-                                <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
-                                <span className="text-xs font-medium text-cyan-300">
-                                  Uploading image…
-                                </span>
-                                <span className="text-[10px] text-[#71717A]">
-                                  Please wait a moment
-                                </span>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform shadow-sm">
-                                  <Upload className="w-5 h-5" />
-                                </div>
-                                <div>
-                                  <p className="text-xs font-medium text-white group-hover:text-cyan-300 transition-colors">
-                                    Click to browse or drag & drop profile image
-                                  </p>
-                                  <p className="text-[11px] text-[#71717A] mt-0.5">
-                                    PNG, JPG, WebP, GIF up to 5MB
-                                  </p>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        )}
-
-                        {picUploadError && (
-                          <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-2 rounded-lg">
-                            {picUploadError}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      /* URL Direct Input Mode */
-                      <div className="space-y-1.5">
-                        <div className="flex gap-2.5">
-                          <input
-                            type="text"
-                            value={teamFormData.picUrl}
-                            onChange={(e) => setTeamFormData({ ...teamFormData, picUrl: e.target.value })}
-                            placeholder="e.g. /members/johndoe.png or https://..."
-                            className="flex-1 h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all font-mono text-xs"
-                          />
-                          {teamFormData.picUrl && (
-                            <div className="w-11 h-11 rounded-xl overflow-hidden border border-white/[0.1] bg-[#15151C] flex items-center justify-center shrink-0">
-                              <img
-                                src={teamFormData.picUrl}
-                                alt="Preview"
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = "none";
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-[#71717A]">
-                          Enter an image URL from the web or a local path in /members/
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-
-                  {/* Course & Branch Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                        Course <span className="text-cyan-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={teamFormData.course}
-                        onChange={(e) => setTeamFormData({ ...teamFormData, course: e.target.value })}
-                        placeholder="e.g. B.Tech, BCA, MCA"
-                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                        Branch <span className="text-cyan-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={teamFormData.branch}
-                        onChange={(e) => setTeamFormData({ ...teamFormData, branch: e.target.value })}
-                        placeholder="e.g. CSE, ECE, IT"
-                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Year & Role Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                        Year <span className="text-cyan-500">*</span>
-                      </label>
-                      <select
-                        required
-                        value={teamFormData.year}
-                        onChange={(e) => setTeamFormData({ ...teamFormData, year: e.target.value })}
-                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all cursor-pointer appearance-none"
-                      >
-                        <option value="" disabled>Select year</option>
-                        <option value="1st Year">1st Year</option>
-                        <option value="2nd Year">2nd Year</option>
-                        <option value="3rd Year">3rd Year</option>
-                        <option value="4th Year">4th Year</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                        Role <span className="text-cyan-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={teamFormData.role}
-                        onChange={(e) => setTeamFormData({ ...teamFormData, role: e.target.value })}
-                        placeholder="e.g. Tech Lead, Cloud Lead, Member"
-                        className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white placeholder-[#52525B] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Display Order */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
-                        Display Order
-                      </label>
-                      <span className="text-[11px] text-[#71717A]">Lower = shown first</span>
-                    </div>
-                    <input
-                      type="number"
-                      min={0}
-                      value={teamFormData.displayOrder}
-                      onChange={(e) => setTeamFormData({ ...teamFormData, displayOrder: parseInt(e.target.value) || 0 })}
-                      className="w-full h-11 px-3.5 rounded-xl text-sm bg-[#15151C] border border-white/[0.08] text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-all"
-                    />
-                  </div>
-
-                  {teamFormError && (
-                    <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400">
-                      {teamFormError}
-                    </div>
-                  )}
-                </div>
-
-                {/* Modal Footer */}
-                <div className="px-6 py-4 border-t border-white/[0.06] bg-[#0F0F14] flex items-center justify-between gap-2.5 shrink-0">
-                  {editingTeamMember ? (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteTeamMember(editingTeamMember)}
-                      className="h-10 px-3.5 rounded-xl text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Remove Member</span>
-                    </button>
-                  ) : (
-                    <div />
-                  )}
-
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={resetTeamForm}
-                      className="h-10 px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={teamFormSubmitting}
-                      className="h-10 px-5 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-white transition-all cursor-pointer disabled:opacity-50 shadow-lg shadow-cyan-500/20"
-                    >
-                      {teamFormSubmitting
-                        ? "Saving…"
-                        : editingTeamMember
-                        ? "Save Changes"
-                        : "Add Member"}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════ */}
-      {/* ── BULK IMPORT MODAL ────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════ */}
-      {showBulkImport && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto p-2 sm:p-4 flex items-center justify-center overscroll-contain"
-          data-lenis-prevent
-          onWheel={(e) => e.stopPropagation()}
-        >
-          <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
-            onClick={() => {
-              if (!bulkImporting) setShowBulkImport(false);
-            }}
-          />
-          <div
-            className="relative w-full max-w-4xl p-1 rounded-[2rem] bg-white/[0.05] border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto"
-            data-lenis-prevent
-            onWheel={(e) => e.stopPropagation()}
-          >
-            <div className="rounded-[calc(2rem-4px)] bg-[#0F0F14] overflow-hidden flex flex-col max-h-[90vh]">
-              {/* Modal Header */}
-              <div className="px-6 sm:px-8 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0 flex-nowrap gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
-                    <Table2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white tracking-tight">
-                      Bulk Import Team Members
-                    </h3>
-                    <p className="text-xs text-[#71717A] mt-0.5">
-                      Upload an Excel (.xlsx/.xls), CSV, or ODS file — up to 200 members at once
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => { if (!bulkImporting) setShowBulkImport(false); }}
-                  className="h-8 w-8 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-[#71717A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Scrollable Content */}
-              <div
-                className="p-6 sm:p-8 space-y-6 overflow-y-auto overscroll-contain flex-1 min-h-0"
-                style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.15) transparent" }}
-                data-lenis-prevent
-                onWheel={(e) => e.stopPropagation()}
-              >
-                {/* Step 1 — Required columns info */}
-                <div className="p-4 rounded-2xl bg-[#12121A] border border-white/[0.06] space-y-3">
-                  <p className="text-xs font-mono uppercase tracking-wider text-[#71717A]">
-                    Required columns in your spreadsheet
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {["name", "course", "branch", "year", "role"].map((col) => (
-                      <span
-                        key={col}
-                        className="px-2.5 py-1 rounded-lg text-xs font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                      >
-                        {col}
-                      </span>
-                    ))}
-                    <span className="text-xs text-[#71717A] self-center pl-1">+</span>
-                    {["batch", "pic_url", "display_order"].map((col) => (
-                      <span
-                        key={col}
-                        className="px-2.5 py-1 rounded-lg text-xs font-mono bg-white/[0.04] text-[#A1A1AA] border border-white/[0.08]"
-                      >
-                        {col} <span className="text-[#52525B]">(optional)</span>
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-[#52525B]">
-                    Column names are flexible — e.g. "Full Name", "Department", "Position", "Photo" are all recognised automatically.
-                    Members without a batch column in your spreadsheet will automatically be assigned to Batch {bulkImportBatch || (selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27")}.
-                  </p>
-                </div>
-
-                {/* Target Batch Information */}
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#14141C] border border-white/[0.06]">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-mono uppercase tracking-wider text-[#71717A]">
-                      Target Batch:
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
-                      Batch {bulkImportBatch || (selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27")}
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-[#71717A] font-mono">
-                    ({teamMembers.filter((m) => (m.batch || "2026-27") === (bulkImportBatch || (selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27"))).length} current member{teamMembers.filter((m) => (m.batch || "2026-27") === (bulkImportBatch || (selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27"))).length !== 1 ? "s" : ""})
-                  </span>
-                </div>
-
-                {/* Import Strategy: Append vs Overwrite Options */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono uppercase tracking-wider text-[#A1A1AA]">
-                      Import Method
-                    </label>
-                    <span className="text-[11px] text-[#71717A] font-mono">
-                      Choose how to apply spreadsheet rows
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Option 1: Add to Existing Data */}
-                    <button
-                      type="button"
-                      onClick={() => setBulkImportMode("append")}
-                      className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        bulkImportMode === "append"
-                          ? "bg-emerald-500/10 border-emerald-500/40 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30"
-                          : "bg-[#14141C] border-white/[0.06] hover:border-white/15 opacity-70 hover:opacity-100"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                            bulkImportMode === "append" ? "bg-emerald-500/20 text-emerald-300" : "bg-white/[0.05] text-[#71717A]"
-                          }`}>
-                            <UserPlus className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <span className="text-xs font-semibold text-white block">Add to Existing</span>
-                            <span className="text-[10px] font-mono text-emerald-400">Append data</span>
-                          </div>
-                        </div>
-                        <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                          bulkImportMode === "append" ? "border-emerald-400 bg-emerald-400" : "border-white/20"
-                        }`}>
-                          {bulkImportMode === "append" && <span className="w-1.5 h-1.5 rounded-full bg-[#0D0D14]" />}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
-                        Keep all current members and append new members from this sheet alongside them.
-                      </p>
-                    </button>
-
-                    {/* Option 2: Overwrite Current Data */}
-                    <button
-                      type="button"
-                      onClick={() => setBulkImportMode("overwrite")}
-                      className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        bulkImportMode === "overwrite"
-                          ? "bg-rose-500/10 border-rose-500/40 shadow-lg shadow-rose-500/10 ring-1 ring-rose-500/30"
-                          : "bg-[#14141C] border-white/[0.06] hover:border-white/15 opacity-70 hover:opacity-100"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                            bulkImportMode === "overwrite" ? "bg-rose-500/20 text-rose-300" : "bg-white/[0.05] text-[#71717A]"
-                          }`}>
-                            <RefreshCw className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <span className="text-xs font-semibold text-white block">Overwrite Current Data</span>
-                            <span className="text-[10px] font-mono text-rose-400">Replace cohort</span>
-                          </div>
-                        </div>
-                        <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                          bulkImportMode === "overwrite" ? "border-rose-400 bg-rose-400" : "border-white/20"
-                        }`}>
-                          {bulkImportMode === "overwrite" && <span className="w-1.5 h-1.5 rounded-full bg-[#0D0D14]" />}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
-                        Clear existing members in this batch and replace them completely with the spreadsheet data.
-                      </p>
-                    </button>
-                  </div>
-
-                  {/* Overwrite Warning Banner */}
-                  {bulkImportMode === "overwrite" && (
-                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 flex items-start gap-2.5">
-                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      <div className="text-[11.5px] text-rose-200/90 leading-relaxed flex-1">
-                        <span className="font-semibold text-rose-300">Caution:</span> All current members in{" "}
-                        <span className="font-mono font-bold text-white bg-rose-500/20 px-1.5 py-0.5 rounded">
-                          Batch {bulkImportBatch || (selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27")}
-                        </span>{" "}
-                        ({teamMembers.filter((m) => (m.batch || "2026-27") === (bulkImportBatch || (selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27"))).length} member{teamMembers.filter((m) => (m.batch || "2026-27") === (bulkImportBatch || (selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27"))).length !== 1 ? "s" : ""}) will be permanently deleted and replaced with this file.
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-
-                {/* Drop Zone */}
-                <div
-                  className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
-                    bulkDragActive
-                      ? "border-emerald-400 bg-emerald-500/10"
-                      : bulkImportFileName
-                      ? "border-emerald-500/40 bg-emerald-500/5"
-                      : "border-white/[0.12] hover:border-white/25 bg-white/[0.02] hover:bg-white/[0.04]"
-                  } cursor-pointer`}
-                  onDragOver={(e) => { e.preventDefault(); setBulkDragActive(true); }}
-                  onDragLeave={(e) => { e.preventDefault(); setBulkDragActive(false); }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setBulkDragActive(false);
-                    const file = e.dataTransfer.files?.[0];
-                    if (file) handleBulkFileSelect(file);
-                  }}
-                  onClick={() => bulkFileInputRef.current?.click()}
-                >
-                  <input
-                    ref={bulkFileInputRef}
-                    type="file"
-                    accept=".xlsx,.xls,.csv,.ods"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleBulkFileSelect(file);
-                    }}
-                  />
-                  {bulkImportFileName ? (
-                    <div className="space-y-2">
-                      <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
-                        <FileSpreadsheet className="w-6 h-6" />
-                      </div>
-                      <p className="text-sm font-semibold text-white">{bulkImportFileName}</p>
-                      <p className="text-xs text-emerald-400">
-                        {bulkImportRows.length} rows detected — click to replace file
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="w-12 h-12 mx-auto rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#71717A]">
-                        <Upload className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-white">
-                          Drop your spreadsheet here
-                        </p>
-                        <p className="text-xs text-[#71717A] mt-1">
-                          or click to browse — .xlsx, .xls, .csv, .ods accepted
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Validation Errors */}
-                {bulkImportErrors.length > 0 && (
-                  <div className="p-4 rounded-2xl bg-red-500/8 border border-red-500/20 space-y-2">
-                    <div className="flex items-center gap-2 text-red-400">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      <p className="text-xs font-semibold">
-                        {bulkImportErrors.length} validation {bulkImportErrors.length === 1 ? "issue" : "issues"} found — fix before importing
-                      </p>
-                    </div>
-                    <ul className="space-y-1 max-h-32 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
-                      {bulkImportErrors.map((err, i) => (
-                        <li key={i} className="text-xs text-red-300 font-mono pl-6">
-                          • {err}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Preview Table */}
-                {bulkImportRows.length > 0 && bulkImportErrors.length === 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-mono uppercase tracking-wider text-[#71717A]">
-                        Preview — {bulkImportRows.length} member{bulkImportRows.length !== 1 ? "s" : ""} ready to import
-                      </p>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
-                        All rows valid ✓
-                      </span>
-                    </div>
-                    <div className="rounded-2xl overflow-hidden border border-white/[0.07]">
-                      <div className="max-w-full overflow-x-auto max-h-64" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.12) transparent" }}>
-                        <table className="w-full min-w-[600px] text-xs">
-                          <thead className="bg-[#0B0B0F] border-b border-white/[0.07]">
-                            <tr>
-                              {["#", "Name", "Role", "Course", "Branch", "Year", "Batch"].map((h) => (
-                                <th key={h} className="text-left px-3 py-2.5 text-[#71717A] font-mono font-semibold uppercase tracking-wider whitespace-nowrap">
-                                  {h}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-white/[0.04]">
-                            {bulkImportRows.slice(0, 50).map((row, i) => (
-                              <tr key={i} className="hover:bg-white/[0.025] transition-colors">
-                                <td className="px-3 py-2 text-[#52525B] font-mono">{i + 1}</td>
-                                <td className="px-3 py-2 text-white font-medium whitespace-nowrap max-w-[160px] truncate">{row.name || <span className="text-red-400">—</span>}</td>
-                                <td className="px-3 py-2 text-cyan-400 whitespace-nowrap">{row.role || <span className="text-red-400">—</span>}</td>
-                                <td className="px-3 py-2 text-[#A1A1AA] whitespace-nowrap">{row.course || <span className="text-red-400">—</span>}</td>
-                                <td className="px-3 py-2 text-[#A1A1AA] whitespace-nowrap">{row.branch || <span className="text-red-400">—</span>}</td>
-                                <td className="px-3 py-2 text-[#A1A1AA] whitespace-nowrap">{row.year || <span className="text-red-400">—</span>}</td>
-                                <td className="px-3 py-2 text-emerald-400 font-mono whitespace-nowrap">{row.batch}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      {bulkImportRows.length > 50 && (
-                        <div className="px-4 py-2.5 bg-[#0B0B0F] border-t border-white/[0.06] text-center text-xs text-[#71717A]">
-                          Showing first 50 of {bulkImportRows.length} rows
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Modal Footer */}
-              <div className="px-6 sm:px-8 py-4 border-t border-white/[0.06] bg-[#0F0F14] flex items-center justify-between gap-3 shrink-0">
-                <a
-                  href="/team-import-template.xlsx"
-                  download
-                  className="h-9 px-3.5 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] transition-all flex items-center gap-1.5 cursor-pointer"
-                  onClick={async (e) => {
-                    // Generate a template in-browser instead of fetching a file
-                    e.preventDefault();
-                    const XLSX = await import("xlsx");
-                    const targetBatch = bulkImportBatch || (selectedTeamBatch !== "ALL" ? selectedTeamBatch : "2026-27");
-                    const ws = XLSX.utils.aoa_to_sheet([
-                      ["name", "course", "branch", "year", "role", "batch", "pic_url"],
-                      ["Rahul Sharma", "B.Tech", "CSE", "3rd Year", "Tech Lead", targetBatch, ""],
-                      ["Priya Singh", "BCA", "IT", "2nd Year", "Cloud Lead", targetBatch, ""],
-                    ]);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "Team Members");
-                    XLSX.writeFile(wb, "team-import-template.xlsx");
-                  }}
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download Template</span>
-                </a>
-
-                <div className="flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => { if (!bulkImporting) setShowBulkImport(false); }}
-                    className="h-10 px-4 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white transition-colors cursor-pointer"
-                    disabled={bulkImporting}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleBulkImportSubmit}
-                    disabled={
-                      bulkImporting ||
-                      bulkImportRows.length === 0 ||
-                      bulkImportErrors.length > 0
-                    }
-                    className={`h-10 px-5 rounded-xl text-xs font-semibold text-white transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 ${
-                      bulkImportMode === "overwrite"
-                        ? "bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 shadow-lg shadow-rose-500/20"
-                        : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 shadow-lg shadow-emerald-500/20"
-                    }`}
-                  >
-                    {bulkImporting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>{bulkImportMode === "overwrite" ? "Overwriting…" : "Importing…"}</span>
-                      </>
-                    ) : bulkImportMode === "overwrite" ? (
-                      <>
-                        <RefreshCw className="w-4 h-4" />
-                        <span>
-                          Overwrite & Import {bulkImportRows.length > 0 ? `(${bulkImportRows.length})` : ""}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4" />
-                        <span>
-                          Add to Existing {bulkImportRows.length > 0 ? `(${bulkImportRows.length})` : ""}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {/* ══════════════════════════════════════════════════ */}
       {/* ── ASSIGN TOP PERFORMER (RANK) MODAL ───────────── */}
       {/* ══════════════════════════════════════════════════ */}
@@ -4421,24 +2814,24 @@ function AdminPageContent() {
           onWheel={(e) => e.stopPropagation()}
         >
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-md"
+            className="ad-backdrop fixed inset-0"
             onClick={() => !assigningTopPerformer && setRankModal(null)}
           />
-          <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/[0.1] bg-[#0F0F16] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150">
+          <div className="ad-modal relative z-10 w-full max-w-md p-5 sm:p-6 animate-in zoom-in-95 duration-150">
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border bg-amber-500/10 border-amber-500/20 text-amber-400">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border bg-[#fff1dc] border-[#92400e]/25 text-[#92400e]">
                 <Trophy className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-lg font-bold text-white tracking-tight">Assign as Top Performer</h3>
-                <p className="mt-1 text-xs text-[#A1A1AA]">
-                  <span className="font-medium text-white">{rankModal.participant.name}</span>
+                <h3 className="text-lg font-bold text-sbg-ink tracking-tight">Assign as Top Performer</h3>
+                <p className="mt-1 text-xs text-sbg-ink-2">
+                  <span className="font-medium text-sbg-ink">{rankModal.participant.name}</span>
                   {" · "}
                   {rankModal.participant.course}
                   {currentViewEvent ? (
                     <>
                       <br />
-                      Event: <span className="text-[#D4D4D8]">{currentViewEvent.name}</span>
+                      Event: <span className="text-sbg-ink">{currentViewEvent.name}</span>
                     </>
                   ) : null}
                 </p>
@@ -4452,8 +2845,8 @@ function AdminPageContent() {
               }}
               className="mt-4 space-y-3"
             >
-              <label htmlFor="tp-rank" className="block text-xs font-semibold text-[#D4D4D8]">
-                Rank <span className="text-amber-400">*</span>
+              <label htmlFor="tp-rank" className="block text-xs font-semibold text-sbg-ink">
+                Rank <span className="text-[#92400e]">*</span>
               </label>
               <input
                 id="tp-rank"
@@ -4466,9 +2859,9 @@ function AdminPageContent() {
                 onChange={(e) => setRankModal((prev) => (prev ? { ...prev, rank: e.target.value.replace(/\D/g, "") } : prev))}
                 placeholder="e.g. 1"
                 disabled={assigningTopPerformer}
-                className="w-full h-11 rounded-xl border border-white/[0.1] bg-[#09090E] px-3.5 text-sm text-white placeholder:text-[#52525B] focus:border-amber-500 focus:outline-none"
+                className="w-full h-11 rounded-xl border border-sbg-ink/[0.14] bg-sbg-mist px-3.5 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none"
               />
-              <p className="text-[11px] text-[#71717A]">
+              <p className="text-[11px] text-sbg-ink-3">
                 Rank 1, 2 and 3 map to Gold, Silver and Bronze certificates. Issue the certificate from the Top Performers section after assigning.
               </p>
               <div className="flex items-center justify-end gap-2 pt-1">
@@ -4476,14 +2869,14 @@ function AdminPageContent() {
                   type="button"
                   onClick={() => setRankModal(null)}
                   disabled={assigningTopPerformer}
-                  className="h-10 px-4 rounded-xl text-xs font-semibold text-[#A1A1AA] hover:text-white bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] transition-all cursor-pointer disabled:opacity-40"
+                  className="h-10 px-4 rounded-xl text-xs font-semibold text-sbg-ink-2 hover:text-sbg-ink bg-white/60 hover:bg-sbg-lilac-100 border border-sbg-ink/[0.12] transition-all cursor-pointer disabled:opacity-40"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={assigningTopPerformer || !rankModal.rank.trim()}
-                  className="h-10 px-5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-amber-600 to-amber-500 hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-amber-600/20 flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
+                  className="h-10 px-5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-amber-700 to-amber-800 hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-amber-600/20 flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
                 >
                   {assigningTopPerformer ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
                   {assigningTopPerformer ? "Assigning…" : "Assign"}
@@ -4504,13 +2897,13 @@ function AdminPageContent() {
         >
           {/* Backdrop with blur */}
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
+            className="ad-backdrop fixed inset-0 transition-opacity"
             onClick={closeConfirm}
           />
 
           {/* Dialog Card */}
           <div
-            className="relative w-full max-w-md rounded-3xl bg-[#0F0F16] border border-white/[0.1] shadow-2xl p-6 sm:p-7 overflow-hidden z-10 animate-in zoom-in-95 duration-200"
+            className="ad-modal relative w-full max-w-md p-6 sm:p-7 overflow-hidden z-10 animate-in zoom-in-95 duration-200"
             data-lenis-prevent
             onWheel={(e) => e.stopPropagation()}
           >
@@ -4518,8 +2911,8 @@ function AdminPageContent() {
             <div
               className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent ${
                 confirmModal.variant === "danger"
-                  ? "via-rose-500/70"
-                  : "via-cyan-500/70"
+                  ? "via-[#b91c1c]/60"
+                  : "via-sbg-lilac-500/70"
               } to-transparent`}
             />
 
@@ -4528,8 +2921,8 @@ function AdminPageContent() {
               <div
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
                   confirmModal.variant === "danger"
-                    ? "bg-rose-500/10 border-rose-500/20 text-rose-400 shadow-lg shadow-rose-500/10"
-                    : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400 shadow-lg shadow-cyan-500/10"
+                    ? "bg-[#ffe1e1] border-[#b91c1c]/25 text-[#b91c1c]"
+                    : "bg-sbg-lilac-100 border-sbg-lilac-300 text-sbg-lilac-700"
                 }`}
               >
                 {confirmModal.variant === "danger" ? (
@@ -4542,7 +2935,7 @@ function AdminPageContent() {
               </div>
               <button
                 onClick={closeConfirm}
-                className="h-8 w-8 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-[#71717A] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="h-10 w-10 sm:h-8 sm:w-8 rounded-xl bg-sbg-ink/5 hover:bg-sbg-ink/10 text-sbg-ink-2 hover:text-sbg-ink flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -4550,20 +2943,20 @@ function AdminPageContent() {
 
             {/* Content */}
             <div className="space-y-2">
-              <h3 className="text-lg font-bold text-white tracking-tight">
+              <h3 className="font-lt-display text-lg font-semibold text-sbg-ink tracking-[-0.03em]">
                 {confirmModal.title}
               </h3>
-              <p className="text-xs sm:text-[13px] text-[#A1A1AA] leading-relaxed whitespace-pre-line">
+              <p className="text-xs sm:text-[13px] text-sbg-ink-2 leading-relaxed whitespace-pre-line">
                 {confirmModal.message}
               </p>
             </div>
 
             {/* Actions Footer */}
-            <div className="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-white/[0.06]">
+            <div className="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-sbg-ink/10">
               <button
                 type="button"
                 onClick={closeConfirm}
-                className="h-10 px-4 rounded-xl text-xs font-semibold text-[#A1A1AA] hover:text-white bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] transition-all cursor-pointer"
+                className="ad-btn ad-btn-ghost"
               >
                 {confirmModal.cancelLabel || "Cancel"}
               </button>
@@ -4574,10 +2967,10 @@ function AdminPageContent() {
                   closeConfirm();
                   await cb();
                 }}
-                className={`h-10 px-5 rounded-xl text-xs font-semibold text-white transition-all cursor-pointer active:scale-[0.98] shadow-lg ${
+                className={`ad-btn active:scale-[0.98] ${
                   confirmModal.variant === "danger"
-                    ? "bg-gradient-to-r from-rose-600 to-red-600 hover:brightness-110 shadow-rose-600/20"
-                    : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 shadow-cyan-500/20"
+                    ? "bg-[#b91c1c] text-white hover:bg-[#991b1b]"
+                    : "ad-btn-primary"
                 }`}
               >
                 {confirmModal.confirmLabel || "Confirm"}
@@ -4613,7 +3006,7 @@ function AdminPageContent() {
 
 export default function AdminPage() {
   return (
-    <Suspense fallback={<div className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 pt-24 sm:pt-28 pb-24"><AdminPageSkeleton /></div>}>
+    <Suspense fallback={<div className="w-full min-w-0"><AdminPageSkeleton /></div>}>
       <AdminPageContent />
     </Suspense>
   );

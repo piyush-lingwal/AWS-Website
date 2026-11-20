@@ -1,7 +1,7 @@
 # DESIGN.md — Daylight Cloud
 
 The design system for the redesigned AWS Student Builder Group website (Tulas University).
-**Status:** sample landing page built at `/preview`. Nothing else on the site uses these styles yet.
+**Status:** sample landing page built at `/preview`. The admin panel now uses Daylight Cloud with its own shell (`components/admin/AdminShell.tsx`). Other pages: see section 11.
 Section 11 lists exactly what changes if you adopt it.
 
 ---
@@ -107,7 +107,7 @@ the section being left to the tone of the one being entered.
 | `dusk` | `#FAF1FF` | `#F8C6E6` rose | `#C8B2FF` | `#FFDCB0` | Why join |
 | `clear` | `#FDFCFF` | `#ECE5FF` | `#E0D5FF` | `#FFEFD9` | Events |
 
-**Every tone is light** (a unit test fails if any base or blob gets dark). The page never leaves white and lilac.
+**Every light tone is light** (a unit test fails if any base or blob gets dark). In light mode the page never leaves white and lilac. Dark tones are in section 13.
 
 ### 3.3 Rules of the blend
 
@@ -274,7 +274,7 @@ Everything is namespaced, so adoption is deliberate and reversible.
    (`/api/events`) and the Stats counters.
 4. **Inner pages**, one at a time, in this order (most visited first): Events, Team, Learning Hub, Gallery, About, Register, Verify.
    Each one gets a `data-tone` per section and the shared surfaces and buttons.
-5. **Admin stays as it is.** It is a dense data tool used by a few people; it keeps the dark theme and `native-scroll` behaviour.
+5. **Admin uses Daylight Cloud too.** The admin panel uses the same tokens through `app/admin/admin-daylight.css` and its own sidebar shell, `components/admin/AdminShell.tsx`. It is light only, has a static backdrop and no scroll choreography, and keeps native scrolling.
 6. **Toaster and chatbot.** Switch `Toaster theme` to `light` and restyle `ChatbotMascot` (it is dark-only today).
 
 **Certificate PDFs and e-mails are not affected**: they use their own templates.
@@ -287,8 +287,105 @@ Everything is namespaced, so adoption is deliberate and reversible.
 |---|---|
 | Use the italic serif for one phrase per heading | Use it for whole sentences or body text |
 | Tint shadows violet | Use grey or black drop shadows |
-| Keep every tone light | Add a dark page tone (the CTA card is the only dark surface) |
+| Keep every tone light per theme (light tones light, dark tones dark) | Mix a dark tone into light mode or the reverse (in light mode the CTA card is the only dark surface) |
 | Use orange as a few pixels | Use orange for text, buttons or backgrounds on light |
 | Let scroll reveal content that is already in the DOM | Hide the headline or CTA behind a scroll trigger |
 | Write animations as one `--t` variable plus CSS | Add scroll listeners that set React state |
 | Reuse real AWS service icons and Kio | Use stock illustrations or random gradient art |
+
+---
+
+## 13. Dark mode
+
+Source of truth: `lib/design/dark-palette.ts` (tested by `tests/design/dark-palette.test.ts`). If a value changes, change it there and here first.
+
+### 13.1 Mechanism
+
+- `data-theme="dark"` on `<html>`, set by `next-themes` (attribute `data-theme`, storage key `sbg-theme`). The `.dark` class is not used (old pages and `globals.css` own it).
+- Default is `prefers-color-scheme`; a saved choice wins.
+- Gated to six pages: Home, About, Events, Team, Learning Hub, Gallery. The toggle renders only there. `/community`, `/register`, `/verify` and `/certificate` stay light.
+- Tokens are defined at `html` level (not only on `.sbg-light`) because the Gallery lightbox is portalled into `document.body`.
+
+### 13.2 Tokens
+
+Elevation ladder (darkest to lightest): `paper` `#07050F` (page) < `mist` `#0E0A1E` (quiet panels) < `surface` over paper `#120D25` (cards) < `lilac-100` `#1C1442` (active pills, tinted cards) < `lilac-200` `#2A1F5E` (raised fills). Card hover adds a `--lift-line` border (`rgba(187,162,255,.30)`), so hover is a lighter edge plus a deeper shadow. The nav glass (`#0B0817` over paper) is darker than cards, the lightbox scrim is `rgba(4,3,10,.92)` (`--scrim`).
+
+| Token | Light | Dark | Role |
+|---|---|---|---|
+| `paper` | `#FBF9FF` | `#07050F` | Page base |
+| `mist` | `#F4EFFF` | `#0E0A1E` | Quiet panels |
+| `ink` | `#1B1140` | `#F5F2FF` | Headlines, body |
+| `ink-2` | `#4D4470` | `#C9C0EA` | Secondary text |
+| `ink-3` | `#6A6190` | `#A89FCF` | Labels, captions |
+| `spark` | `#FF9900` | `#FFA31A` | Decoration only |
+| `lilac-50` | `#F7F3FF` | `#110C26` | Fill |
+| `lilac-100` | `#EFE8FF` | `#1C1442` | Fill |
+| `lilac-200` | `#E1D4FF` | `#2A1F5E` | Fill |
+| `lilac-300` | `#CBB5FF` | `#43338A` | Fill |
+| `lilac-400` | `#AF8CFF` | `#7A5CD6` | Fill |
+| `lilac-500` to `900` | scale in 2.2 | unchanged | Fill, buttons, deep CTA card |
+| `accent` | `#7C3AED` | `#BBA2FF` | Text-role purple (accent words, links) |
+| `accent-strong` | `#6428D4` | `#D6C8FF` | Text on lilac-100 (active nav) |
+| `surface` | `rgba(255,255,255,.72)` | `rgba(22,16,46,.72)` | Card fill |
+| `surface-line` | `rgba(255,255,255,.9)` | `rgba(255,255,255,.07)` | Card border |
+| `glass` | `rgba(255,255,255,.62)` | `rgba(12,9,26,.72)` | Nav |
+| `line` | `rgba(27,17,64,.10)` | `rgba(241,236,255,.10)` | Hairlines |
+| `shadow-tint` | `rgba(76,29,149,.28)` | `rgba(0,0,0,.70)` | Shadows |
+| `on-ink` | `#1B1140` | `#1C1442` | Logo tile |
+### 13.3 Rules
+
+- **Text roles** use `ink`, `ink-2`, `ink-3`, `accent`, `accent-strong`. **Fill roles** use `lilac-*` and `surface`. Never use `text-sbg-lilac-600/700` for text: they do not flip.
+- The deep CTA card (`#2E1170` to `#4A1D9E` to `#6428D4`) is identical in both themes. In dark it gets a 1 px `rgba(255,255,255,.12)` border so it separates from the page.
+- Orange stays decoration only (10.12 : 1 on dark paper, still never text).
+- The primary button keeps its lilac gradient and white text in both themes.
+- Light mode is unchanged.
+
+### 13.4 Contrast (WCAG 2.x, computed with `contrast()` in `lib/design/dark-palette.ts`)
+
+| Pair | Ratio | Result |
+|---|---|---|
+| ink on paper | 18.34 : 1 | AAA |
+| ink-2 on paper | 11.77 : 1 | AAA |
+| ink-3 on paper | 8.22 : 1 | AAA |
+| ink on surface (over paper) | 17.14 : 1 | AAA |
+| ink-3 on surface (over paper) | 7.68 : 1 | AAA |
+| ink-2 on surface over worst blob (`violet` b) | 9.60 : 1 | AAA |
+| ink-3 on surface over worst blob (`violet` b) | 6.70 : 1 | AA |
+| accent on paper | 9.37 : 1 | AAA |
+| accent on surface (over paper) | 8.76 : 1 | AAA |
+| accent-strong on lilac-100 | 11.05 : 1 | AAA |
+| white on lilac-600 (primary button) | 5.70 : 1 | AA |
+| white on deep CTA card `#2E1170` | 14.68 : 1 | AAA |
+| ink (light value `#1B1140`) on spark `#FFA31A` | 8.75 : 1 | AAA |
+| spark on dark paper | 10.12 : 1 | decoration only |
+
+The test checks ink-2 and ink-3 on `surface` over every blob of every tone (all >= 4.5). Bare ink-3 directly on a saturated blob is not guaranteed, so ink-3 text sits on `surface` or on a quiet tone.
+
+### 13.5 Dark tones (ScrollAtmosphere)
+
+Same tone names and order of depth as light (`clear` quietest, `violet` most saturated), so `data-tone` attributes do not change. Every dark base has luminance < 25 and every blob < 75 (tested, 0 to 255 scale). Blobs are glows in near-black, not lit panels.
+
+| Tone | Base | Blob a | Blob b | Blob c |
+|---|---|---|---|---|
+| `dawn` | `#07050F` | `#140C3A` | `#2A180C` | `#0A1838` |
+| `bloom` | `#08051A` | `#1E1050` | `#35123C` | `#0D1C3C` |
+| `violet` | `#0B0820` | `#2E1C74` | `#281E78` | `#3A230E` |
+| `dusk` | `#0A0616` | `#3A1535` | `#20164E` | `#3A260C` |
+| `clear` | `#050410` | `#0F0A2C` | `#140E38` | `#1E1208` |
+
+### 13.6 Card tints
+
+Wash: `linear-gradient(155deg, tint 0%, rgba(14,10,30,.7) 58%)`.
+
+| Tint | Light | Dark |
+|---|---|---|
+| Lilac | `#EFE8FF` | `#160F36` |
+| Peach | `#FFEBD3` | `#1D130F` |
+| Rose | `#FFE7F1` | `#1D0F1B` |
+| Sky | `#DCEBFF` | `#0D162A` |
+| Mint | `#DDF3E6` | `#0B1B1C` |
+| Blush | `#FFE1E1` | `#1D1014` |
+### 13.7 Kio and Gallery
+
+- Kio (transparent PNG/WebP) is kept as is; in dark add `filter: drop-shadow(0 14px 36px rgba(139,92,246,.4))`. Verified visually in FEAT-003.
+- Gallery photos are never filtered. The chrome around them is dark `surface`. The lightbox scrim is `--scrim` (`rgba(4,3,10,.92)` in dark, `#1B1140` at 90 % in light).

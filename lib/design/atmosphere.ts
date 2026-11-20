@@ -13,6 +13,8 @@
 // Nothing here touches the DOM (components/design/ScrollAtmosphere.tsx does).
 // ============================================================
 
+import { DARK_TONES } from "./dark-palette.ts";
+
 export type RGB = readonly [number, number, number];
 
 export interface Tone {
@@ -50,6 +52,23 @@ export const TONES = {
 
 export type ToneName = keyof typeof TONES;
 
+export type ThemeName = "light" | "dark";
+
+/** Dark counterparts (values in lib/design/dark-palette.ts, DESIGN.md section 13.5). Same names. */
+export const TONES_DARK = {
+  dawn: tone(DARK_TONES.dawn.base, DARK_TONES.dawn.a, DARK_TONES.dawn.b, DARK_TONES.dawn.c),
+  bloom: tone(DARK_TONES.bloom.base, DARK_TONES.bloom.a, DARK_TONES.bloom.b, DARK_TONES.bloom.c),
+  violet: tone(DARK_TONES.violet.base, DARK_TONES.violet.a, DARK_TONES.violet.b, DARK_TONES.violet.c),
+  dusk: tone(DARK_TONES.dusk.base, DARK_TONES.dusk.a, DARK_TONES.dusk.b, DARK_TONES.dusk.c),
+  clear: tone(DARK_TONES.clear.base, DARK_TONES.clear.a, DARK_TONES.clear.b, DARK_TONES.clear.c),
+} as const satisfies Record<ToneName, Tone>;
+
+export type TonePalette = Record<ToneName, Tone>;
+
+export function toneSet(theme: ThemeName): TonePalette {
+  return theme === "dark" ? TONES_DARK : TONES;
+}
+
 export function isToneName(value: unknown): value is ToneName {
   return typeof value === "string" && Object.hasOwn(TONES, value);
 }
@@ -84,23 +103,23 @@ export const HOLD = 0.3;
  * Before the first stop and after the last one the edge tone is used.
  * `stops` must be sorted by `at`.
  */
-export function toneAtY(stops: readonly ToneStop[], y: number): Tone {
-  if (stops.length === 0) return TONES.dawn;
-  if (y <= stops[0].at) return TONES[stops[0].tone];
+export function toneAtY(stops: readonly ToneStop[], y: number, palette: TonePalette = TONES): Tone {
+  if (stops.length === 0) return palette.dawn;
+  if (y <= stops[0].at) return palette[stops[0].tone];
   const last = stops[stops.length - 1];
-  if (y >= last.at) return TONES[last.tone];
+  if (y >= last.at) return palette[last.tone];
 
   for (let i = 0; i < stops.length - 1; i++) {
     const from = stops[i];
     const to = stops[i + 1];
     if (y < from.at || y > to.at) continue;
     const span = to.at - from.at;
-    if (span <= 0) return TONES[to.tone];
+    if (span <= 0) return palette[to.tone];
     const t = (y - from.at) / span;
     const eased = smoothstep((t - HOLD) / (1 - 2 * HOLD));
-    return mixTone(TONES[from.tone], TONES[to.tone], eased);
+    return mixTone(palette[from.tone], palette[to.tone], eased);
   }
-  return TONES[last.tone];
+  return palette[last.tone];
 }
 
 /** "251 249 255": the form CSS wants for rgb(var(--x) / alpha). */

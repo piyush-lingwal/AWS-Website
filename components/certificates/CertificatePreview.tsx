@@ -383,17 +383,17 @@ export function CertificatePreview({
 
   if (isLoading) {
     return (
-      <div className="w-full aspect-[3300/2550] bg-slate-900/60 rounded-xl flex flex-col items-center justify-center border border-slate-800/80 animate-pulse gap-3">
-        <div className="w-8 h-8 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin" />
-        <p className="text-xs text-slate-400 font-mono tracking-wide">Loading Vector SVG Template...</p>
+      <div className="w-full aspect-[3300/2550] bg-sbg-lilac-50 rounded-xl flex flex-col items-center justify-center border border-sbg-ink/10 animate-pulse gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-sbg-lilac-300 border-t-sbg-lilac-600 animate-spin" />
+        <p className="text-xs text-sbg-ink-3 font-mono tracking-wide">Loading Vector SVG Template...</p>
       </div>
     );
   }
 
   if (!renderedSvg) {
     return (
-      <div className="w-full aspect-[3300/2550] bg-slate-900 rounded-xl flex items-center justify-center border border-red-500/30">
-        <p className="text-xs text-red-400 font-medium">Failed to render template SVG</p>
+      <div className="w-full aspect-[3300/2550] bg-red-50 rounded-xl flex items-center justify-center border border-red-300">
+        <p className="text-xs text-red-700 font-medium">Failed to render template SVG</p>
       </div>
     );
   }
@@ -406,13 +406,13 @@ export function CertificatePreview({
           type="button"
           onClick={() => setIsFullscreen(true)}
           aria-label="Open the certificate full size"
-          className="group/preview relative block w-full cursor-zoom-in overflow-hidden rounded-lg border border-white/10 bg-white shadow-2xl shadow-black/60 transition-shadow duration-300 hover:shadow-[0_25px_80px_-20px_rgba(108,99,255,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF] sm:rounded-xl"
+          className="group/preview relative block w-full cursor-zoom-in overflow-hidden rounded-lg border border-sbg-ink/10 bg-white shadow-[0_18px_50px_-24px_rgba(124,58,237,0.45)] transition-shadow duration-300 hover:shadow-[0_25px_80px_-20px_rgba(124,58,237,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sbg-lilac-600 sm:rounded-xl"
         >
           <span
             className={`block aspect-[3300/2550] w-full select-none [&_svg]:block [&_svg]:h-full [&_svg]:w-full ${renderedSvg ? "" : "animate-pulse bg-slate-200"}`}
             dangerouslySetInnerHTML={{ __html: renderedSvg }}
           />
-          <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg border border-white/15 bg-slate-950/85 px-2.5 py-1.5 text-[11px] font-medium text-slate-100 shadow-lg backdrop-blur-md sm:bottom-3 sm:right-3 sm:text-xs">
+          <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg border border-sbg-ink/10 bg-white/90 px-2.5 py-1.5 text-[11px] font-medium text-sbg-ink shadow-lg backdrop-blur-md sm:bottom-3 sm:right-3 sm:text-xs">
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
             </svg>

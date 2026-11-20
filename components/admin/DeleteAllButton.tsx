@@ -22,7 +22,6 @@ interface DeleteAllButtonProps {
   /** How many entries the admin can see. The button is disabled at 0. */
   count: number;
   eventId?: string;
-  batch?: string;
   /** Where the entries are, e.g. 'for "Build-Verse 2026"'. */
   scope?: string;
   /** What else is deleted with them. */
@@ -56,7 +55,6 @@ export function DeleteAllButton({
   noun,
   count,
   eventId,
-  batch,
   scope,
   consequences,
   onDeleted,
@@ -97,7 +95,7 @@ export function DeleteAllButton({
       const res = await fetch("/api/admin/bulk-delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section, eventId, batch, confirm: BULK_DELETE_CONFIRMATION }),
+        body: JSON.stringify({ section, eventId, confirm: BULK_DELETE_CONFIRMATION }),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.success) {
@@ -122,7 +120,7 @@ export function DeleteAllButton({
         type="button"
         onClick={() => setStep(1)}
         disabled={disabled || count === 0}
-        className={`${compact ? "h-9" : "h-10"} inline-flex items-center gap-2 whitespace-nowrap rounded-xl border border-rose-500/25 bg-rose-500/10 px-3.5 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer`}
+        className={`${compact ? "h-9" : "h-10"} ad-btn ad-btn-danger disabled:opacity-40`}
         title={`Delete all ${noun}`}
       >
         <Trash2 className="h-3.5 w-3.5" />
@@ -131,7 +129,7 @@ export function DeleteAllButton({
 
       {step > 0 && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+          className="ad-backdrop fixed inset-0 z-[80] flex items-center justify-center p-4"
           role="presentation"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) close();
@@ -142,22 +140,22 @@ export function DeleteAllButton({
             aria-modal="true"
             aria-labelledby={`delete-all-${section}-title`}
             aria-describedby={`delete-all-${section}-body`}
-            className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/[0.1] bg-[#0E0E13] p-6 shadow-2xl"
+            className="ad-modal relative w-full max-w-md overflow-hidden p-6"
           >
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-500/70 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#b91c1c]/60 to-transparent" />
 
             <div className="mb-4 flex items-start justify-between gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-rose-500/20 bg-rose-500/10 text-rose-400 shadow-lg shadow-rose-500/10">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#b91c1c]/25 bg-[#ffe1e1] text-[#b91c1c]">
                 <AlertTriangle className="h-6 w-6" />
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A]">Step {step} of 2</span>
+                <span className="font-lt-mono text-[10px] uppercase tracking-wider text-sbg-ink-3">Step {step} of 2</span>
                 <button
                   type="button"
                   onClick={close}
                   disabled={busy}
                   aria-label="Close"
-                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.03] text-[#71717A] transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-40 cursor-pointer"
+                  className="flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-sbg-ink/5 text-sbg-ink-2 transition-colors hover:bg-sbg-ink/10 hover:text-sbg-ink disabled:opacity-40 cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -167,26 +165,26 @@ export function DeleteAllButton({
             {step === 1 ? (
               <>
                 <div className="space-y-2">
-                  <h3 id={`delete-all-${section}-title`} className="text-lg font-bold tracking-tight text-white">
+                  <h3 id={`delete-all-${section}-title`} className="font-lt-display text-lg font-semibold tracking-[-0.03em] text-sbg-ink">
                     Delete all {noun}?
                   </h3>
-                  <p id={`delete-all-${section}-body`} className="text-xs leading-relaxed text-[#A1A1AA] sm:text-[13px]">
+                  <p id={`delete-all-${section}-body`} className="text-xs leading-relaxed text-sbg-ink-2 sm:text-[13px]">
                     This deletes all {what}. {consequences}
                   </p>
-                  <p className="text-xs text-[#71717A]">You will be asked to confirm once more.</p>
+                  <p className="text-xs text-sbg-ink-3">You will be asked to confirm once more.</p>
                 </div>
-                <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-white/[0.06] pt-4">
+                <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-sbg-ink/10 pt-4">
                   <button
                     type="button"
                     onClick={close}
-                    className="h-10 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 text-xs font-semibold text-[#A1A1AA] transition-all hover:bg-white/[0.08] hover:text-white cursor-pointer"
+                    className="ad-btn ad-btn-ghost"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={() => setStep(2)}
-                    className="h-10 rounded-xl border border-rose-500/30 bg-rose-500/10 px-5 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 cursor-pointer"
+                    className="ad-btn ad-btn-danger"
                   >
                     Continue
                   </button>
@@ -200,16 +198,16 @@ export function DeleteAllButton({
                 }}
               >
                 <div className="space-y-2">
-                  <h3 id={`delete-all-${section}-title`} className="text-lg font-bold tracking-tight text-white">
+                  <h3 id={`delete-all-${section}-title`} className="font-lt-display text-lg font-semibold tracking-[-0.03em] text-sbg-ink">
                     Final confirmation
                   </h3>
-                  <p id={`delete-all-${section}-body`} className="text-xs leading-relaxed text-[#A1A1AA] sm:text-[13px]">
+                  <p id={`delete-all-${section}-body`} className="text-xs leading-relaxed text-sbg-ink-2 sm:text-[13px]">
                     {what} will be permanently deleted. This cannot be undone.
                   </p>
                 </div>
                 <label className="mt-4 block space-y-1.5">
-                  <span className="text-xs text-[#D4D4D8]">
-                    Type <span className="font-mono font-bold text-rose-300">{BULK_DELETE_CONFIRMATION}</span> to confirm
+                  <span className="text-xs text-sbg-ink">
+                    Type <span className="font-lt-mono font-bold text-[#b91c1c]">{BULK_DELETE_CONFIRMATION}</span> to confirm
                   </span>
                   <input
                     ref={inputRef}
@@ -218,23 +216,23 @@ export function DeleteAllButton({
                     disabled={busy}
                     autoComplete="off"
                     spellCheck={false}
-                    className="h-10 w-full rounded-xl border border-white/[0.1] bg-[#09090E] px-3 font-mono text-sm text-white placeholder:text-[#52525B] focus:border-rose-500 focus:outline-none"
+                    className="ad-input font-lt-mono"
                     placeholder={BULK_DELETE_CONFIRMATION}
                   />
                 </label>
-                <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-white/[0.06] pt-4">
+                <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-sbg-ink/10 pt-4">
                   <button
                     type="button"
                     onClick={close}
                     disabled={busy}
-                    className="h-10 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 text-xs font-semibold text-[#A1A1AA] transition-all hover:bg-white/[0.08] hover:text-white disabled:opacity-40 cursor-pointer"
+                    className="ad-btn ad-btn-ghost"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={!confirmed || busy}
-                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 px-5 text-xs font-semibold text-white shadow-lg shadow-rose-600/20 transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="ad-btn bg-[#b91c1c] text-white hover:bg-[#991b1b] disabled:opacity-40"
                   >
                     {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                     {busy ? "Deleting…" : `Delete all ${noun}`}

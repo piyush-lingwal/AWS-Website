@@ -10,6 +10,7 @@ There is no Supabase CLI config, so apply each file by hand in the SQL Editor
 | `20261013000001_team_members` | Not re-runnable (`CREATE TABLE` without `IF NOT EXISTS`) |
 | `20261017000001` onward | Admin users, RLS lock-down, media, certificates |
 | `20261018000003_top_performers` | Top performers and excellence certificates |
+| `20261119000001_team_members_redefine` | Drops `team_members` and recreates it (name, email, course, branch, role, wing, picture_url). **Deletes all team rows.** Safe to re-run |
 | `20261112000001_media_supabase_source` | Supabase Storage as a media source (two buckets). Safe to re-run |
 
 `seed-admins.sql` is not a migration. It is a one-off script you edit (add the

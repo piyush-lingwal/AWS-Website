@@ -1,0 +1,754 @@
+/* ============================================================
+   Daylight Cloud — design system + scroll mechanics (see DESIGN.md)
+   Everything is scoped to .sbg-light, so no other page is affected.
+   ============================================================ */
+
+/* ── Theme tokens (DESIGN.md section 13, values in lib/design/dark-palette.ts) ──
+   :root holds the LIGHT values, so every light page is as before. The dark values apply only when
+   html[data-theme="dark"] (next-themes) AND the page is one of the six dark-capable ones
+   (ThemeScope sets data-themable="true"), so /community, /register and /verify never go dark.
+   They live on <html>, not .sbg-light, because the Gallery lightbox portals into <body>.
+   --sbg-* are space-separated RGB triplets (Tailwind adds the alpha). */
+:root {
+  --sbg-paper: 251 249 255;
+  --sbg-mist: 244 239 255;
+  --sbg-ink: 27 17 64;
+  --sbg-ink-2: 77 68 112;
+  --sbg-ink-3: 106 97 144;
+  --sbg-on-ink: 27 17 64;
+  --sbg-spark: 255 153 0;
+  --sbg-accent: 124 58 237;
+  --sbg-accent-strong: 100 40 212;
+  --sbg-lilac-50: 247 243 255;
+  --sbg-lilac-100: 239 232 255;
+  --sbg-lilac-200: 225 212 255;
+  --sbg-lilac-300: 203 181 255;
+  --sbg-lilac-400: 175 140 255;
+  --sbg-lilac-500: 148 97 250;
+  --sbg-lilac-600: 124 58 237;
+  --sbg-lilac-700: 100 40 212;
+  --sbg-lilac-800: 74 29 158;
+  --sbg-lilac-900: 46 17 112;
+  --sbg-line: rgba(27, 17, 64, 0.1);
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-line: rgba(255, 255, 255, 0.9);
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-line: rgba(255, 255, 255, 0.75);
+  --hl: rgba(255, 255, 255, 0.9); /* inset top highlight */
+  --shadow-tint: rgba(76, 29, 149, 0.28);
+  --shadow-soft: rgba(76, 29, 149, 0.08);
+  --shadow-strong: rgba(76, 29, 149, 0.38);
+  --shadow-strong-soft: rgba(76, 29, 149, 0.1);
+  --btn-ghost-bg: rgba(255, 255, 255, 0.7);
+  --btn-ghost-hover: #fff;
+  --footer-bg: rgba(255, 255, 255, 0.5);
+  --chip-hover: rgba(255, 255, 255, 0.7);
+  --card-lilac: #efe8ff;
+  --card-peach: #ffebd3;
+  --card-rose: #ffe7f1;
+  --card-sky: #dcebff;
+  --card-mint: #ddf3e6;
+  --card-blush: #ffe1e1;
+  --card-end: rgba(255, 255, 255, 0.6);
+  --wash-78: rgba(255, 255, 255, 0.78);
+  --wash-80: rgba(255, 255, 255, 0.8);
+  --chip-bg: rgba(255, 255, 255, 0.8);
+  --tile-bg: #fff;
+  --tile-shadow: rgba(76, 29, 149, 0.45);
+  --word-dim: #dccfff;
+  --pill-on: rgb(255 255 255 / 0.85);
+  --pill-off: rgb(255 255 255 / 0.2);
+  --wash-85: rgba(255, 255, 255, 0.85);
+  --hub-shadow: rgba(100, 40, 212, 0.45);
+  --hub-shadow-50: rgba(100, 40, 212, 0.5);
+  --dot-off: #fff;
+  --row-hover: rgba(255, 255, 255, 0.5);
+  --wash-90: rgba(255, 255, 255, 0.9);
+  --wash-40: rgba(255, 255, 255, 0.4);
+  --wing-idle: #a79fc9;
+  --ok-text: #047857;
+  --wing-tech: 100 40 212;
+  --wing-cloud: 180 83 9;
+  --wing-design: 190 24 93;
+  --wing-events: 29 111 216;
+  --wing-media: 21 128 61;
+  --wing-outreach: 194 65 12;
+  --tag-peach-bg: #ffebd3;
+  --tag-peach-fg: #9a4a00;
+  --tag-sky-bg: #dcebff;
+  --tag-sky-fg: #1f4f9a;
+  --tag-mint-bg: #ddf5e6;
+  --tag-mint-fg: #17663a;
+  --ok-dot: #1fa35b;
+  --cover-grad: linear-gradient(135deg, #e1d4ff 0%, #efe8ff 55%, #ffebd3 100%);
+  --pixel-dim: rgba(124, 77, 255, 0.22);
+  /* glow of an orange pixel as the ambient wave passes it (.px-tile) */
+  --px-glow: rgba(255, 153, 0, 0.5);
+  --px-glow-blur: 7px;
+}
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) {
+  color-scheme: dark;
+  /* elevation: paper (#07050F) < mist < surface (card) < lilac-100 / hover < lilac-200. Violet-tinted near-black. */
+  --sbg-paper: 7 5 15;
+  --sbg-mist: 14 10 30;
+  --sbg-ink: 245 242 255;
+  --sbg-ink-2: 201 192 234;
+  --sbg-ink-3: 168 159 207;
+  --sbg-on-ink: 28 20 66;
+  --sbg-spark: 255 163 26;
+  --sbg-accent: 187 162 255;
+  --sbg-accent-strong: 214 200 255;
+  --sbg-lilac-50: 17 12 38;
+  --sbg-lilac-100: 28 20 66;
+  --sbg-lilac-200: 42 31 94;
+  --sbg-lilac-300: 67 51 138;
+  --sbg-lilac-400: 122 92 214;
+  --sbg-line: rgba(241, 236, 255, 0.1);
+  --surface: rgba(22, 16, 46, 0.72);
+  --surface-line: rgba(255, 255, 255, 0.07);
+  --lift-line: rgba(187, 162, 255, 0.3);
+  --scrim: rgba(4, 3, 10, 0.92);
+  --glass: rgba(12, 9, 26, 0.72);
+  --glass-line: rgba(255, 255, 255, 0.09);
+  --hl: rgba(255, 255, 255, 0.05);
+  --shadow-tint: rgba(0, 0, 0, 0.7);
+  --shadow-soft: rgba(0, 0, 0, 0.4);
+  --shadow-strong: rgba(0, 0, 0, 0.8);
+  --shadow-strong-soft: rgba(0, 0, 0, 0.4);
+  --btn-ghost-bg: rgba(255, 255, 255, 0.05);
+  --btn-ghost-hover: rgba(255, 255, 255, 0.1);
+  --footer-bg: rgba(7, 5, 15, 0.7);
+  --chip-hover: rgba(255, 255, 255, 0.09);
+  --card-lilac: #160f36;
+  --card-peach: #1d130f;
+  --card-rose: #1d0f1b;
+  --card-sky: #0d162a;
+  --card-mint: #0b1b1c;
+  --card-blush: #1d1014;
+  --card-end: rgba(14, 10, 30, 0.7);
+  --wash-78: rgba(14, 10, 30, 0.7);
+  --wash-80: rgba(14, 10, 30, 0.7);
+  --chip-bg: rgba(255, 255, 255, 0.07);
+  --tile-bg: rgba(255, 255, 255, 0.07);
+  --tile-shadow: rgba(0, 0, 0, 0.7);
+  --word-dim: #54449a;
+  --pill-on: rgba(42, 31, 94, 0.85);
+  --pill-off: rgba(42, 31, 94, 0.2);
+  --wash-85: rgba(14, 10, 30, 0.7);
+  --hub-shadow: rgba(0, 0, 0, 0.7);
+  --hub-shadow-50: rgba(0, 0, 0, 0.7);
+  --dot-off: #110c26;
+  --row-hover: rgba(255, 255, 255, 0.05);
+  --wash-90: rgba(14, 10, 30, 0.7);
+  --wash-40: rgba(14, 10, 30, 0.45);
+  --wing-idle: #8a80b8;
+  --ok-text: #6ee7b7;
+  --wing-tech: 187 162 255;
+  --wing-cloud: 245 178 92;
+  --wing-design: 245 143 189;
+  --wing-events: 125 180 255;
+  --wing-media: 95 208 138;
+  --wing-outreach: 255 154 102;
+  --tag-peach-bg: rgba(255, 154, 102, 0.14);
+  --tag-peach-fg: #ffc29e;
+  --tag-sky-bg: rgba(125, 180, 255, 0.14);
+  --tag-sky-fg: #a9ccff;
+  --tag-mint-bg: rgba(95, 208, 138, 0.14);
+  --tag-mint-fg: #8ee6b0;
+  --ok-dot: #4ade80;
+  --cover-grad: linear-gradient(135deg, #1c1442 0%, #110c26 55%, #2a180e 100%);
+  --pixel-dim: rgba(187, 162, 255, 0.26);
+  --px-glow: rgba(255, 163, 26, 0.7);
+  --px-glow-blur: 10px;
+}
+
+html:has(.sbg-light),
+html:has(.sbg-light) body {
+  background: rgb(var(--sbg-paper));
+}
+html:has(.sbg-light) {
+  scrollbar-color: rgb(var(--sbg-lilac-300)) rgb(var(--sbg-mist));
+}
+html:has(.sbg-light)::-webkit-scrollbar-track {
+  background: rgb(var(--sbg-mist));
+}
+html:has(.sbg-light)::-webkit-scrollbar-thumb {
+  background: rgb(var(--sbg-lilac-300));
+}
+html:has(.sbg-light)::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--sbg-lilac-400));
+}
+
+.sbg-light {
+  /* colour (read from the theme tokens above) */
+  --ink: rgb(var(--sbg-ink));
+  --ink-2: rgb(var(--sbg-ink-2));
+  --ink-3: rgb(var(--sbg-ink-3));
+  --paper: rgb(var(--sbg-paper));
+  --lilac-100: rgb(var(--sbg-lilac-100));
+  --lilac-200: rgb(var(--sbg-lilac-200));
+  --lilac-300: rgb(var(--sbg-lilac-300));
+  --lilac-400: rgb(var(--sbg-lilac-400));
+  --lilac-600: rgb(var(--sbg-lilac-600));
+  --lilac-700: rgb(var(--sbg-lilac-700));
+  --spark: rgb(var(--sbg-spark));
+  --accent: rgb(var(--sbg-accent));
+  --accent-strong: rgb(var(--sbg-accent-strong));
+  --line: var(--sbg-line);
+  /* motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  /* layout */
+  --gutter: clamp(20px, 5vw, 40px);
+
+  position: relative;
+  isolation: isolate;
+  color: var(--ink);
+  background: var(--paper);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.sbg-light ::selection {
+  background: var(--lilac-600);
+  color: #fff;
+}
+.sbg-light :focus-visible {
+  outline: 2px solid var(--lilac-600);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* ── Typography ─────────────────────────────────────────── */
+.sbg-light .t-display {
+  font-family: var(--font-lt-display), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+.sbg-light .t-serif {
+  font-family: var(--font-lt-serif), ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  /* a serif's x-height is smaller: a touch larger to sit level with the sans */
+  font-size: 1.07em;
+}
+.sbg-light .t-eyebrow {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sbg-light .t-pixel {
+  font-family: var(--font-geist-pixel-square), var(--font-geist-mono), monospace;
+}
+.sbg-light .t-lead {
+  font-size: clamp(16px, 1.55vw, 19px);
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.sbg-light .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out), background-color 220ms var(--ease-out), color 220ms;
+}
+.sbg-light .btn:active {
+  transform: scale(0.97);
+}
+.sbg-light .btn-primary {
+  color: #fff;
+  background: linear-gradient(180deg, #8b4ff2 0%, var(--lilac-600) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 10px 28px -8px rgba(124, 58, 237, 0.65);
+}
+.sbg-light .btn-ghost {
+  color: var(--ink);
+  background: var(--btn-ghost-bg);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+.sbg-light .btn-light {
+  /* sits on the deep CTA card, identical in both themes: fixed light-theme ink, not the flipping token */
+  color: #1b1140;
+  background: #fff;
+  box-shadow: 0 10px 28px -10px rgba(0, 0, 0, 0.35);
+}
+@media (hover: hover) {
+  .sbg-light .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 16px 34px -8px rgba(124, 58, 237, 0.75);
+  }
+  .sbg-light .btn-ghost:hover {
+    background: var(--btn-ghost-hover);
+    transform: translateY(-2px);
+  }
+  .sbg-light .btn-light:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* ── Surfaces ───────────────────────────────────────────── */
+.sbg-light .surface {
+  background: var(--surface);
+  border: 1px solid var(--surface-line);
+  box-shadow: 0 1px 0 var(--hl) inset, 0 20px 50px -24px var(--shadow-tint), 0 2px 6px -2px var(--shadow-soft);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+/* ── Dynamic background (components/design/ScrollAtmosphere) ── */
+.sbg-light .nav-glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 1px 0 var(--hl) inset, 0 20px 50px -24px var(--shadow-tint), 0 2px 6px -2px var(--shadow-soft);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+}
+
+.sbg-light .atmos {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --p: 0;
+  --bg: 251 249 255;
+  --a: 228 216 255;
+  --b: 255 224 188;
+  --c: 212 229 255;
+  background: rgb(var(--bg));
+}
+/* dark "dawn" tone (lib/design/dark-palette.ts) so server-rendered HTML is not light; ScrollAtmosphere overrides inline */
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .atmos {
+  --bg: 7 5 15;
+  --a: 20 12 58;
+  --b: 42 24 12;
+  --c: 10 24 56;
+}
+.sbg-light .atmos-blob {
+  position: absolute;
+  width: 78vmax;
+  height: 78vmax;
+  border-radius: 50%;
+  will-change: transform;
+}
+.sbg-light .atmos-a {
+  top: -26vmax;
+  left: -22vmax;
+  background: radial-gradient(closest-side, rgb(var(--a) / 0.95), rgb(var(--a) / 0));
+  transform: translate3d(calc(var(--p) * 58vw), calc(var(--p) * 120vh), 0) rotate(calc(var(--p) * 120deg));
+}
+.sbg-light .atmos-b {
+  top: 8vh;
+  right: -30vmax;
+  background: radial-gradient(closest-side, rgb(var(--b) / 0.8), rgb(var(--b) / 0));
+  transform: translate3d(calc(var(--p) * -72vw), calc(var(--p) * 70vh), 0) rotate(calc(var(--p) * -90deg));
+}
+.sbg-light .atmos-c {
+  bottom: -34vmax;
+  left: 12vw;
+  background: radial-gradient(closest-side, rgb(var(--c) / 0.9), rgb(var(--c) / 0));
+  transform: translate3d(calc(var(--p) * 34vw), calc(var(--p) * -80vh), 0) rotate(calc(var(--p) * 60deg));
+}
+/* the brand's pixel motif, drifting at different speeds */
+.sbg-light .atmos-px {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 22%;
+  background: rgb(var(--a) / 0.9);
+  opacity: var(--o);
+  transform: translate3d(calc(sin(var(--p) * var(--f)) * var(--amp) * 1px), calc(var(--p) * var(--v) * 1vh), 0);
+}
+.sbg-light .atmos-px[data-spark="true"] {
+  background: var(--spark);
+}
+/* dark: the blob colour is too dim for pixels, so use a lighter lilac and a lower opacity */
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .atmos-px:not([data-spark="true"]) {
+  background: rgb(var(--sbg-lilac-400));
+  opacity: calc(var(--o) * 0.55);
+}
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .atmos-px[data-spark="true"] {
+  opacity: calc(var(--o) * 0.7);
+}
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .atmos-grain {
+  mix-blend-mode: screen;
+  opacity: 0.35;
+}
+.sbg-light .atmos-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0 0.5  0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.sbg-light .atmos-fade {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 80% at 50% 0%, transparent 40%, rgb(var(--bg) / 0.55) 100%);
+}
+
+/* ── Scroll progress bar ────────────────────────────────── */
+.sbg-light .progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: 3px;
+  transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0));
+  background: linear-gradient(90deg, var(--lilac-400), var(--lilac-600) 60%, var(--spark));
+}
+
+/* ── Scenes (pinned, scroll-driven sections) ──────────────── */
+.sbg-light .scene {
+  --t: 0;
+}
+.sbg-light .pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+/* HERO: intro (time) + build (scroll) */
+@keyframes sbg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.sbg-light .rise {
+  opacity: 0;
+  animation: sbg-rise 0.9s var(--ease-out) forwards;
+  animation-delay: calc(var(--d, 0) * 1ms + 120ms);
+}
+.sbg-light .hero-copy {
+  /* leaves gently as the build finishes */
+  opacity: clamp(0, calc((1 - var(--t)) * 4.5), 1);
+  transform: translate3d(0, calc(var(--t) * -34px), 0);
+}
+.sbg-light .hero-stage {
+  --cell: clamp(7px, 2.6vw, 11px);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.92;
+  max-width: 620px;
+  margin-inline: auto;
+  transform: translate3d(0, calc(var(--t) * -24px), 0) scale(calc(1 + var(--t) * 0.05));
+}
+@media (min-width: 640px) {
+  .sbg-light .hero-stage {
+    --cell: clamp(10px, 2.4vw, 15px);
+    aspect-ratio: 1 / 0.98;
+  }
+}
+@media (min-width: 1024px) {
+  .sbg-light .hero-stage {
+    --cell: clamp(12px, 1.5vw, 21px);
+  }
+}
+.sbg-light .cloud {
+  position: absolute;
+  left: 50%;
+  top: 3%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: repeat(26, var(--cell));
+  grid-auto-rows: var(--cell);
+  gap: calc(var(--cell) * 0.14);
+  filter: drop-shadow(0 28px 36px rgba(124, 58, 237, 0.2));
+}
+.sbg-light .cloud-cell {
+  /* 0.2 = CLOUD_HEAD_START (lib/design/pixel-cloud.ts): the base of the cloud is already
+     landing when the page opens, so the first screen is never empty. */
+  --k: clamp(0, calc((var(--t) + 0.2 - var(--d)) * 5), 1);
+  background: var(--col);
+  border-radius: calc(var(--cell) * 0.2);
+  opacity: var(--k);
+  transform: translate3d(calc((1 - var(--k)) * var(--dx) * var(--cell)), calc((1 - var(--k)) * var(--dy) * var(--cell)), 0) scale(calc(0.35 + 0.65 * var(--k)));
+  will-change: transform, opacity;
+}
+/* Kio arrives with the page (time), then drifts up a little as the reader scrolls. */
+@keyframes sbg-kio-in {
+  from {
+    opacity: 0;
+    scale: 0.88;
+    translate: 0 48px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+.sbg-light .kio {
+  position: absolute;
+  left: 50%;
+  bottom: -2%;
+  width: 54%;
+  opacity: 0;
+  transform: translate3d(-50%, calc(var(--t) * -18px), 0);
+  filter: drop-shadow(0 22px 24px rgba(76, 29, 149, 0.28));
+  animation: sbg-kio-in 1.1s var(--ease-out) 0.35s forwards;
+}
+@keyframes sbg-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+.sbg-light .kio > * {
+  animation: sbg-bob 6s ease-in-out infinite;
+}
+.sbg-light .chip-float {
+  --k: clamp(0, calc((var(--t) - var(--at)) * 5), 1);
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  opacity: var(--k);
+  transform: translate3d(0, calc((1 - var(--k)) * 28px), 0) scale(calc(0.8 + 0.2 * var(--k)));
+}
+.sbg-light .chip-float > div {
+  animation: sbg-bob 7s ease-in-out infinite;
+  animation-delay: var(--bob, 0s);
+}
+.sbg-light .hero-facts {
+  --k: clamp(0, calc((var(--t) - 0.34) * 5), 1);
+  opacity: var(--k);
+  transform: translate3d(0, calc((1 - var(--k)) * 18px), 0);
+}
+.sbg-light .scroll-cue {
+  opacity: clamp(0, calc(1 - var(--t) * 12), 1);
+}
+@keyframes sbg-cue {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(260%);
+  }
+}
+
+/* MANIFESTO: words light up with scroll */
+.sbg-light .manifesto {
+  font-size: clamp(30px, 5.2vw, 70px);
+  line-height: 1.08;
+}
+.sbg-light .word {
+  --w: clamp(0, calc((var(--t) * (var(--n) + 6) - var(--i)) / 4), 1);
+  color: color-mix(in srgb, var(--ink) calc(var(--w) * 100%), var(--word-dim));
+}
+.sbg-light .word.t-serif {
+  color: color-mix(in srgb, var(--accent) calc(var(--w) * 100%), var(--word-dim));
+}
+.sbg-light .value-pill {
+  --w: clamp(0, calc((var(--t) - var(--at)) * 9), 1);
+  opacity: calc(0.35 + var(--w) * 0.65);
+  transform: translate3d(0, calc((1 - var(--w)) * 10px), 0);
+  background: color-mix(in srgb, var(--pill-on) calc(var(--w) * 100%), var(--pill-off));
+}
+
+/* BUILD RAIL: vertical scroll drives a horizontal track */
+.sbg-light .rail-track {
+  display: flex;
+  gap: clamp(14px, 2vw, 24px);
+  width: max-content;
+  padding-inline: max(var(--gutter), calc((100vw - 1240px) / 2 + var(--gutter)));
+  transform: translate3d(calc(var(--t) * var(--shift, 0) * -1px), 0, 0);
+  will-change: transform;
+}
+.sbg-light .rail-card {
+  width: min(80vw, 380px);
+  flex: none;
+}
+.sbg-light .rail-bar {
+  transform-origin: 0 50%;
+  transform: scaleX(var(--t));
+}
+
+/* LEARN: marquees driven by scroll position */
+.sbg-light .marquee-row {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  will-change: transform;
+}
+.sbg-light .marquee-left {
+  transform: translate3d(calc(var(--t) * -26%), 0, 0);
+}
+.sbg-light .marquee-right {
+  transform: translate3d(calc(-26% + var(--t) * 26%), 0, 0);
+}
+
+/* small icon tile (white in light, a faint wash in dark) */
+.sbg-light .tile {
+  background: var(--tile-bg);
+  box-shadow: 0 8px 24px -10px var(--tile-shadow);
+}
+/* Kio in dark (DESIGN.md 13.7): a soft violet glow instead of the dark drop shadow */
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .kio,
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .kio-shadow {
+  filter: drop-shadow(0 14px 36px rgba(139, 92, 246, 0.4));
+}
+/* the deep CTA card is identical in both themes; in dark it gets a hairline so it separates from the page */
+html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .cta-card {
+  outline: 1px solid rgba(255, 255, 255, 0.12);
+  outline-offset: -1px;
+}
+
+/* ── Pixel motif: an ambient data pulse ─────────────────────
+   Every few seconds a wave runs diagonally across the small pixel grids
+   (top-left to bottom-right, --i = column + row, lib/design/pixel-cloud.ts
+   pixelWave): each lilac tile dips and dims for a moment, each orange tile
+   swells and glows. Between waves the grid is exactly the static motif. */
+@keyframes sbg-px-wave {
+  0%,
+  12%,
+  100% {
+    scale: 1;
+    filter: none;
+  }
+  5% {
+    scale: 0.72;
+    filter: opacity(0.4);
+  }
+}
+@keyframes sbg-px-spark {
+  0%,
+  100% {
+    scale: 1;
+    box-shadow: 0 0 0 0 transparent;
+  }
+  5% {
+    scale: 1.16;
+    box-shadow: 0 0 var(--px-glow-blur) 1px var(--px-glow);
+  }
+  22% {
+    scale: 1;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+/* the hero cloud's orange squares only glow: their transform belongs to the scroll build */
+@keyframes sbg-px-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 calc(var(--px-glow-blur) * 1.4) 1px var(--px-glow);
+  }
+}
+.sbg-light .px-tile {
+  animation: sbg-px-wave 7s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation-delay: calc(var(--i, 0) * 120ms);
+}
+.sbg-light .px-tile[data-hot="true"] {
+  animation-name: sbg-px-spark;
+}
+.sbg-light .cloud-cell[data-spark="true"] {
+  animation: sbg-px-glow 4.8s ease-in-out infinite;
+  animation-delay: calc(var(--d) * 6s);
+}
+
+/* ── Reveal on enter ────────────────────────────────────── */
+.sbg-light .reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition: opacity 0.8s var(--ease-out), transform 0.9s var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+.sbg-light .reveal[data-in="true"] {
+  opacity: 1;
+  transform: none;
+}
+@media (scripting: none) {
+  .sbg-light .reveal,
+  .sbg-light .rise {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* ── Cards that lift ────────────────────────────────────── */
+@media (hover: hover) {
+  .sbg-light .lift {
+    transition: transform 400ms var(--ease-out), box-shadow 400ms var(--ease-out);
+  }
+  .sbg-light .lift:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 1px 0 var(--hl) inset, 0 30px 60px -24px var(--shadow-strong), 0 2px 6px -2px var(--shadow-strong-soft);
+  }
+}
+
+/* ── Reduced motion: show the finished state, no travel ───── */
+@media (prefers-reduced-motion: reduce) {
+  .sbg-light .rise,
+  .sbg-light .kio {
+    animation: none;
+    opacity: 1;
+  }
+  .sbg-light .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .sbg-light .kio > *,
+  .sbg-light .chip-float > div,
+  .sbg-light .px-tile,
+  .sbg-light .px-tile[data-hot="true"],
+  .sbg-light .cloud-cell[data-spark="true"] {
+    animation: none;
+  }
+  .sbg-light .atmos-blob,
+  .sbg-light .atmos-px {
+    transform: none;
+  }
+  /* the horizontal rail becomes a normal swipeable row */
+  .sbg-light .rail-pin {
+    position: static;
+    height: auto;
+    overflow: visible;
+  }
+  .sbg-light .rail-scroller {
+    overflow-x: auto;
+  }
+  .sbg-light .rail-track {
+    transform: none;
+  }
+}
+
+/* The global dark autofill rule (globals.css) would paint a dark box on light inputs. */
+.sbg-light input:-webkit-autofill,
+.sbg-light input:-webkit-autofill:hover,
+.sbg-light input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #1b1140 !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  border-color: rgba(27, 17, 64, 0.15) !important;
+}

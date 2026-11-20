@@ -12,7 +12,7 @@
 //   top-performers  all top performers of one event and their Excellence certificates.
 //   organisers      all Certificates of Appreciation of one event.
 //   volunteers      all Certificates of Volunteering of one event.
-//   team            all team members of one batch, or of every batch ("ALL").
+//   team            every team member.
 //
 // Takes the Supabase client as a parameter so tests can pass a fake one and
 // check every filter (tests/admin/bulk-delete-run.test.ts).
@@ -21,7 +21,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isMissingColumnError } from "../certificates/event-theme.ts";
 import { chunkRanges, DB_PAGE_LIMIT } from "./pagination.ts";
-import { ALL_TEAM_BATCHES, DEFAULT_TEAM_BATCH, chunk, type BulkDeleteRequest } from "./bulk-delete.ts";
+import { chunk, type BulkDeleteRequest } from "./bulk-delete.ts";
 
 /** Ids per `.in(...)` filter, so the request URL stays short. */
 export const IN_CHUNK = 100;
@@ -164,18 +164,8 @@ export async function runBulkDelete(db: Db, req: BulkDeleteRequest): Promise<Bul
     }
 
     case "team": {
-      if (req.batch === ALL_TEAM_BATCHES) {
-        const del = check(await db.from("team_members").delete({ count: "exact" }).not("id", "is", null), "team delete");
-        return { ok: true, deleted: { teamMembers: del.count ?? 0 } };
-      }
-      const del = check(await db.from("team_members").delete({ count: "exact" }).eq("batch", req.batch), "team delete");
-      let teamMembers = del.count ?? 0;
-      // Members saved without a batch are listed under the default batch.
-      if (req.batch === DEFAULT_TEAM_BATCH) {
-        const unbatched = check(await db.from("team_members").delete({ count: "exact" }).is("batch", null), "team delete");
-        teamMembers += unbatched.count ?? 0;
-      }
-      return { ok: true, deleted: { teamMembers } };
+      const del = check(await db.from("team_members").delete({ count: "exact" }).not("id", "is", null), "team delete");
+      return { ok: true, deleted: { teamMembers: del.count ?? 0 } };
     }
   }
 }

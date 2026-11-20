@@ -1,81 +1,35 @@
-"use client";
+import { Reveal } from "@/components/design/Reveal";
+import { SocialLinks } from "@/components/design/SocialLinks";
+import { pixelWave } from "@/lib/design/pixel-cloud";
 
-import * as React from "react";
-import Link from "next/link";
-import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
-import { CirclePlus } from "@/components/ui/animate-ui/icons/circle-plus";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { PixelHeading } from "@/components/ui/pixel-heading-character";
-import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
-import { RecruitmentCTA } from "@/components/recruitment/RecruitmentCTA";
-
-gsap.registerPlugin(useGSAP, ScrollTrigger);
-
+/** Section 08. What to do next: a deep gradient card. */
 export function AboutCTA() {
-  const containerRef = React.useRef<HTMLElement>(null);
-
-  useGSAP(() => {
-    gsap.fromTo(
-      ".cta-el",
-      { opacity: 0, y: 24 },
-      {
-        opacity: 1,
-        y: 0,
-        stagger: 0.12,
-        duration: 0.7,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: ".cta-container",
-          start: "top 90%",
-          toggleActions: "play none none none",
-        },
-      }
-    );
-
-    const refreshTimer = setTimeout(() => ScrollTrigger.refresh(), 200);
-    return () => clearTimeout(refreshTimer);
-  }, { scope: containerRef });
-
   return (
-    <section ref={containerRef} className="bg-grid bg-noise relative overflow-hidden bg-bg py-16 md:py-24">
-      <div className="relative mx-auto max-w-content px-4 sm:px-6">
-        {/* Ambient glow behind the card */}
+    <section data-tone="violet" className="relative px-[var(--gutter)] pb-24 pt-32 sm:pb-32 sm:pt-44">
+      <Reveal className="relative mx-auto max-w-[1100px]">
         <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[450px] w-[450px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-[130px] z-0"
-        />
-
-        <div className="cta-container relative overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.01] backdrop-blur-xl px-4 py-10 sm:px-12 sm:py-20 md:py-24 text-center max-w-4xl mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10">
-          {/* Subtle inside grid overlay */}
-          <div className="pointer-events-none absolute inset-0 bg-grid opacity-100" />
-          {/* Subtle inside gradient highlight */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent" />
-          
-          <h2 className="cta-el font-display text-[32px] sm:text-[40px] md:text-[52px] font-semibold leading-[1.05] tracking-tight text-text-primary relative z-10">
-            Ready to{" "}
-            <PixelHeading mode="uniform" className="text-gradient">Build?</PixelHeading>
-          </h2>
-          <p className="cta-el mt-6 text-[15px] sm:text-[17px] leading-relaxed text-text-secondary max-w-lg mx-auto relative z-10">
-            Join a community where ideas become projects,
-            <br className="hidden sm:block" />
-            projects become portfolios,
-            <br className="hidden sm:block" />
-            and portfolios become careers.
-          </p>
-
-          {/* Register / Join Community Button */}
-          <div className="cta-el mt-10 relative z-10 flex justify-center">
-            <RecruitmentCTA
-              variant="border-gradient"
-              openText="Register Now"
-              closedText="Join Community"
-              className="font-display text-[15px] font-bold px-8 py-3.5"
-            />
+          className="cta-card relative overflow-hidden rounded-[36px] px-7 py-14 text-white sm:px-14 sm:py-20"
+          style={{ backgroundImage: "linear-gradient(135deg, #2E1170 0%, #4A1D9E 52%, #6428D4 100%)", boxShadow: "0 50px 100px -40px rgba(46,17,112,0.7)" }}
+        >
+          <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#AF8CFF]/35 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 right-10 h-64 w-64 rounded-full bg-[#FF9900]/20 blur-3xl" />
+          <span aria-hidden="true" className="pointer-events-none absolute bottom-8 right-8 grid grid-cols-4 gap-1.5 opacity-60">
+            {Array.from({ length: 16 }, (_, k) => (
+              <span key={k} data-hot={[0, 5, 6, 10, 15].includes(k) || undefined} className="px-tile h-3 w-3 rounded-[3px]" style={{ background: [0, 5, 6, 10, 15].includes(k) ? "#FF9900" : "rgba(255,255,255,0.14)", ...pixelWave(k, 4) }} />
+            ))}
+          </span>
+          <div className="relative max-w-2xl">
+            <p className="t-eyebrow mb-5 !text-white/70">What&apos;s next</p>
+            <h2 className="t-display text-[clamp(34px,5.2vw,64px)]">
+              Keep the <span className="t-serif text-[#D9C8FF]">momentum going.</span>
+            </h2>
+            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-white/80">
+              Now that you know who we are, come hang out. Join the chat, catch an upcoming event and see what the community is building.
+            </p>
+            <SocialLinks />
           </div>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

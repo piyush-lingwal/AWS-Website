@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Minus, HelpCircle, Mail } from "lucide-react";
+import { Plus, Minus, Mail } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -38,7 +38,7 @@ const FAQS = [
 
 export function TeamFAQ() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const faqListRef = useRef<HTMLDivElement>(null);
 
@@ -99,94 +99,95 @@ export function TeamFAQ() {
   }, [openIdx]);
 
   return (
-    <section ref={sectionRef} className="py-16 sm:py-24 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8 lg:gap-20 items-start">
+    <section ref={sectionRef} data-tone="dawn" className="relative overflow-hidden">
+      <div className="relative mx-auto max-w-[1240px] px-[var(--gutter)] py-24 md:py-32">
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_1.7fr] lg:gap-20">
 
-        {/* Left sticky header (Desktop) / Top header (Mobile) */}
-        <div ref={headerRef} className="lg:sticky lg:top-28">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] uppercase tracking-[0.2em] text-primary-light font-mono mb-3">
-            <HelpCircle className="w-3 h-3 text-primary-light" />
-            <span>Got Questions?</span>
-          </div>
+          {/* Left sticky header (Desktop) / Top header (Mobile) */}
+          <div ref={headerRef} className="lg:sticky lg:top-28">
+            <p className="t-eyebrow flex items-center gap-3">
+              <span className="t-pixel text-sbg-accent">05</span>
+              <span className="h-px w-10 bg-sbg-lilac-300" />
+              Got Questions?
+            </p>
 
-          <h2 className="text-3xl sm:text-4xl font-bold font-display text-text-primary tracking-tight leading-tight mb-3">
-            Frequently <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-primary-light to-accent bg-clip-text text-transparent">
-              Asked Questions.
-            </span>
-          </h2>
-          
-          <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-            Everything you need to know about joining the AWS Student Builder Group.
-          </p>
+            <h2 className="t-display mb-5 mt-5 text-[clamp(34px,4.6vw,60px)] text-sbg-ink">
+              Frequently <br className="hidden sm:inline" />
+              <span className="t-serif text-sbg-accent">Asked Questions.</span>
+            </h2>
 
-          {/* Desktop Contact Card */}
-          <div className="hidden lg:block mt-8 p-5 rounded-2xl bg-bg-card border border-border">
-            <p className="text-xs text-muted font-mono mb-1.5">Have a different question?</p>
-            <a
-              href="mailto:awssbg@tulas.edu.in"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-light hover:text-accent transition-colors"
-            >
-              <Mail className="w-4 h-4" />
-              <span>awssbg@tulas.edu.in →</span>
-            </a>
-          </div>
-        </div>
+            <p className="t-lead max-w-sm">
+              Everything you need to know about joining the AWS Student Builder Group.
+            </p>
 
-        {/* Right — FAQ accordion with GSAP Stagger */}
-        <div ref={faqListRef} className="space-y-3">
-          {FAQS.map((faq, idx) => {
-            const isOpen = openIdx === idx;
-            return (
-              <div
-                key={idx}
-                className={`gsap-faq-item rounded-2xl border overflow-hidden transition-all duration-300 ${
-                  isOpen
-                    ? "border-primary/40 bg-gradient-to-br from-primary/10 via-bg-card to-bg-card shadow-lg"
-                    : "border-border bg-bg-card/80 hover:border-border/80"
-                }`}
+            {/* Desktop Contact Card */}
+            <div className="surface mt-8 hidden rounded-[24px] p-6 lg:block">
+              <p className="t-eyebrow mb-2">Have a different question?</p>
+              <a
+                href="mailto:awssbg@tulas.edu.in"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-sbg-accent-strong transition-colors hover:text-sbg-accent"
               >
-                <button
-                  type="button"
-                  onClick={() => setOpenIdx(isOpen ? null : idx)}
-                  className="w-full flex items-center justify-between gap-3 p-4 sm:p-5 text-left focus:outline-none select-none active:bg-white/[0.02]"
+                <Mail className="h-4 w-4" />
+                <span>awssbg@tulas.edu.in →</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Right: FAQ accordion with GSAP Stagger */}
+          <div ref={faqListRef} className="space-y-3">
+            {FAQS.map((faq, idx) => {
+              const isOpen = openIdx === idx;
+              return (
+                <div
+                  key={idx}
+                  className={`gsap-faq-item surface overflow-hidden rounded-[22px] transition-all duration-300 ${
+                    isOpen ? "!bg-[var(--tile-bg)] !border-sbg-lilac-300 shadow-lg" : "hover:!bg-[var(--wash-90)]"
+                  }`}
+                  style={isOpen ? { backgroundImage: "linear-gradient(155deg, var(--card-lilac) 0%, var(--wash-90) 58%)" } : undefined}
                 >
-                  <span className={`text-xs sm:text-sm font-semibold font-display transition-colors leading-snug ${isOpen ? "text-text-primary" : "text-text-secondary hover:text-text-primary"}`}>
-                    {faq.q}
-                  </span>
-                  <div className={`shrink-0 w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 ${isOpen ? "border-primary/40 bg-primary/15 text-primary-light" : "border-border text-muted"}`}>
-                    {isOpen ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setOpenIdx(isOpen ? null : idx)}
+                    aria-expanded={isOpen}
+                    className="flex w-full select-none items-center justify-between gap-4 p-5 text-left sm:p-6"
+                  >
+                    <span className="t-display text-[17px] leading-snug text-sbg-ink sm:text-[19px]">
+                      {faq.q}
+                    </span>
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${isOpen ? "bg-sbg-lilac-600 text-white" : "bg-sbg-lilac-100 text-sbg-accent-strong"}`}>
+                      {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    </div>
+                  </button>
 
-                <AnimatePresence>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <p className="px-4 sm:px-5 pb-4 sm:pb-5 text-xs sm:text-sm text-text-secondary leading-relaxed border-t border-primary/15 pt-3">
-                        {faq.a}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <p className="mx-5 border-t border-sbg-lilac-200 pb-5 pt-4 text-[15px] leading-relaxed text-sbg-ink-2 sm:mx-6 sm:pb-6">
+                          {faq.a}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
 
-          {/* Mobile Contact Card */}
-          <div className="gsap-faq-item lg:hidden mt-6 p-4 rounded-2xl bg-bg-card border border-border text-center">
-            <p className="text-xs text-muted font-mono mb-1">Have a different question?</p>
-            <a
-              href="mailto:awssbg@tulas.edu.in"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-primary-light hover:text-accent transition-colors"
-            >
-              <Mail className="w-3.5 h-3.5" />
-              <span>awssbg@tulas.edu.in →</span>
-            </a>
+            {/* Mobile Contact Card */}
+            <div className="gsap-faq-item surface mt-6 rounded-[22px] p-5 text-center lg:hidden">
+              <p className="t-eyebrow mb-2">Have a different question?</p>
+              <a
+                href="mailto:awssbg@tulas.edu.in"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-sbg-accent-strong transition-colors hover:text-sbg-accent"
+              >
+                <Mail className="h-3.5 w-3.5" />
+                <span>awssbg@tulas.edu.in →</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>

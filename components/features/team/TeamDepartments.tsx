@@ -4,7 +4,6 @@ import React from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Sparkles } from "lucide-react";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -29,51 +28,26 @@ export function TeamDepartments() {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef} id="team" className="relative w-full overflow-hidden">
-
-      {/* Full-width cinematic banner */}
-      <div className="relative w-full bg-bg border-y border-border/60 py-20 sm:py-28 px-4 sm:px-6">
-
-        {/* Background glow orbs */}
-        <div className="pointer-events-none absolute left-1/4 top-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-primary/10 rounded-full blur-[120px]" />
-        <div className="pointer-events-none absolute right-1/4 top-1/2 -translate-y-1/2 w-[400px] h-[250px] bg-accent/8 rounded-full blur-[100px]" />
-
-        {/* Subtle grid overlay */}
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:60px_60px]" />
-
-        {/* Top glow line */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-
-        <div className="team-dept-header relative z-10 max-w-3xl mx-auto flex flex-col items-center text-center gap-8">
+    <section ref={containerRef} id="team" data-tone="bloom" className="relative w-full overflow-hidden">
+      <div className="relative mx-auto max-w-[1240px] px-[var(--gutter)] py-24 sm:py-32">
+        <div className="team-dept-header relative z-10 mx-auto flex max-w-3xl flex-col items-center gap-8 text-center">
 
           {/* Eyebrow */}
-          <p className="team-dept-el text-[11px] uppercase tracking-[0.16em] text-muted">
+          <p className="team-dept-el t-eyebrow">
             Our Team · Cohort 2026
           </p>
 
           {/* Main headline */}
-          <div className="team-dept-el space-y-2">
-            <h2 className="font-display text-[42px] sm:text-[56px] md:text-[68px] font-bold leading-none tracking-tight text-white">
-              Team
-            </h2>
-            <h2 className="font-display text-[42px] sm:text-[56px] md:text-[68px] font-bold leading-none tracking-tight bg-gradient-to-r from-primary-light via-accent to-purple-300 bg-clip-text text-transparent pb-3">
-              Revealing Soon
-            </h2>
-          </div>
+          <h2 className="team-dept-el t-display text-[clamp(42px,7vw,88px)] text-sbg-ink">
+            Team <span className="t-serif text-sbg-accent">Revealing Soon</span>
+          </h2>
 
           {/* CTAs */}
-          <div className="team-dept-el flex flex-col sm:flex-row items-center gap-3">
-            <a
-              href="/register"
-              className="group relative px-8 py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-sm overflow-hidden shadow-[0_0_28px_-5px_rgba(124,58,237,0.6)] hover:shadow-[0_0_40px_-5px_rgba(124,58,237,0.85)] transition-all duration-300 hover:scale-[1.03]"
-            >
-              <span className="relative z-10">Apply Now →</span>
-              <span className="absolute inset-0 bg-gradient-to-r from-primary via-purple-500 to-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="team-dept-el flex flex-col items-center gap-3 sm:flex-row">
+            <a href="/register" className="btn btn-primary">
+              Apply Now →
             </a>
-            <a
-              href="/team"
-              className="px-8 py-3.5 rounded-xl bg-white/[0.04] border border-white/[0.1] hover:border-white/[0.2] text-text-secondary hover:text-text-primary font-semibold text-sm transition-all duration-200 backdrop-blur-sm"
-            >
+            <a href="/team" className="btn btn-ghost">
               Explore Wings
             </a>
           </div>

@@ -13,7 +13,7 @@
 //   top-performers  every top performer of one event, with their Excellence certificates
 //   organisers      every Certificate of Appreciation of one event
 //   volunteers      every Certificate of Volunteering of one event
-//   team            every team member of one batch, or of all batches
+//   team            every team member
 // ============================================================
 
 import { isUuid } from "../auth/roles.ts";
@@ -25,20 +25,12 @@ export type BulkDeleteSection = (typeof BULK_DELETE_SECTIONS)[number];
 /** What the admin must type in the second confirmation step. */
 export const BULK_DELETE_CONFIRMATION = "DELETE";
 
-/** The team "batch" value that means every batch. */
-export const ALL_TEAM_BATCHES = "ALL";
-
-/** Team members saved without a batch are shown (and deleted) as this batch. */
-export const DEFAULT_TEAM_BATCH = "2026-27";
-
 const EVENT_SECTIONS: readonly BulkDeleteSection[] = ["registrations", "top-performers", "organisers", "volunteers"];
-
-const BATCH_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}$/;
 
 export type BulkDeleteRequest =
   | { section: "events" }
   | { section: "registrations" | "top-performers" | "organisers" | "volunteers"; eventId: string }
-  | { section: "team"; batch: string };
+  | { section: "team" };
 
 export type BulkDeleteValidation =
   | { ok: true; value: BulkDeleteRequest }
@@ -50,7 +42,7 @@ export function isBulkDeleteSection(value: unknown): value is BulkDeleteSection 
 
 export function validateBulkDelete(body: unknown): BulkDeleteValidation {
   if (typeof body !== "object" || body === null) return { ok: false, error: "Invalid request body." };
-  const { section, eventId, batch, confirm } = body as Record<string, unknown>;
+  const { section, eventId, confirm } = body as Record<string, unknown>;
 
   if (!isBulkDeleteSection(section)) {
     return { ok: false, error: `Section must be one of: ${BULK_DELETE_SECTIONS.join(", ")}.` };
@@ -72,11 +64,7 @@ export function validateBulkDelete(body: unknown): BulkDeleteValidation {
   }
 
   // team
-  const cleanBatch = typeof batch === "string" ? batch.trim() : "";
-  if (cleanBatch !== ALL_TEAM_BATCHES && !BATCH_PATTERN.test(cleanBatch)) {
-    return { ok: false, error: "A valid batch (or ALL) is required." };
-  }
-  return { ok: true, value: { section: "team", batch: cleanBatch } };
+  return { ok: true, value: { section: "team" } };
 }
 
 /** Splits ids into groups small enough for one `.in(...)` filter in a URL. */

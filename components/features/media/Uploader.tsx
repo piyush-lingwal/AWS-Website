@@ -227,10 +227,10 @@ export function Uploader({ eventId }: { eventId: string }) {
   };
 
   return (
-    <section aria-labelledby="upload-heading" className="space-y-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+    <section aria-labelledby="upload-heading" className="space-y-4 surface rounded-[28px] p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="upload-heading" className="text-lg font-semibold">Upload</h2>
-        <div role="group" aria-label="Where to store the files" className="inline-flex rounded-xl border border-white/[0.08] p-0.5 text-xs">
+        <div role="group" aria-label="Where to store the files" className="inline-flex rounded-xl border border-sbg-ink/10 p-0.5 text-xs">
           {(["s3", "supabase"] as const).map((t) => (
             <button
               key={t}
@@ -239,14 +239,14 @@ export function Uploader({ eventId }: { eventId: string }) {
               disabled={hasUnfinished}
               onClick={() => setTarget(t)}
               className={`rounded-[10px] px-3 py-1.5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                target === t ? "bg-[#6C63FF] text-white" : "text-[#A1A1AA] hover:text-white"
+                target === t ? "bg-sbg-lilac-600 text-white" : "text-sbg-ink-2 hover:text-sbg-ink"
               }`}
             >
               {t === "s3" ? "AWS S3" : "Supabase"}
             </button>
           ))}
         </div>
-        <div role="group" aria-label="What are you uploading?" className="inline-flex rounded-xl border border-white/[0.08] p-0.5 text-xs">
+        <div role="group" aria-label="What are you uploading?" className="inline-flex rounded-xl border border-sbg-ink/10 p-0.5 text-xs">
           {(["gallery", "cover"] as const).map((p) => (
             <button
               key={p}
@@ -255,7 +255,7 @@ export function Uploader({ eventId }: { eventId: string }) {
               disabled={hasUnfinished}
               onClick={() => setPurpose(p)}
               className={`rounded-[10px] px-3 py-1.5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                purpose === p ? "bg-[#6C63FF] text-white" : "text-[#A1A1AA] hover:text-white"
+                purpose === p ? "bg-sbg-lilac-600 text-white" : "text-sbg-ink-2 hover:text-sbg-ink"
               }`}
             >
               {p === "gallery" ? "Photos & videos" : "Event cover"}
@@ -275,15 +275,15 @@ export function Uploader({ eventId }: { eventId: string }) {
           setDragging(false);
           addFiles(e.dataTransfer.files);
         }}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-10 text-center transition-colors focus-within:ring-2 focus-within:ring-[#6C63FF] ${
-          dragging ? "border-[#6C63FF] bg-[#6C63FF]/10" : "border-white/[0.12] hover:border-white/25"
+        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-10 text-center transition-colors focus-within:ring-2 focus-within:ring-sbg-lilac-600 ${
+          dragging ? "border-sbg-lilac-600 bg-sbg-lilac-100" : "border-sbg-lilac-300 bg-sbg-lilac-50 hover:border-sbg-lilac-500"
         }`}
       >
-        <UploadCloud className="h-7 w-7 text-[#8B83FF]" aria-hidden="true" />
+        <UploadCloud className="h-7 w-7 text-sbg-lilac-700" aria-hidden="true" />
         <span className="text-sm font-medium">
           {purpose === "cover" ? "Choose one cover image" : "Drop files here, or click to browse"}
         </span>
-        <span className="text-xs text-[#71717A]">
+        <span className="text-xs text-sbg-ink-3">
           JPEG, PNG, WebP, iPhone HEIC · compressed to WebP before upload
           {purpose === "gallery" ? ` · MP4, WebM up to ${target === "supabase" ? SUPABASE_VIDEO_MAX_BYTES / (1024 * 1024) : 500} MB` : ""}
         </span>
@@ -300,7 +300,7 @@ export function Uploader({ eventId }: { eventId: string }) {
       </label>
 
       {compressing > 0 && (
-        <p role="status" className="flex items-center gap-2 text-xs text-[#A1A1AA]">
+        <p role="status" className="flex items-center gap-2 text-xs text-sbg-ink-2">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
           Compressing {compressing} {compressing === 1 ? "photo" : "photos"} to WebP…
         </p>
@@ -309,13 +309,13 @@ export function Uploader({ eventId }: { eventId: string }) {
       {items.length > 0 && (
         <>
           <div className="flex items-center justify-between gap-3">
-            <p aria-live="polite" className="text-xs text-[#A1A1AA]">
+            <p aria-live="polite" className="text-xs text-sbg-ink-2">
               {summary.done} of {summary.total} done
-              {summary.failed > 0 && <span className="text-red-400"> · {summary.failed} need attention</span>}
+              {summary.failed > 0 && <span className="text-red-700"> · {summary.failed} need attention</span>}
               {summary.inFlight > 0 && <span> · {summary.inFlight} in progress</span>}
             </p>
             {summary.done > 0 && (
-              <button type="button" onClick={clearFinished} className="text-xs text-[#8B83FF] hover:underline">
+              <button type="button" onClick={clearFinished} className="text-xs text-sbg-lilac-700 hover:underline">
                 Clear finished
               </button>
             )}
@@ -349,12 +349,12 @@ function UploadRow({
     item.state === "error" ? item.error : uploading ? `Uploading… ${item.progress}%` : STATUS_LABEL[item.state];
 
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-black/20 p-2.5">
-      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/[0.04]">
+    <li className="flex items-center gap-3 rounded-xl border border-sbg-ink/10 bg-white p-2.5">
+      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-sbg-mist">
         {item.kind === "video" ? (
-          <Film className="h-5 w-5 text-[#A1A1AA]" aria-hidden="true" />
+          <Film className="h-5 w-5 text-sbg-ink-2" aria-hidden="true" />
         ) : (
-          <ImageIcon className="h-5 w-5 text-[#A1A1AA]" aria-hidden="true" />
+          <ImageIcon className="h-5 w-5 text-sbg-ink-2" aria-hidden="true" />
         )}
         {preview && (
           // The icon above shows through if the file is not a decodable image.
@@ -362,7 +362,7 @@ function UploadRow({
           <img
             src={preview}
             alt=""
-            className="absolute inset-0 h-full w-full bg-[#0b0b10] object-cover"
+            className="absolute inset-0 h-full w-full bg-sbg-mist object-cover"
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
@@ -372,7 +372,7 @@ function UploadRow({
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{item.name}</p>
-        <p className={`mt-0.5 flex items-center gap-1.5 text-xs ${item.state === "error" ? "text-red-400" : done ? "text-emerald-400" : "text-[#A1A1AA]"}`}>
+        <p className={`mt-0.5 flex items-center gap-1.5 text-xs ${item.state === "error" ? "text-red-700" : done ? "text-emerald-700" : "text-sbg-ink-2"}`}>
           {item.state === "error" && <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
           {done && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
           {(item.state === "signing" || item.state === "verifying") && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden="true" />}
@@ -390,20 +390,20 @@ function UploadRow({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={item.progress}
-            className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/10"
+            className="mt-1.5 h-1 overflow-hidden rounded-full bg-sbg-lilac-100"
           >
-            <div className="h-full rounded-full bg-[#6C63FF] transition-[width] duration-150" style={{ width: `${item.progress}%` }} />
+            <div className="h-full rounded-full bg-sbg-lilac-600 transition-[width] duration-150" style={{ width: `${item.progress}%` }} />
           </div>
         )}
       </div>
 
       {item.state === "error" && item.retryable && (
-        <button type="button" onClick={onRetry} aria-label={`Retry ${item.name}`} className="flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.1] px-2.5 text-xs hover:bg-white/[0.06]">
+        <button type="button" onClick={onRetry} aria-label={`Retry ${item.name}`} className="flex h-8 items-center gap-1.5 rounded-lg border border-sbg-ink/15 px-2.5 text-xs hover:bg-sbg-lilac-50">
           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Retry
         </button>
       )}
       {!isBusy(item.state) && (
-        <button type="button" onClick={onRemove} aria-label={`Remove ${item.name} from the list`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#71717A] hover:bg-white/[0.06] hover:text-white">
+        <button type="button" onClick={onRemove} aria-label={`Remove ${item.name} from the list`} className="flex h-8 w-8 items-center justify-center rounded-lg text-sbg-ink-3 hover:bg-sbg-lilac-50 hover:text-sbg-ink">
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
       )}

@@ -48,10 +48,10 @@ function toPreview(rows: ParsedAttendeeRow[], existing: Set<string>): PreviewRow
 }
 
 const STATUS_STYLE: Record<RowStatus, string> = {
-  ready: "text-emerald-400",
-  imported: "text-emerald-400",
-  already_added: "text-amber-300",
-  error: "text-red-400",
+  ready: "text-[#047857]",
+  imported: "text-[#047857]",
+  already_added: "text-[#92400e]",
+  error: "text-[#b91c1c]",
 };
 
 const STATUS_LABEL: Record<RowStatus, string> = {
@@ -193,16 +193,16 @@ export function AttendeeImportDialog({ eventId, eventName, eventDate, existingEm
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="h-10 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/[0.08] flex items-center gap-2 transition-all cursor-pointer"
+        className="h-10 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white/70 hover:bg-sbg-lilac-100 text-sbg-ink border border-sbg-ink/[0.12] flex items-center gap-2 transition-all cursor-pointer"
         title="Add attendees to this event from an Excel / CSV sheet"
       >
-        <Upload className="w-4 h-4 text-amber-400" />
+        <Upload className="w-4 h-4 text-[#92400e]" />
         <span className="hidden sm:inline">Import Excel</span>
       </button>
 
       {open && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/75 p-2 backdrop-blur-sm sm:p-4"
+          className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-sbg-ink/45 backdrop-blur-sm p-2 sm:p-4"
           role="presentation"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) close();
@@ -214,38 +214,38 @@ export function AttendeeImportDialog({ eventId, eventName, eventDate, existingEm
             aria-labelledby="attendee-import-title"
             data-lenis-prevent
             onWheel={(e) => e.stopPropagation()}
-            className="my-auto flex max-h-[95dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/[0.1] bg-[#0F0F16] shadow-2xl"
+            className="my-auto flex max-h-[95dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-sbg-ink/[0.14] bg-white shadow-2xl"
           >
-            <header className="flex items-start justify-between gap-4 border-b border-white/[0.08] p-4 sm:p-5">
+            <header className="flex items-start justify-between gap-4 border-b border-sbg-ink/[0.12] p-4 sm:p-5">
               <div className="min-w-0">
-                <h2 id="attendee-import-title" className="text-lg font-bold text-white">Import attendees</h2>
-                <p className="mt-1 truncate text-xs text-[#A1A1AA]">
-                  Event: <span className="font-medium text-white">{eventName}</span>
+                <h2 id="attendee-import-title" className="text-lg font-bold text-sbg-ink">Import attendees</h2>
+                <p className="mt-1 truncate text-xs text-sbg-ink-2">
+                  Event: <span className="font-medium text-sbg-ink">{eventName}</span>
                 </p>
-                <p className="mt-1 text-xs text-[#71717A]">
+                <p className="mt-1 text-xs text-sbg-ink-3">
                   Columns: Full Name, Email, College ID (numbers only), Course. Each new attendee gets a participation
                   certificate, the same as submitting the attendance form. Upload .xlsx, .xls or .csv (max 2 MB,{" "}
                   {ATTENDEE_IMPORT_MAX_ROWS} rows), or paste cells copied from Excel / Google Sheets.
                 </p>
               </div>
-              <button type="button" onClick={close} disabled={importing} aria-label="Close import dialog" className="rounded-lg p-2 text-[#A1A1AA] hover:bg-white/[0.06] hover:text-white disabled:opacity-40">
+              <button type="button" onClick={close} disabled={importing} aria-label="Close import dialog" className="rounded-lg p-2 text-sbg-ink-2 hover:bg-sbg-lilac-100 hover:text-sbg-ink disabled:opacity-40">
                 <X className="h-4 w-4" />
               </button>
             </header>
 
             <div className="space-y-4 overflow-y-auto p-4 sm:p-5">
               {!eventDate ? (
-                <p role="alert" className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-300">
+                <p role="alert" className="flex items-start gap-2 rounded-xl border border-[#92400e]/25 bg-[#fff1dc] p-3 text-xs text-[#92400e]">
                   <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   This event has no date yet. Set the date (Edit Event) before importing: certificates show the event date.
                 </p>
               ) : (
                 <>
                   <div className="flex flex-wrap items-center gap-2">
-                    <button type="button" onClick={() => void downloadSample()} className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05]">
+                    <button type="button" onClick={() => void downloadSample()} className="inline-flex h-9 items-center gap-2 rounded-xl border border-sbg-ink/[0.14] px-3 text-xs font-medium text-sbg-ink hover:bg-sbg-lilac-100">
                       <Download className="h-3.5 w-3.5" /> Download sample sheet
                     </button>
-                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={importing} className="inline-flex h-9 items-center gap-2 rounded-xl bg-amber-600 px-3 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-50">
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={importing} className="inline-flex h-9 items-center gap-2 rounded-xl bg-amber-700 px-3 text-xs font-semibold text-white hover:bg-amber-800 disabled:opacity-50">
                       <FileSpreadsheet className="h-3.5 w-3.5" /> Choose Excel / CSV
                     </button>
                     <input
@@ -258,11 +258,11 @@ export function AttendeeImportDialog({ eventId, eventName, eventDate, existingEm
                         e.currentTarget.value = "";
                       }}
                     />
-                    {sourceName && <span className="text-xs text-[#71717A]">{sourceName}</span>}
+                    {sourceName && <span className="text-xs text-sbg-ink-3">{sourceName}</span>}
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="attendee-paste" className="block text-xs font-semibold text-[#D4D4D8]">Or paste cells (header row included)</label>
+                    <label htmlFor="attendee-paste" className="block text-xs font-semibold text-sbg-ink">Or paste cells (header row included)</label>
                     <textarea
                       id="attendee-paste"
                       value={pasteText}
@@ -270,9 +270,9 @@ export function AttendeeImportDialog({ eventId, eventName, eventDate, existingEm
                       rows={3}
                       disabled={importing}
                       placeholder={ATTENDEE_FIELDS.map((f) => ATTENDEE_FIELD_LABELS[f]).join("\t")}
-                      className="w-full rounded-xl border border-white/[0.1] bg-[#09090E] p-3 font-mono text-xs text-white placeholder:text-[#52525B] focus:border-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-sbg-ink/[0.14] bg-sbg-mist p-3 font-mono text-xs text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none"
                     />
-                    <button type="button" onClick={handlePaste} disabled={!pasteText.trim() || importing} className="h-8 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05] disabled:opacity-40">
+                    <button type="button" onClick={handlePaste} disabled={!pasteText.trim() || importing} className="h-8 rounded-lg border border-sbg-ink/[0.14] px-3 text-xs font-medium text-sbg-ink hover:bg-sbg-lilac-100 disabled:opacity-40">
                       Preview pasted rows
                     </button>
                   </div>
@@ -280,7 +280,7 @@ export function AttendeeImportDialog({ eventId, eventName, eventDate, existingEm
               )}
 
               {error && (
-                <p role="alert" className="flex items-start gap-2 text-xs text-red-400">
+                <p role="alert" className="flex items-start gap-2 text-xs text-[#b91c1c]">
                   <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {error}
                 </p>
@@ -289,7 +289,7 @@ export function AttendeeImportDialog({ eventId, eventName, eventDate, existingEm
               {rows.length > 0 && (
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-[#A1A1AA]">
+                    <p className="text-xs text-sbg-ink-2">
                       {finished
                         ? `${count("imported")} imported, ${count("already_added")} already added, ${count("error")} errors`
                         : `${readyCount} ready, ${count("already_added")} already added, ${count("error")} errors`}
@@ -298,7 +298,7 @@ export function AttendeeImportDialog({ eventId, eventName, eventDate, existingEm
                       type="button"
                       onClick={() => void runImport()}
                       disabled={readyCount === 0 || importing || finished}
-                      className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45"
+                      className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#047857] px-3.5 text-xs font-semibold text-white hover:bg-[#065f46] disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                       {importing && progress
@@ -309,9 +309,9 @@ export function AttendeeImportDialog({ eventId, eventName, eventDate, existingEm
                     </button>
                   </div>
 
-                  <div className="max-w-full overflow-x-auto rounded-xl border border-white/[0.08]">
+                  <div className="max-w-full overflow-x-auto rounded-xl border border-sbg-ink/[0.12]">
                     <table className="w-full min-w-[760px] text-left text-xs">
-                      <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-[#71717A]">
+                      <thead className="bg-white/60 text-[10px] uppercase tracking-wider text-sbg-ink-3">
                         <tr>
                           <th className="px-3 py-2">Row</th>
                           {ATTENDEE_FIELDS.map((f) => (
@@ -320,12 +320,12 @@ export function AttendeeImportDialog({ eventId, eventName, eventDate, existingEm
                           <th className="px-3 py-2">Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/[0.05]">
+                      <tbody className="divide-y divide-sbg-ink/[0.07]">
                         {rows.map((row) => {
                           const shown = row.result.ok ? row.result.value : row.cells;
                           return (
-                            <tr key={row.rowNumber} className="text-[#D4D4D8]">
-                              <td className="px-3 py-2 text-[#71717A]">{row.rowNumber}</td>
+                            <tr key={row.rowNumber} className="text-sbg-ink">
+                              <td className="px-3 py-2 text-sbg-ink-3">{row.rowNumber}</td>
                               <td className="px-3 py-2">{shown.fullName}</td>
                               <td className="px-3 py-2">{shown.email}</td>
                               <td className="px-3 py-2 font-mono">{shown.collegeId}</td>

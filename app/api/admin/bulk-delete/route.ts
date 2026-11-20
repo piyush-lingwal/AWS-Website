@@ -2,7 +2,7 @@
 // POST /api/admin/bulk-delete — delete every entry of one admin section
 // ============================================================
 //
-// Body: { section, eventId?, batch?, confirm: "DELETE" }  (see lib/admin/bulk-delete.ts)
+// Body: { section, eventId?, confirm: "DELETE" }  (see lib/admin/bulk-delete.ts)
 // What each section deletes: lib/admin/bulk-delete-run.ts.
 // The admin dashboard calls this from components/admin/DeleteAllButton.tsx,
 // after two confirmation steps.

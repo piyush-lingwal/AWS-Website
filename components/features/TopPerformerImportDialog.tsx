@@ -280,7 +280,7 @@ export function TopPerformerImportDialog({ eventId, existingEmails, onImported }
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 text-xs font-semibold text-[#D4D4D8] hover:bg-white/[0.07]"
+        className="inline-flex h-9 items-center gap-2 rounded-xl border border-sbg-ink/[0.14] bg-white/60 px-3 text-xs font-semibold text-sbg-ink hover:bg-sbg-lilac-100"
       >
         <FileSpreadsheet className="h-3.5 w-3.5" />
         Import from Excel / Sheet
@@ -288,7 +288,7 @@ export function TopPerformerImportDialog({ eventId, existingEmails, onImported }
 
       {open && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/75 p-2 backdrop-blur-sm sm:p-4"
+          className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-sbg-ink/45 backdrop-blur-sm p-2 sm:p-4"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) close();
@@ -300,25 +300,25 @@ export function TopPerformerImportDialog({ eventId, existingEmails, onImported }
             aria-labelledby="top-performer-import-title"
             data-lenis-prevent
             onWheel={(event) => event.stopPropagation()}
-            className="my-auto flex max-h-[95dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/[0.1] bg-[#0F0F16] shadow-2xl"
+            className="my-auto flex max-h-[95dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-sbg-ink/[0.14] bg-white shadow-2xl"
           >
-            <header className="flex items-start justify-between gap-4 border-b border-white/[0.08] p-4 sm:p-5">
+            <header className="flex items-start justify-between gap-4 border-b border-sbg-ink/[0.12] p-4 sm:p-5">
               <div>
-                <h2 id="top-performer-import-title" className="text-lg font-bold text-white">Import Top Performers</h2>
-                <p className="mt-1 text-xs text-[#A1A1AA]">Upload .xlsx or .csv (max 2 MB, 500 rows), or paste tab-separated cells.</p>
-                <p className="mt-1 text-xs text-[#71717A]">From Google Sheets: File -&gt; Download -&gt; Excel/CSV, or copy the cells and paste</p>
+                <h2 id="top-performer-import-title" className="text-lg font-bold text-sbg-ink">Import Top Performers</h2>
+                <p className="mt-1 text-xs text-sbg-ink-2">Upload .xlsx or .csv (max 2 MB, 500 rows), or paste tab-separated cells.</p>
+                <p className="mt-1 text-xs text-sbg-ink-3">From Google Sheets: File -&gt; Download -&gt; Excel/CSV, or copy the cells and paste</p>
               </div>
-              <button type="button" onClick={close} aria-label="Close import dialog" className="rounded-lg p-2 text-[#A1A1AA] hover:bg-white/[0.06] hover:text-white">
+              <button type="button" onClick={close} aria-label="Close import dialog" className="rounded-lg p-2 text-sbg-ink-2 hover:bg-sbg-lilac-100 hover:text-sbg-ink">
                 <X className="h-4 w-4" />
               </button>
             </header>
 
             <div className="space-y-4 overflow-y-auto p-4 sm:p-5">
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={downloadSample} className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05]">
+                <button type="button" onClick={downloadSample} className="inline-flex h-9 items-center gap-2 rounded-xl border border-sbg-ink/[0.14] px-3 text-xs font-medium text-sbg-ink hover:bg-sbg-lilac-100">
                   <Download className="h-3.5 w-3.5" /> Download sample file
                 </button>
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-9 items-center gap-2 rounded-xl bg-amber-600 px-3 text-xs font-semibold text-white hover:bg-amber-500">
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-9 items-center gap-2 rounded-xl bg-amber-700 px-3 text-xs font-semibold text-white hover:bg-amber-800">
                   <Upload className="h-3.5 w-3.5" /> Choose Excel / CSV
                 </button>
                 <input
@@ -331,58 +331,58 @@ export function TopPerformerImportDialog({ eventId, existingEmails, onImported }
                     event.currentTarget.value = "";
                   }}
                 />
-                {fileName && <span className="self-center text-xs text-[#71717A]">{fileName}</span>}
+                {fileName && <span className="self-center text-xs text-sbg-ink-3">{fileName}</span>}
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="top-performer-paste" className="block text-xs font-semibold text-[#D4D4D8]">Paste spreadsheet cells</label>
+                <label htmlFor="top-performer-paste" className="block text-xs font-semibold text-sbg-ink">Paste spreadsheet cells</label>
                 <textarea
                   id="top-performer-paste"
                   value={pasteText}
                   onChange={(event) => setPasteText(event.target.value)}
                   rows={4}
                   placeholder={"Rank\tName\tEmail\tRoll No\tCourse"}
-                  className="w-full rounded-xl border border-white/[0.1] bg-[#09090E] p-3 font-mono text-xs text-white placeholder:text-[#52525B] focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-xl border border-sbg-ink/[0.14] bg-sbg-mist p-3 font-mono text-xs text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none"
                 />
-                <button type="button" onClick={handlePaste} disabled={!pasteText.trim()} className="h-8 rounded-lg border border-white/[0.1] px-3 text-xs font-medium text-[#D4D4D8] hover:bg-white/[0.05] disabled:opacity-40">
+                <button type="button" onClick={handlePaste} disabled={!pasteText.trim()} className="h-8 rounded-lg border border-sbg-ink/[0.14] px-3 text-xs font-medium text-sbg-ink hover:bg-sbg-lilac-100 disabled:opacity-40">
                   Preview pasted rows
                 </button>
               </div>
 
-              {error && <p role="alert" className="flex items-start gap-2 text-xs text-red-400"><AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{error}</p>}
+              {error && <p role="alert" className="flex items-start gap-2 text-xs text-[#b91c1c]"><AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{error}</p>}
 
               {rows.length > 0 && (
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-[#A1A1AA]">{readyCount} ready, {errorCount} errors, {rows.filter((row) => row.status === "already_added").length} already added</p>
-                    <button type="button" onClick={() => void importRows()} disabled={readyCount === 0 || importing || results.length > 0} className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45">
+                    <p className="text-xs text-sbg-ink-2">{readyCount} ready, {errorCount} errors, {rows.filter((row) => row.status === "already_added").length} already added</p>
+                    <button type="button" onClick={() => void importRows()} disabled={readyCount === 0 || importing || results.length > 0} className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#047857] px-3.5 text-xs font-semibold text-white hover:bg-[#065f46] disabled:cursor-not-allowed disabled:opacity-45">
                       {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                       {importing ? "Importing…" : results.length > 0 ? "Import complete" : `Import ${readyCount} valid rows`}
                     </button>
                   </div>
-                  <div className="max-w-full overflow-x-auto rounded-xl border border-white/[0.08]">
+                  <div className="max-w-full overflow-x-auto rounded-xl border border-sbg-ink/[0.12]">
                     <table className="w-full min-w-[760px] text-left text-xs">
-                      <thead className="bg-white/[0.03] text-[10px] uppercase tracking-wider text-[#71717A]">
+                      <thead className="bg-white/60 text-[10px] uppercase tracking-wider text-sbg-ink-3">
                         <tr>
                           <th className="px-3 py-2">Row</th>
                           {(["rank", "fullName", "email", "rollNo", "course"] as const).map((key) => <th key={key} className="px-3 py-2">{FIELD_LABELS[key]}</th>)}
                           <th className="px-3 py-2">Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/[0.05]">
+                      <tbody className="divide-y divide-sbg-ink/[0.07]">
                         {rows.map((row) => {
                           const result = results.find((item) => item.rowNumber === row.rowNumber);
                           const status = result?.status || row.status;
                           const message = result?.message || row.message;
                           return (
-                            <tr key={row.rowNumber} className="text-[#D4D4D8]">
-                              <td className="px-3 py-2 text-[#71717A]">{row.rowNumber}</td>
+                            <tr key={row.rowNumber} className="text-sbg-ink">
+                              <td className="px-3 py-2 text-sbg-ink-3">{row.rowNumber}</td>
                               <td className="px-3 py-2">{row.rank}</td>
                               <td className="px-3 py-2">{row.fullName}</td>
                               <td className="px-3 py-2">{row.email}</td>
                               <td className="px-3 py-2">{row.rollNo}</td>
                               <td className="px-3 py-2">{row.course}</td>
-                              <td className={`px-3 py-2 ${status === "ready" || status === "imported" ? "text-emerald-400" : status === "already_added" ? "text-amber-300" : "text-red-400"}`}>
+                              <td className={`px-3 py-2 ${status === "ready" || status === "imported" ? "text-[#047857]" : status === "already_added" ? "text-[#92400e]" : "text-[#b91c1c]"}`}>
                                 {status === "ready" ? "Ready" : status === "imported" ? "Imported" : status === "already_added" ? "Already added" : "Error"}{message ? `: ${message}` : ""}
                               </td>
                             </tr>
@@ -392,7 +392,7 @@ export function TopPerformerImportDialog({ eventId, existingEmails, onImported }
                     </table>
                   </div>
                   {results.length > 0 && (
-                    <p role="status" className="text-xs text-emerald-400">
+                    <p role="status" className="text-xs text-[#047857]">
                       Imported {results.filter((result) => result.status === "imported").length}; skipped {results.filter((result) => result.status !== "imported").length}.
                     </p>
                   )}

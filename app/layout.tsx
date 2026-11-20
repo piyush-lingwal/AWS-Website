@@ -144,7 +144,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={cn(poppins.variable, "font-sans")}>
+    <html lang="en" className={cn(poppins.variable, "font-sans")} suppressHydrationWarning>
       <head>
         <OrganizationJsonLd />
         <WebSiteJsonLd />

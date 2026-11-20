@@ -7,18 +7,9 @@
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
-import type { ApiResponse, DbTeamMember } from "@/types/certificate";
-
-interface BulkImportMember {
-  name: string;
-  pic_url?: string | null;
-  course: string;
-  branch: string;
-  year: string;
-  role: string;
-  batch?: string;
-  display_order?: number;
-}
+import type { ApiResponse } from "@/types/certificate";
+import type { TeamMemberRow } from "@/lib/team/types";
+import { parseTeamMemberInput, isUniqueViolation, type TeamMemberDbFields } from "@/lib/team/validate";
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdmin();
@@ -33,10 +24,8 @@ export async function POST(request: NextRequest) {
   }
 
   let body: {
-    members: BulkImportMember[];
-    batch?: string;
+    members: Record<string, unknown>[];
     mode?: "append" | "overwrite";
-    overwriteScope?: "batch" | "all";
   };
   try {
     body = await request.json();
@@ -47,12 +36,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const {
-    members,
-    batch: defaultBatch = "2026-27",
-    mode = "append",
-    overwriteScope = "batch",
-  } = body;
+  const { members, mode = "append" } = body;
 
   if (!Array.isArray(members) || members.length === 0) {
     return NextResponse.json(
@@ -63,72 +47,49 @@ export async function POST(request: NextRequest) {
 
   if (members.length > 200) {
     return NextResponse.json(
-      { success: false, error: "Maximum 200 members per import batch." } satisfies ApiResponse,
+      { success: false, error: "Maximum 200 members per import." } satisfies ApiResponse,
       { status: 400 }
     );
   }
 
   // Validate & normalize each row
-  const rows: BulkImportMember[] = [];
+  const rows: Partial<TeamMemberDbFields>[] = [];
   const validationErrors: string[] = [];
+  const seenEmails = new Set<string>();
 
   members.forEach((m, i) => {
     const rowNum = i + 2; // +2 because row 1 is header
-    const name = (m.name ?? "").toString().trim();
-    const course = (m.course ?? "").toString().trim();
-    const branch = (m.branch ?? "").toString().trim();
-    const year = (m.year ?? "").toString().trim();
-    const role = (m.role ?? "").toString().trim();
-
-    if (!name) { validationErrors.push(`Row ${rowNum}: Name is required`); return; }
-    if (!course) { validationErrors.push(`Row ${rowNum}: Course is required`); return; }
-    if (!branch) { validationErrors.push(`Row ${rowNum}: Branch is required`); return; }
-    if (!year) { validationErrors.push(`Row ${rowNum}: Year is required`); return; }
-    if (!role) { validationErrors.push(`Row ${rowNum}: Role is required`); return; }
-
-    rows.push({
-      name,
-      pic_url: (m.pic_url ?? "").toString().trim() || null,
-      course,
-      branch,
-      year,
-      role,
-      batch: (m.batch ?? "").toString().trim() || defaultBatch,
-      display_order: typeof m.display_order === "number" ? m.display_order : i,
-    });
+    const parsed = parseTeamMemberInput(m ?? {});
+    if (!parsed.ok) {
+      for (const message of Object.values(parsed.errors)) validationErrors.push(`Row ${rowNum}: ${message}`);
+      return;
+    }
+    const email = parsed.fields.email as string;
+    if (seenEmails.has(email)) {
+      validationErrors.push(`Row ${rowNum}: Email ${email} appears more than once in the file`);
+      return;
+    }
+    seenEmails.add(email);
+    rows.push(parsed.fields);
   });
 
   if (validationErrors.length > 0) {
     return NextResponse.json(
       {
         success: false,
-        error: `Validation failed for ${validationErrors.length} row(s).`,
+        error: `Validation failed for ${validationErrors.length} issue(s).`,
         data: validationErrors,
       } satisfies ApiResponse,
       { status: 400 }
     );
   }
 
-  // If overwrite mode is selected, delete existing data prior to insert
+  // Overwrite mode replaces the whole roster
   if (mode === "overwrite") {
-    let deleteQuery;
-    if (overwriteScope === "all") {
-      deleteQuery = supabase
-        .from("team_members")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-    } else {
-      // Overwrite target batches
-      const targetBatches = Array.from(
-        new Set([defaultBatch, ...rows.map((r) => r.batch).filter(Boolean) as string[]])
-      );
-      deleteQuery = supabase
-        .from("team_members")
-        .delete()
-        .in("batch", targetBatches);
-    }
-
-    const { error: deleteError } = await deleteQuery;
+    const { error: deleteError } = await supabase
+      .from("team_members")
+      .delete()
+      .not("id", "is", null);
     if (deleteError) {
       console.error("[API/team-members/bulk-import] Delete error during overwrite:", deleteError);
       return NextResponse.json(
@@ -147,8 +108,13 @@ export async function POST(request: NextRequest) {
   if (insertError) {
     console.error("[API/team-members/bulk-import] Insert error:", insertError);
     return NextResponse.json(
-      { success: false, error: "Database insert failed: " + insertError.message } satisfies ApiResponse,
-      { status: 500 }
+      {
+        success: false,
+        error: isUniqueViolation(insertError)
+          ? "One or more emails already exist in the team. Nothing was imported."
+          : "Database insert failed: " + insertError.message,
+      } satisfies ApiResponse,
+      { status: isUniqueViolation(insertError) ? 409 : 500 }
     );
   }
 
@@ -160,7 +126,7 @@ export async function POST(request: NextRequest) {
         mode === "overwrite"
           ? `Successfully overwritten and imported ${inserted?.length ?? 0} team members.`
           : `Successfully imported ${inserted?.length ?? 0} team members.`,
-    } satisfies ApiResponse<DbTeamMember[]>,
+    } satisfies ApiResponse<TeamMemberRow[]>,
     { status: 201 }
   );
 }

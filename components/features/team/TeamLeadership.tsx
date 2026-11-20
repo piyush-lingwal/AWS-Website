@@ -1,191 +1,63 @@
-"use client";
+import { Reveal } from "@/components/design/Reveal";
+import type { PublicTeamMember } from "@/lib/team/roster";
+import { TeamAvatar } from "./TeamAvatar";
 
-import React from "react";
-import Image from "next/image";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Github, Linkedin, Mail, ShieldCheck, Sparkles } from "lucide-react";
-import { PixelHeading } from "@/components/ui/pixel-heading-character";
-import { LEADERSHIP_TEAM, LeadershipMember } from "./data";
+const TINTS = ["var(--card-lilac)", "var(--card-peach)", "var(--card-rose)", "var(--card-sky)", "var(--card-mint)", "var(--card-blush)"];
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+/** Desktop grid (6 columns): rows of three; the first two are featured wide when the rest fill rows of three (e.g. 5). */
+const featured = (i: number, n: number) => i < 2 && n > 3 && (n - 2) % 3 === 0;
+const span = (i: number, n: number) => (featured(i, n) ? "lg:col-span-3" : "lg:col-span-2");
 
-export function TeamLeadership() {
-  const sectionRef = React.useRef<HTMLDivElement>(null);
+const detail = (m: PublicTeamMember) => [m.course, m.branch].filter(Boolean).join(" · ");
 
-  useGSAP(() => {
-    const items = gsap.utils.toArray<HTMLElement>(".gsap-reveal-lead");
-    items.forEach((item, idx) => {
-      gsap.fromTo(
-        item,
-        { y: 30, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.7,
-          delay: idx * 0.08,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: item,
-            start: "top 88%",
-            end: "bottom 12%",
-            toggleActions: "play reverse play reverse",
-          },
-        }
-      );
-    });
-  }, { scope: sectionRef });
+/** The leadership titles (see LEADERSHIP_ROLES in lib/team/roster.ts), in title order. */
+export function TeamLeadership({ core }: { core: PublicTeamMember[] }) {
+  if (core.length === 0) return null;
 
   return (
-    <section ref={sectionRef} id="leadership" className="relative py-16 sm:py-24 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto">
-      {/* Section Header */}
-      <div className="relative max-w-3xl mx-auto text-center mb-10 sm:mb-16">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-96 h-20 bg-[#7C3AED]/20 blur-3xl rounded-full pointer-events-none z-0" />
-        
-        <div className="gsap-reveal-lead inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] uppercase tracking-[0.2em] text-primary-light font-mono mb-3">
-          <Sparkles className="w-3 h-3 text-primary-light" />
-          <span>Leadership & Advisory</span>
-        </div>
+    <section id="leadership" data-tone="clear" className="relative overflow-hidden">
+      <div className="relative mx-auto max-w-[1240px] px-[var(--gutter)] py-24 md:py-32">
+        <Reveal className="mx-auto mb-14 max-w-3xl text-center sm:mb-20">
+          <p className="t-eyebrow flex items-center justify-center gap-3">
+            <span className="t-pixel text-sbg-accent">03</span>
+            <span className="h-px w-10 bg-sbg-lilac-300" />
+            Student Leadership
+          </p>
+          <h2 className="t-display mt-5 text-[clamp(34px,5vw,68px)] text-sbg-ink">
+            Leading the <span className="t-serif text-sbg-accent">community.</span>
+          </h2>
+          <p className="t-lead mx-auto mt-5 max-w-md">
+            The students who set the direction and keep every wing moving.
+          </p>
+        </Reveal>
 
-        <h2 className="gsap-reveal-lead relative z-10 font-display text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-text-primary">
-          Community{" "}
-          <PixelHeading mode="uniform" className="text-gradient">
-            Leadership.
-          </PixelHeading>
-        </h2>
-        <p className="gsap-reveal-lead relative z-10 text-xs sm:text-sm text-text-secondary mt-2 max-w-md mx-auto">
-          Guiding the next generation of cloud architects and software builders
-        </p>
-      </div>
-
-      {/* 2-Column Grid Layout for Faculty Coordinator & SBG Leader */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 items-stretch">
-        {LEADERSHIP_TEAM.map((leader: LeadershipMember, idx: number) => {
-          const isFaculty = leader.id === "faculty-coordinator";
-
-          return (
-            <div
-              key={leader.id}
-              className="gsap-reveal-lead relative rounded-2xl sm:rounded-3xl bg-bg-card border border-border p-5 sm:p-8 flex flex-col justify-between overflow-hidden group hover:border-primary/40 transition-all duration-300 shadow-xl"
-            >
-              {/* Top Accent Glow */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary-light/40 to-transparent" />
-              
-              <div className="absolute top-3.5 sm:top-4 right-4 sm:right-6 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest text-muted">
-                0{idx + 1} // LEADERSHIP
-              </div>
-
-              <div className="space-y-4 sm:space-y-6">
-                {/* Header Profile Row */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left">
-                  {/* Photo */}
-                  <div className="relative group/photo flex-shrink-0">
-                    <div className="absolute -inset-1.5 sm:-inset-2 rounded-full bg-primary/25 blur-md opacity-50 group-hover/photo:opacity-90 transition-opacity" />
-                    <div
-                      className={`relative overflow-hidden bg-bg-surface border border-primary/30 shadow-lg transition-transform duration-300 group-hover/photo:scale-105 ${
-                        isFaculty
-                          ? "w-24 h-24 sm:w-32 sm:h-32 rounded-full"
-                          : "w-24 h-32 sm:w-32 sm:h-40 rounded-2xl"
-                      }`}
-                    >
-                      <Image
-                        src={leader.avatar}
-                        alt={leader.name}
-                        fill
-                        className={isFaculty ? "object-cover object-center scale-[1.38]" : "object-cover object-center"}
-                      />
+        {(
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-6">
+            {core.map((m, i) => (
+              <li key={m.id} className={span(i, core.length)}>
+                <Reveal index={i % 3} className="h-full">
+                  <article
+                    className="surface lift flex h-full flex-col items-center gap-5 rounded-[28px] p-7 text-center"
+                    style={{ backgroundImage: `linear-gradient(155deg, ${TINTS[i % TINTS.length]} 0%, var(--wash-80) 58%)` }}
+                  >
+                    <TeamAvatar
+                      src={m.picture_url}
+                      name={m.name}
+                      className={featured(i, core.length) ? "h-36 w-36 rounded-full" : "h-28 w-28 rounded-full"}
+                    />
+                    <div>
+                      <span className="inline-flex items-center rounded-full bg-[var(--chip-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-sbg-accent-strong">
+                        {m.role}
+                      </span>
+                      <h3 className="t-display mt-3 text-[24px] text-sbg-ink sm:text-[28px]">{m.name}</h3>
+                      {detail(m) && <p className="mt-1.5 text-[13px] text-sbg-ink-3">{detail(m)}</p>}
                     </div>
-                  </div>
-
-                  {/* Leader Metadata */}
-                  <div className="space-y-1.5 sm:space-y-2 pt-0 sm:pt-1">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-primary/10 border border-primary/20 text-primary-light text-[11px] sm:text-xs font-mono">
-                      <ShieldCheck className="w-3.5 h-3.5 text-primary-light shrink-0" />
-                      <span>{leader.titleBadge}</span>
-                    </div>
-
-                    <h3 className="text-xl sm:text-3xl font-semibold text-text-primary font-display tracking-tight">
-                      {leader.name}
-                    </h3>
-
-                    {leader.bio && (
-                      <p className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans max-w-md">
-                        {leader.bio}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Social Action Footer */}
-              {(leader.socials.github || leader.socials.linkedin || leader.socials.email) ? (
-                <div className="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-border/80">
-                  {leader.socials.github && (
-                    leader.socials.github === "#" ? (
-                      <span
-                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted opacity-75 cursor-default"
-                        aria-label="GitHub"
-                      >
-                        <Github className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </span>
-                    ) : (
-                      <a
-                        href={leader.socials.github}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted hover:text-text-primary hover:border-primary/40 active:scale-95 transition-all"
-                        aria-label="GitHub"
-                      >
-                        <Github className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </a>
-                    )
-                  )}
-
-                  {leader.socials.linkedin && (
-                    leader.socials.linkedin === "#" ? (
-                      <span
-                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted opacity-75 cursor-default"
-                        aria-label="LinkedIn"
-                      >
-                        <Linkedin className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </span>
-                    ) : (
-                      <a
-                        href={leader.socials.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted hover:text-[#0A66C2] hover:border-[#0A66C2]/40 active:scale-95 transition-all"
-                        aria-label="LinkedIn"
-                      >
-                        <Linkedin className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </a>
-                    )
-                  )}
-
-                  {leader.socials.email && (
-                    leader.socials.email === "#" ? (
-                      <span
-                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted opacity-75 cursor-default"
-                        aria-label="Email"
-                      >
-                        <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </span>
-                    ) : (
-                      <a
-                        href={`mailto:${leader.socials.email}`}
-                        className="p-2.5 sm:p-3 rounded-xl bg-bg-surface border border-border text-muted hover:text-accent hover:border-accent/40 active:scale-95 transition-all"
-                        aria-label="Email"
-                      >
-                        <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </a>
-                    )
-                  )}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
+                  </article>
+                </Reveal>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   );

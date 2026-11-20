@@ -1,9 +1,8 @@
 "use client";
 
-import * as React from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useEffect, useRef, useState } from "react";
+import { Reveal } from "@/components/design/Reveal";
+import { cssVars, useScrollVar } from "@/components/design/use-scroll-var";
 import { CirclePlus } from "@/components/ui/animate-ui/icons/circle-plus";
 import { Layers } from "@/components/ui/animate-ui/icons/layers";
 import { Hammer } from "@/components/ui/animate-ui/icons/hammer";
@@ -12,257 +11,156 @@ import { PartyPopper } from "@/components/ui/animate-ui/icons/party-popper";
 import { BadgeCheck } from "@/components/ui/animate-ui/icons/badge-check";
 import { Star } from "@/components/ui/animate-ui/icons/star";
 import { LayoutDashboard } from "@/components/ui/animate-ui/icons/layout-dashboard";
-import { ArrowRight } from "@/components/ui/animate-ui/icons/arrow-right";
-import { ArrowLeft } from "@/components/ui/animate-ui/icons/arrow-left";
-import { ArrowDown } from "@/components/ui/animate-ui/icons/arrow-down";
-import { PixelHeading } from "@/components/ui/pixel-heading-character";
-
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+import { pixelWave } from "@/lib/design/pixel-cloud";
 
 const STEPS = [
-  { icon: CirclePlus, title: "Join SBG", description: "Become part of the builder community.", phase: "01", direction: "right" },
-  { icon: Layers, title: "AWS Fundamentals", description: "Core services, IAM, cloud concepts.", phase: "02", direction: "right" },
-  { icon: Hammer, title: "Hands-on Workshops", description: "Build in live sandbox environments.", phase: "03", direction: "down" },
-  { icon: Blocks, title: "Cloud Projects", description: "Deploy real applications on AWS.", phase: "04", direction: "left" },
-  { icon: PartyPopper, title: "Hackathons", description: "Compete, build fast, win prizes.", phase: "05", direction: "left" },
-  { icon: BadgeCheck, title: "AWS Certifications", description: "Earn industry-recognized credentials.", phase: "06", direction: "down" },
-  { icon: Star, title: "Leadership", description: "Mentor, organize, and lead initiatives.", phase: "07", direction: "right" },
-  { icon: LayoutDashboard, title: "Internships & Careers", description: "Launch your cloud career.", phase: "08", direction: "end" },
-];
+  { icon: CirclePlus, title: "Join SBG", description: "Become part of the builder community.", phase: "01", tint: "var(--card-lilac)" },
+  { icon: Layers, title: "AWS Fundamentals", description: "Core services, IAM, cloud concepts.", phase: "02", tint: "var(--card-sky)" },
+  { icon: Hammer, title: "Hands-on Workshops", description: "Build in live sandbox environments.", phase: "03", tint: "var(--card-mint)" },
+  { icon: Blocks, title: "Cloud Projects", description: "Deploy real applications on AWS.", phase: "04", tint: "var(--card-peach)" },
+  { icon: PartyPopper, title: "Hackathons", description: "Compete, build fast, win prizes.", phase: "05", tint: "var(--card-rose)" },
+  { icon: BadgeCheck, title: "AWS Certifications", description: "Earn industry-recognized credentials.", phase: "06", tint: "var(--card-blush)" },
+  { icon: Star, title: "Leadership", description: "Mentor, organize, and lead initiatives.", phase: "07", tint: "var(--card-lilac)" },
+  { icon: LayoutDashboard, title: "Internships & Careers", description: "Launch your cloud career.", phase: "08", tint: "var(--card-peach)" },
+] as const;
 
-const GRID_POSITIONS = [
-  "lg:col-start-1 lg:row-start-1", // 01
-  "lg:col-start-2 lg:row-start-1", // 02
-  "lg:col-start-3 lg:row-start-1", // 03
-  "lg:col-start-3 lg:row-start-2", // 04
-  "lg:col-start-2 lg:row-start-2", // 05
-  "lg:col-start-1 lg:row-start-2", // 06
-  "lg:col-start-1 lg:row-start-3", // 07
-  "lg:col-start-2 lg:row-start-3", // 08
-];
-
+/** Section 05. The path: a spine that fills as the reader scrolls, with eight phase cards along it. */
 export function AboutTimeline() {
-  const containerRef = React.useRef<HTMLElement>(null);
-  const headingRef = React.useRef<HTMLHeadingElement>(null);
-  const pathRef = React.useRef<SVGPathElement>(null);
+  const ref = useRef<HTMLElement>(null);
+  useScrollVar(ref, ["start 75%", "end 55%"]);
 
-  useGSAP(() => {
-    gsap.from(".timeline-header-el", {
-      opacity: 0,
-      y: 20,
-      stagger: 0.1,
-      duration: 0.6,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: ".timeline-header",
-        start: "top 85%",
-        toggleActions: "play none none reverse",
-      },
-    });
+  // The mobile spine must stop exactly at the last dot, which sits 32px (top-8) inside the
+  // final <li>, not at the bottom of that <li> (the finale card continues well past its dot).
+  // Measured because the finale card's height — and so the trailing gap to trim — varies with
+  // content/viewport and can't be hardcoded as a Tailwind utility.
+  const listRef = useRef<HTMLOListElement>(null);
+  const [spineTail, setSpineTail] = useState(0);
 
-    const cards = gsap.utils.toArray<HTMLElement>(".s-timeline-card");
-    const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
-
-    if (isDesktop) {
-      gsap.set(cards, { opacity: 0, y: 35, scale: 0.92 });
-
-      // Animate SVG Flipped-S track stroke draw when heading reaches just below navbar (80px)
-      if (pathRef.current && headingRef.current) {
-        const pathLength = pathRef.current.getTotalLength();
-        gsap.set(pathRef.current, {
-          strokeDasharray: pathLength,
-          strokeDashoffset: pathLength,
-        });
-
-        gsap.to(pathRef.current, {
-          strokeDashoffset: 0,
-          ease: "none",
-          scrollTrigger: {
-            trigger: headingRef.current,
-            start: "top 80px",
-            end: "+=2600",
-            scrub: 0.8,
-          },
-        });
-      }
-
-      // Pin section on desktop when the h2 heading reaches just below the navbar (80px)
-      if (headingRef.current) {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: headingRef.current,
-            start: "top 140px",
-            end: "+=2600",
-            pin: containerRef.current,
-            scrub: 0.8,
-            anticipatePin: 1,
-          },
-        });
-
-        cards.forEach((card, index) => {
-          tl.to(
-            card,
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              duration: 0.9,
-              ease: "power2.out",
-            },
-            index * 0.9
-          );
-        });
-      }
-    } else {
-      // Mobile view: NO PINNING! Cards reveal smoothly as user scrolls naturally
-      gsap.set(cards, { opacity: 0, y: 30, scale: 0.95 });
-      ScrollTrigger.batch(cards, {
-        onEnter: (batch) => {
-          gsap.to(batch, {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.6,
-            stagger: 0.1,
-            ease: "power2.out",
-            overwrite: true,
-          });
-        },
-        onLeaveBack: (batch) => {
-          gsap.to(batch, {
-            opacity: 0,
-            y: 30,
-            scale: 0.95,
-            duration: 0.3,
-            overwrite: true,
-          });
-        },
-        start: "top 88%",
-      });
-    }
-
-    const refreshTimer = setTimeout(() => ScrollTrigger.refresh(), 200);
-    return () => clearTimeout(refreshTimer);
-  }, { scope: containerRef });
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const measure = () => {
+      const lastItem = list.lastElementChild as HTMLElement | null;
+      if (!lastItem) return;
+      // Height of the finale <li> below its dot (dot is top-8 = 32px from the <li>'s own top).
+      setSpineTail(Math.max(0, lastItem.offsetHeight - 32));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(list);
+    return () => ro.disconnect();
+  }, []);
 
   return (
-    <section ref={containerRef} className="bg-grid bg-noise relative overflow-hidden bg-bg min-h-screen flex flex-col justify-center py-6 lg:py-10">
-      {/* Background ambient lighting */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/4 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-primary/10 blur-[150px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-10 bottom-10 h-[400px] w-[400px] rounded-full bg-secondary/8 blur-[140px]"
-      />
-
-      <div className="relative mx-auto max-w-content w-full px-4 sm:px-6">
-        {/* Header */}
-        <div className="timeline-header max-w-2xl text-center md:text-left mx-auto md:mx-0 mb-6 lg:mb-7">
-          <p className="timeline-header-el text-[11px] uppercase tracking-[0.16em] text-muted">
+    <section
+      ref={ref}
+      data-tone="violet"
+      className="scene relative py-24 sm:py-32"
+      style={cssVars({ "--t": 0, "--spine-tail": `${spineTail}px` })}
+    >
+      <div className="mx-auto max-w-[1240px] px-[var(--gutter)]">
+        <Reveal className="mb-14 max-w-2xl">
+          <p className="t-eyebrow mb-4 flex items-center gap-3">
+            <span className="t-pixel text-sbg-accent">05</span>
+            <span className="h-px w-10 bg-sbg-lilac-300" />
             Your Journey
           </p>
-          <h2
-            ref={headingRef}
-            className="timeline-header-el mt-2 font-display text-[26px] sm:text-[30px] md:text-[34px] font-semibold leading-[1.1] tracking-tight text-text-primary"
-          >
-            The builder{" "}
-            <PixelHeading mode="uniform" className="text-gradient">journey.</PixelHeading>
+          <h2 className="t-display text-[clamp(34px,5.4vw,76px)] text-sbg-ink">
+            The builder <span className="t-serif text-sbg-accent">journey.</span>
           </h2>
-          <p className="timeline-header-el mt-2 max-w-lg text-[13.5px] sm:text-[14.5px] leading-relaxed text-text-secondary">
-            From day one to career launch — here&apos;s the path every builder walks in a serpentine flow.
+          <p className="t-lead mt-5 max-w-lg">
+            From day one to career launch — here&apos;s the path every builder walks.
           </p>
-        </div>
+        </Reveal>
 
-        {/* Desktop Flipped-S Serpentine Layout */}
-        <div className="relative mt-2">
-          {/* Connector Track SVG Overlay for Desktop */}
-          <div className="hidden lg:block pointer-events-none absolute -inset-x-6 -inset-y-4 z-0">
-            <svg className="w-full h-full" viewBox="0 0 1000 500" fill="none">
-              {/* Background guide path */}
-              <path
-                d="M 166 80 L 833 80 C 960 80 960 250 833 250 L 166 250 C 40 250 40 420 166 420 L 500 420"
-                stroke="rgba(255, 255, 255, 0.07)"
-                strokeWidth="3"
-                strokeDasharray="6 6"
-              />
-              {/* Animated glowing serpentine stroke path with shimmer */}
-              <path
-                ref={pathRef}
-                d="M 166 80 L 833 80 C 960 80 960 250 833 250 L 166 250 C 40 250 40 420 166 420 L 500 420"
-                stroke="url(#flipped-s-shimmer-gradient)"
-                strokeWidth="4"
-                strokeLinecap="round"
-                className="drop-shadow-[0_0_14px_rgba(192,132,252,0.7)]"
-              />
-              <defs>
-                <linearGradient id="flipped-s-shimmer-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#7C3AED" />
-                  <stop offset="35%" stopColor="#C084FC" />
-                  <stop offset="50%" stopColor="#FFFFFF" />
-                  <stop offset="65%" stopColor="#06B6D4" />
-                  <stop offset="100%" stopColor="#3B82F6" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
+        <div className="relative">
+          {/* The spine must stop exactly at the last dot (top-8 inside its <li>), not at the
+              container's bottom edge, which sits lower once the finale card's own padding is
+              added. calc() reaches that point without a JS measurement. */}
+          <span
+            aria-hidden="true"
+            className="absolute left-[19px] top-0 w-[3px] rounded-full bg-sbg-lilac-200 lg:bottom-0 lg:left-1/2 lg:h-auto lg:-translate-x-1/2"
+            style={{ height: "calc(100% - var(--spine-tail, 0px))" }}
+          />
+          <span
+            aria-hidden="true"
+            className="absolute left-[19px] top-0 w-[3px] origin-top rounded-full bg-gradient-to-b from-sbg-lilac-600 to-sbg-lilac-400 lg:bottom-0 lg:left-1/2 lg:h-auto lg:-translate-x-1/2"
+            style={{ height: "calc(100% - var(--spine-tail, 0px))", transform: "scaleY(var(--t))" }}
+          />
 
-          {/* Cards Grid: 3 columns on lg+, vertical on mobile */}
-          <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-            {STEPS.map((step, i) => {
-              const Icon = step.icon;
-              const positionClass = GRID_POSITIONS[i];
-
+          <ol ref={listRef} className="relative grid gap-5 pl-12 lg:grid-cols-2 lg:gap-x-24 lg:gap-y-8 lg:pl-0">
+            {STEPS.map((s, i) => {
+              const Icon = s.icon;
+              const finale = i === STEPS.length - 1;
+              const right = i % 2 === 1;
+              const at = ((i + 0.4) / STEPS.length).toFixed(3);
               return (
-                <div
-                  key={i}
-                  className={`s-timeline-card group relative overflow-hidden flex flex-col justify-between rounded-xl border border-border/80 bg-bg-card/90 backdrop-blur-xl p-4 sm:p-4.5 transition-all duration-300 hover:border-primary/60 hover:shadow-[0_0_30px_-5px_rgba(124,58,237,0.3)] hover:-translate-y-1 ${positionClass}`}
+                <Reveal
+                  as="li"
+                  key={s.title}
+                  className={`relative ${
+                    finale
+                      ? "lg:col-span-2 lg:mx-auto lg:mt-6 lg:w-full lg:max-w-[560px]"
+                      : right
+                        ? "lg:col-start-2 lg:mt-20"
+                        : ""
+                  }`}
                 >
-                  {/* Shimmer light beam pass effect on card reveal / hover */}
-                  <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/15 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                  </div>
-
-                  {/* Top row: Phase Badge & Step Direction Indicator */}
-                  <div className="relative z-10 flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center justify-center px-2.5 py-0.5 text-[10.5px] font-mono font-medium uppercase tracking-wider text-primary-light/70 bg-primary/5 rounded-full border border-primary/15 opacity-70 group-hover:opacity-100 transition-opacity">
-                      Phase {step.phase}
-                    </span>
-
-                    {/* Flow arrow indicators */}
-                    <div className="hidden lg:flex items-center text-muted/60 group-hover:text-primary-light transition-colors">
-                      {step.direction === "right" && <ArrowRight size={16} animateOnHover loop />}
-                      {step.direction === "left" && <ArrowLeft size={16} animateOnHover loop />}
-                      {step.direction === "down" && <ArrowDown size={16} animateOnHover loop />}
+                  <span
+                    aria-hidden="true"
+                    className={`absolute top-8 z-10 h-4 w-4 rounded-full border-2 ${
+                      finale ? "border-[#EA8A00] lg:-top-6 lg:left-1/2 lg:-translate-x-1/2" : "border-sbg-lilac-600"
+                    } -left-[36px] ${
+                      finale ? "" : right ? "lg:-left-[56px]" : "lg:-right-[56px] lg:left-auto"
+                    }`}
+                    style={{
+                      background: finale
+                        ? `color-mix(in srgb, #EA8A00 calc(clamp(0, (var(--t) - 0.9) * 14, 1) * 100%), var(--dot-off))`
+                        : `color-mix(in srgb, var(--lilac-600) calc(clamp(0, (var(--t) - ${at}) * 14, 1) * 100%), var(--dot-off))`,
+                    }}
+                  />
+                  <article
+                    className={`surface lift relative overflow-hidden rounded-[28px] ${
+                      finale ? "p-8 sm:p-10" : "p-6 sm:p-7"
+                    }`}
+                    style={{ backgroundImage: `linear-gradient(155deg, ${s.tint} 0%, var(--wash-80) 58%)` }}
+                  >
+                    {finale && (
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute bottom-6 right-6 grid grid-cols-4 gap-1.5 opacity-70"
+                      >
+                        {Array.from({ length: 16 }, (_, k) => (
+                          <span
+                            key={k}
+                            data-hot={[0, 5, 6, 10, 15].includes(k) || undefined}
+                            className="px-tile h-3 w-3 rounded-[3px]"
+                            style={{ background: [0, 5, 6, 10, 15].includes(k) ? "#FF9900" : "rgba(234,138,0,0.14)", ...pixelWave(k, 4) }}
+                          />
+                        ))}
+                      </span>
+                    )}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="t-pixel rounded-full bg-sbg-lilac-100 px-2.5 py-0.5 text-[11px] text-sbg-accent-strong">
+                        Phase {s.phase}
+                      </span>
+                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--tile-bg)] text-sbg-accent-strong">
+                        <Icon size={24} strokeWidth={1.75} animateOnHover />
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Icon & Title */}
-                  <div className="relative z-10 flex items-center gap-3 mb-2">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/25 via-accent/15 to-info/10 border border-primary/30 text-primary-light group-hover:scale-110 group-hover:border-primary shadow-[0_0_15px_-3px_rgba(124,58,237,0.3)] transition-all">
-                      <Icon size={17} strokeWidth={2} animateOnHover />
-                    </div>
-                    <h3 className="font-display text-[16px] font-semibold text-text-primary group-hover:text-primary-light transition-colors">
-                      {step.title}
+                    <h3
+                      className={`t-display mt-6 text-sbg-ink ${
+                        finale ? "text-[30px] sm:text-[38px]" : "text-[24px] sm:text-[28px]"
+                      }`}
+                    >
+                      {s.title}
                     </h3>
-                  </div>
-
-                  {/* Description */}
-                  <p className="relative z-10 text-[13px] leading-relaxed text-text-secondary">
-                    {step.description}
-                  </p>
-
-                  {/* Mobile direction arrow */}
-                  {i < STEPS.length - 1 && (
-                    <div className="relative z-10 lg:hidden mt-3 pt-2 border-t border-border/50 flex items-center justify-end text-[10.5px] text-muted font-mono">
-                      <ArrowDown size={13} className="text-primary/60" animateOnView />
-                    </div>
-                  )}
-                </div>
+                    <p className="mt-2 text-[15px] leading-relaxed text-sbg-ink-2">{s.description}</p>
+                  </article>
+                </Reveal>
               );
             })}
-          </div>
+          </ol>
         </div>
       </div>
     </section>

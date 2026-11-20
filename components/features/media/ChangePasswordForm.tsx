@@ -57,7 +57,7 @@ export function ChangePasswordForm({ email, forced }: { email: string | null; fo
   };
 
   const field =
-    "w-full rounded-lg border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm text-white focus:border-[#8B5CF6] focus:outline-none";
+    "w-full rounded-lg border border-sbg-ink/15 bg-white px-3.5 py-2.5 text-sm text-sbg-ink focus:border-sbg-lilac-600 focus:ring-2 focus:ring-sbg-lilac-600 focus:outline-none";
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
@@ -65,7 +65,7 @@ export function ChangePasswordForm({ email, forced }: { email: string | null; fo
       <input type="email" name="username" autoComplete="username" value={email ?? ""} readOnly hidden />
 
       <div className="space-y-1.5">
-        <label htmlFor="current-password" className="text-sm text-[#D4D4D8]">
+        <label htmlFor="current-password" className="text-sm text-sbg-ink">
           {forced ? "Temporary password" : "Current password"}
         </label>
         <input
@@ -80,7 +80,7 @@ export function ChangePasswordForm({ email, forced }: { email: string | null; fo
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="new-password" className="text-sm text-[#D4D4D8]">New password</label>
+        <label htmlFor="new-password" className="text-sm text-sbg-ink">New password</label>
         <input
           id="new-password"
           type={show ? "text" : "password"}
@@ -91,13 +91,13 @@ export function ChangePasswordForm({ email, forced }: { email: string | null; fo
           aria-describedby="new-password-help"
           className={field}
         />
-        <p id="new-password-help" className={`text-xs ${policyProblem ? "text-amber-400" : "text-[#71717A]"}`}>
+        <p id="new-password-help" className={`text-xs ${policyProblem ? "text-amber-800" : "text-sbg-ink-3"}`}>
           {policyProblem ?? `At least ${MIN_PASSWORD_LENGTH} characters. A few unrelated words works well.`}
         </p>
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="confirm-password" className="text-sm text-[#D4D4D8]">Confirm new password</label>
+        <label htmlFor="confirm-password" className="text-sm text-sbg-ink">Confirm new password</label>
         <input
           id="confirm-password"
           type={show ? "text" : "password"}
@@ -107,20 +107,20 @@ export function ChangePasswordForm({ email, forced }: { email: string | null; fo
           required
           className={field}
         />
-        {mismatch && <p className="text-xs text-amber-400">The two passwords do not match.</p>}
+        {mismatch && <p className="text-xs text-amber-800">The two passwords do not match.</p>}
       </div>
 
       <button
         type="button"
         onClick={() => setShow((v) => !v)}
-        className="flex items-center gap-2 text-xs text-[#A1A1AA] hover:text-white"
+        className="flex items-center gap-2 text-xs text-sbg-ink-2 hover:text-sbg-ink"
       >
         {show ? <EyeOff className="h-3.5 w-3.5" aria-hidden="true" /> : <Eye className="h-3.5 w-3.5" aria-hidden="true" />}
         {show ? "Hide passwords" : "Show passwords"}
       </button>
 
       {error && (
-        <p role="alert" className="flex items-start gap-2 text-sm text-red-400">
+        <p role="alert" className="flex items-start gap-2 text-sm text-red-700">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> {error}
         </p>
       )}
@@ -129,13 +129,13 @@ export function ChangePasswordForm({ email, forced }: { email: string | null; fo
         <button
           type="submit"
           disabled={busy || (touched && !ready)}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#8B5CF6] px-5 text-sm font-medium text-white disabled:opacity-50"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-sbg-lilac-600 px-5 text-sm font-medium text-white hover:bg-sbg-lilac-700 disabled:opacity-50"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {busy ? "Saving…" : "Change password"}
         </button>
         {forced && (
-          <button type="button" onClick={signOut} className="text-xs text-[#71717A] hover:text-white">
+          <button type="button" onClick={signOut} className="text-xs text-sbg-ink-3 hover:text-sbg-ink">
             Sign out
           </button>
         )}

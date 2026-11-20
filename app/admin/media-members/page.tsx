@@ -24,8 +24,7 @@ interface ApiResult<T> {
   error?: string;
 }
 
-const inputClass =
-  "h-10 w-full rounded-xl border border-white/[0.1] bg-black/30 px-3 text-sm text-[#F4F4F6] placeholder:text-[#52525B] focus:border-[#6C63FF]/60 focus:outline-none";
+const inputClass = "ad-input";
 
 export default function MediaMembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -124,66 +123,57 @@ export default function MediaMembersPage() {
   };
 
   return (
-    <div
-      className="min-h-screen text-[#F4F4F6] pb-24"
-      style={{
-        background:
-          "radial-gradient(1000px 500px at 15% 0%, rgba(108,99,255,0.14), transparent 70%), #08080B",
-      }}
-    >
-      <main className="mx-auto max-w-4xl space-y-8 px-4 pt-28 sm:px-6 sm:pt-36">
+    <div className="pb-12">
+      <main className="mx-auto max-w-4xl space-y-8">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-mono uppercase tracking-wider text-[#71717A]">Admin</p>
-            <h1 className="mt-1 text-2xl font-semibold">Media members</h1>
-            <p className="mt-1 text-sm text-[#A1A1AA]">
+            <p className="ad-eyebrow">Admin</p>
+            <h1 className="mt-1 font-lt-display text-2xl font-semibold tracking-[-0.035em] text-sbg-ink">Media members</h1>
+            <p className="mt-1 text-sm text-sbg-ink-2">
               Accounts for the media team. They sign in at{" "}
-              <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-xs">/media/login</code> and can
+              <code className="rounded-md bg-sbg-lilac-100 px-1.5 py-0.5 font-lt-mono text-xs text-sbg-lilac-700">/media/login</code> and can
               never open the admin dashboard.
             </p>
           </div>
-          <a
-            href="/admin"
-            className="h-9 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 text-xs font-medium leading-9 text-[#A1A1AA] hover:text-white"
-          >
+          <a href="/admin" className="ad-btn ad-btn-ghost">
             ← Back to dashboard
           </a>
         </header>
 
         {error && (
-          <p role="alert" className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          <p role="alert" className="ad-chip-danger rounded-2xl border border-red-700/20 p-4 text-sm font-medium">
             {error}
           </p>
         )}
 
         {credentials && (
-          <div role="status" className="space-y-3 rounded-2xl border border-[#6C63FF]/30 bg-[#6C63FF]/10 p-5">
-            <p className="text-sm font-medium">
+          <div role="status" className="ad-card ad-card-tint-lilac space-y-3 p-5">
+            <p className="text-sm font-medium text-sbg-ink">
               {credentials.reason === "created" ? "Account created." : "Password reset."} Share these
               details securely.
             </p>
-            <dl className="grid gap-1 text-sm">
-              <div className="flex gap-2"><dt className="w-24 text-[#A1A1AA]">Email</dt><dd>{credentials.email}</dd></div>
-              <div className="flex items-center gap-2">
-                <dt className="w-24 text-[#A1A1AA]">Password</dt>
-                <dd className="font-mono">{credentials.password}</dd>
+            <dl className="grid gap-1 text-sm text-sbg-ink">
+              <div className="flex gap-2"><dt className="w-24 text-sbg-ink-2">Email</dt><dd>{credentials.email}</dd></div>
+              <div className="flex flex-wrap items-center gap-2">
+                <dt className="w-24 text-sbg-ink-2">Password</dt>
+                <dd className="font-lt-mono">{credentials.password}</dd>
                 <button
                   onClick={copyPassword}
-                  className="ml-1 flex items-center gap-1 rounded-lg border border-white/[0.1] px-2 py-1 text-xs hover:bg-white/[0.06] cursor-pointer"
+                  className="ad-btn ad-btn-ghost ml-1"
                 >
-                  <Copy className="h-3 w-3" /> {copied ? "Copied" : "Copy"}
+                  <Copy className="h-3.5 w-3.5" /> {copied ? "Copied" : "Copy"}
                 </button>
               </div>
             </dl>
-            <p className="text-xs text-[#A1A1AA]">
+            <p className="text-xs text-sbg-ink-2">
               This password is temporary: the member must choose their own at first sign-in. It is shown only
               once and is not stored. If it is lost, reset it.
             </p>
           </div>
         )}
 
-        <form onSubmit={handleCreate} className="grid gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-          <label className="grid gap-1.5 text-xs text-[#A1A1AA]">
+        <form onSubmit={handleCreate} className="ad-card grid gap-3 p-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <label className="ad-label grid gap-1.5">
             Full name
             <input
               className={inputClass}
@@ -195,7 +185,7 @@ export default function MediaMembersPage() {
               maxLength={80}
             />
           </label>
-          <label className="grid gap-1.5 text-xs text-[#A1A1AA]">
+          <label className="ad-label grid gap-1.5">
             Email
             <input
               className={inputClass}
@@ -210,7 +200,7 @@ export default function MediaMembersPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#6C63FF] px-4 text-sm font-medium text-white hover:bg-[#5B52F0] disabled:opacity-50 cursor-pointer"
+            className="ad-btn ad-btn-primary"
           >
             <UserPlus className="h-4 w-4" />
             {submitting ? "Creating…" : "Create account"}
@@ -218,41 +208,37 @@ export default function MediaMembersPage() {
         </form>
 
         <section aria-labelledby="members-heading" className="space-y-3">
-          <h2 id="members-heading" className="text-lg font-semibold">
-            Current members {members.length > 0 && <span className="text-[#71717A]">({members.length})</span>}
+          <h2 id="members-heading" className="font-lt-display text-lg font-semibold tracking-[-0.03em] text-sbg-ink">
+            Current members {members.length > 0 && <span className="text-sbg-ink-3">({members.length})</span>}
           </h2>
 
           {loading ? (
             <CardsSkeleton count={3} label="Loading media members" />
           ) : members.length === 0 ? (
-            <p className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 text-sm text-[#A1A1AA]">
+            <p className="ad-card p-6 text-sm text-sbg-ink-2">
               No media members yet.
             </p>
           ) : (
-            <ul className="divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02]">
+            <ul className="ad-card divide-y divide-sbg-ink/[0.06] overflow-hidden">
               {members.map((m) => (
-                <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-sbg-lilac-50">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{m.display_name}</p>
-                    <p className="truncate text-xs text-[#A1A1AA]">{m.email}</p>
+                    <p className="truncate font-medium text-sbg-ink">{m.display_name}</p>
+                    <p className="truncate text-xs text-sbg-ink-2">{m.email}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                        m.active ? "bg-emerald-500/15 text-emerald-400" : "bg-zinc-500/15 text-zinc-400"
-                      }`}
-                    >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`ad-chip ${m.active ? "ad-chip-ok" : ""}`}>
                       {m.active ? "Active" : "Disabled"}
                     </span>
                     <button
                       onClick={() => patchMember(m, { resetPassword: true })}
-                      className="flex min-h-10 items-center gap-1.5 rounded-lg border border-white/[0.1] px-3 py-1.5 text-xs hover:bg-white/[0.06] cursor-pointer sm:min-h-0 sm:px-2.5"
+                      className="ad-btn ad-btn-ghost"
                     >
-                      <KeyRound className="h-3 w-3" /> Reset password
+                      <KeyRound className="h-3.5 w-3.5" /> Reset password
                     </button>
                     <button
                       onClick={() => patchMember(m, { active: !m.active })}
-                      className="min-h-10 rounded-lg border border-white/[0.1] px-3 py-1.5 text-xs hover:bg-white/[0.06] cursor-pointer sm:min-h-0 sm:px-2.5"
+                      className="ad-btn ad-btn-ghost"
                     >
                       {m.active ? "Disable" : "Enable"}
                     </button>

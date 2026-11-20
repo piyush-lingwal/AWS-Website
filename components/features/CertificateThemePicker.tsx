@@ -18,7 +18,7 @@ function ThemePreview({ accent, withKiro = false }: { accent: string; withKiro?:
   return (
     <span
       aria-hidden="true"
-      className="relative block h-14 w-[4.5rem] shrink-0 overflow-hidden rounded-md border border-white/10 bg-white"
+      className="relative block h-14 w-[4.5rem] shrink-0 overflow-hidden rounded-md border border-[#1B1140]/15 bg-white"
     >
       <span className="absolute left-1 top-1 h-6 w-9" style={{ backgroundColor: accent }} />
       <span className="absolute right-1 top-1 h-3 w-3 bg-[#161d26]" />
@@ -33,7 +33,7 @@ function ThemePreview({ accent, withKiro = false }: { accent: string; withKiro?:
 export function CertificateThemePicker({ value, onChange, disabled = false }: CertificateThemePickerProps) {
   return (
     <fieldset className="space-y-2.5" disabled={disabled}>
-      <legend className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-[#A1A1AA] font-medium">
+      <legend className="flex items-center gap-1.5 font-lt-mono text-[11px] uppercase tracking-[0.12em] text-sbg-ink-2 font-medium">
         <span>Certificate Template</span>
       </legend>
 
@@ -44,10 +44,10 @@ export function CertificateThemePicker({ value, onChange, disabled = false }: Ce
           return (
             <label
               key={theme}
-              className={`relative flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 transition-all focus-within:ring-2 focus-within:ring-[#8B5CF6]/60 ${
+              className={`relative flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 transition-all focus-within:ring-2 focus-within:ring-sbg-lilac-600 ${
                 selected
-                  ? "border-white/40 bg-white/[0.06]"
-                  : "border-white/[0.08] bg-white/[0.02] hover:border-white/20"
+                  ? "border-sbg-lilac-600 bg-sbg-lilac-100"
+                  : "border-sbg-ink/15 bg-white/80 hover:border-sbg-lilac-300"
               } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
             >
               <input
@@ -60,8 +60,8 @@ export function CertificateThemePicker({ value, onChange, disabled = false }: Ce
               />
               <ThemePreview accent={info.accent} withKiro={info.kiroLogo === true} />
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-white">{info.label}</span>
-                <span className="block font-mono text-[10px] uppercase tracking-wider text-[#71717A]">
+                <span className="block text-sm font-semibold text-sbg-ink">{info.label}</span>
+                <span className="block font-lt-mono text-[10px] uppercase tracking-wider text-sbg-ink-3">
                   {info.accent}
                 </span>
               </span>
@@ -78,7 +78,7 @@ export function CertificateThemePicker({ value, onChange, disabled = false }: Ce
         })}
       </div>
 
-      <p className="text-[11px] leading-relaxed text-[#71717A]">
+      <p className="text-[11px] leading-relaxed text-sbg-ink-2">
         Used for this event&apos;s participation, Excellence and Appreciation certificates. Certificates are drawn
         with the event&apos;s current template whenever they are downloaded or emailed, including ones already issued.
       </p>

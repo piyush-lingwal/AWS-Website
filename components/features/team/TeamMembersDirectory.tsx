@@ -1,272 +1,94 @@
-"use client";
+import { Reveal } from "@/components/design/Reveal";
+import type { WingGroup } from "@/lib/team/roster";
+import { TeamAvatar } from "./TeamAvatar";
 
-import React, { useEffect, useState, useMemo } from "react";
-import Image from "next/image";
-import {
-  Users,
-  Briefcase,
-  GraduationCap,
-  Calendar,
-  Sparkles,
-} from "lucide-react";
-import { PixelHeading } from "@/components/ui/pixel-heading-character";
-import type { DbTeamMember } from "@/types/certificate";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+const TINTS = ["var(--card-lilac)", "var(--card-peach)", "var(--card-rose)", "var(--card-sky)", "var(--card-mint)", "var(--card-blush)"];
 
-gsap.registerPlugin(ScrollTrigger);
+const LEAD_TINT = "var(--card-lilac)";
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
-}
+const wingTitle = (wing: string) => (/wing|team$/i.test(wing) ? wing : `${wing} Wing`);
 
-export function TeamMembersDirectory() {
-  const [members, setMembers] = useState<DbTeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeBatch, setActiveBatch] = useState<string>("2026-27");
+/** Display title for a plain member (role = NULL): "Tech Member", "PR Member", ... Display only; the data is unchanged. */
+const memberLabel = (wing: string) => `${wing.replace(/\s+wing$/i, "")} Member`;
 
-  useEffect(() => {
-    async function fetchMembers() {
-      try {
-        const res = await fetch("/api/team-members", { cache: "no-store" });
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          setMembers(json.data);
-          const batches = Array.from(
-            new Set(json.data.map((m: DbTeamMember) => m.batch || "2026-27"))
-          ).sort((a: any, b: any) => b.localeCompare(a));
-          if (batches.length > 0 && !batches.includes("2026-27")) {
-            setActiveBatch(batches[0] as string);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load team members:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchMembers();
-  }, []);
-
-  // Recalculate ScrollTrigger offsets when members finish loading or batch changes
-  useEffect(() => {
-    if (!loading) {
-      const timer = setTimeout(() => {
-        ScrollTrigger.refresh();
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, activeBatch]);
-
-  // Compute available batches
-  const availableBatches = useMemo(() => {
-    const set = new Set<string>();
-    set.add("2026-27");
-    members.forEach((m) => {
-      if (m.batch?.trim()) set.add(m.batch.trim());
-    });
-    return Array.from(set).sort((a, b) => b.localeCompare(a));
-  }, [members]);
-
-  // Filter members by active batch
-  const currentBatchMembers = useMemo(() => {
-    return members.filter((m) => (m.batch || "2026-27") === activeBatch);
-  }, [members, activeBatch]);
-
-  // If load finished and absolutely no team members in DB, don't show empty ghost block
-  if (!loading && members.length === 0) {
-    return null;
-  }
+/** Everyone with a wing set, grouped by it. Titled people (wing leads) get a larger highlighted card; plain members show "<Wing> Member". Photos fall back to the shared placeholder. */
+export function TeamMembersDirectory({ wings }: { wings: WingGroup[] }) {
+  if (wings.length === 0) return null;
 
   return (
-    <section className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-content mx-auto">
-      {/* Ambient Radial Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-48 bg-cyan-500/10 blur-[110px] rounded-full pointer-events-none z-0" />
-
-      {/* Section Header */}
-      <div className="relative max-w-2xl mx-auto text-center mb-10 sm:mb-12">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] uppercase tracking-[0.2em] text-cyan-400 font-mono mb-3">
-          <Sparkles className="w-3 h-3 text-cyan-400" />
-          <span>Student Builder Roster</span>
-        </div>
-
-        <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-text-primary">
-          Builders{" "}
-          <PixelHeading mode="uniform" className="text-gradient">
-            Directory.
-          </PixelHeading>
-        </h2>
-        <p className="text-xs sm:text-sm text-text-secondary mt-2 max-w-md mx-auto leading-relaxed">
-          Meet the student architects and core builders driving our cloud community
-        </p>
-      </div>
-
-      {/* Batch Navigation Tabs */}
-      <div className="relative z-10 flex flex-col items-center gap-3.5 mb-10">
-        <div className="p-1 rounded-2xl bg-[#0F0F16] border border-white/[0.08] flex items-center gap-1.5 overflow-x-auto max-w-full shadow-lg no-scrollbar">
-          {availableBatches.map((batch) => {
-            const isSelected = activeBatch === batch;
-            const isCurrent = batch === "2026-27";
-            const batchCount = members.filter((m) => (m.batch || "2026-27") === batch).length;
-
-            return (
-              <button
-                key={batch}
-                onClick={() => setActiveBatch(batch)}
-                className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-                  isSelected
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold shadow-md shadow-cyan-500/25 scale-[1.02]"
-                    : "text-[#A1A1AA] hover:text-white hover:bg-white/[0.04]"
-                }`}
-              >
-                <span>Batch {batch}</span>
-                {isCurrent && (
-                  <span
-                    className={`text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-semibold ${
-                      isSelected ? "bg-black/30 text-white" : "bg-cyan-500/20 text-cyan-300"
-                    }`}
-                  >
-                    Current Team
-                  </span>
-                )}
-                {batch < "2026-27" && (
-                  <span
-                    className={`text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-semibold ${
-                      isSelected ? "bg-black/30 text-white" : "bg-white/[0.08] text-[#71717A]"
-                    }`}
-                  >
-                    Alumni
-                  </span>
-                )}
-                <span className={`text-[10px] ${isSelected ? "text-white/80" : "text-[#52525B]"}`}>
-                  ({batchCount})
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Batch Status Caption */}
-        <div className="text-center text-xs text-[#71717A] font-mono">
-          Showing{" "}
-          <span className="text-cyan-400 font-bold">{currentBatchMembers.length}</span> builders in{" "}
-          <span className="text-white font-semibold">Batch {activeBatch}</span>
-          {activeBatch === "2026-27"
-            ? " (Active Working Committee)"
-            : activeBatch < "2026-27"
-            ? " (Previous Batch)"
-            : " (Upcoming Cohort)"}
-        </div>
-      </div>
-
-      {/* Grid of Team Members */}
-      {loading ? (
-        /* Skeletal Loader for smooth perceptual performance */
-        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="p-4 sm:p-5 rounded-2xl bg-[#0D0D14]/70 border border-white/[0.05] animate-pulse flex flex-col justify-between space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-white/[0.06]" />
-                <div className="w-16 h-4 rounded-md bg-white/[0.04]" />
-              </div>
-              <div className="space-y-2">
-                <div className="w-3/4 h-4 rounded bg-white/[0.07]" />
-                <div className="w-1/2 h-3.5 rounded bg-white/[0.04]" />
-              </div>
-              <div className="pt-3 border-t border-white/[0.04] space-y-1.5">
-                <div className="w-4/5 h-3 rounded bg-white/[0.04]" />
-                <div className="w-1/3 h-3 rounded bg-white/[0.03]" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : currentBatchMembers.length === 0 ? (
-        <div className="relative z-10 max-w-md mx-auto p-8 rounded-2xl bg-[#0D0D14] border border-white/[0.08] text-center space-y-2">
-          <Users className="w-8 h-8 mx-auto text-[#52525B]" />
-          <h4 className="text-sm font-semibold text-white">Batch {activeBatch} Details Coming Soon</h4>
-          <p className="text-xs text-[#71717A]">
-            The team lineup for this cohort is currently being finalized.
+    <section id="wings" data-tone="bloom" className="relative overflow-hidden">
+      <div className="relative mx-auto max-w-[1240px] px-[var(--gutter)] py-24 md:py-32">
+        <Reveal className="mx-auto mb-14 max-w-2xl text-center sm:mb-20">
+          <p className="t-eyebrow flex items-center justify-center gap-3">
+            <span className="t-pixel text-sbg-accent">04</span>
+            <span className="h-px w-10 bg-sbg-lilac-300" />
+            Builder Wings
           </p>
-        </div>
-      ) : (
-        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
-          {currentBatchMembers.map((member) => (
-            <div
-              key={member.id}
-              className="group relative p-4 sm:p-4.5 rounded-2xl bg-[#0D0D14] border border-white/[0.06] hover:border-cyan-500/30 transition-all duration-300 flex flex-col justify-between hover:shadow-xl hover:shadow-cyan-500/5 hover:-translate-y-1"
-            >
-              {/* Top Accent Gradient line on hover */}
-              <div className="absolute top-0 left-4 right-4 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <h2 className="t-display mt-5 text-[clamp(34px,5vw,68px)] text-sbg-ink">
+            Every wing, <span className="t-serif text-sbg-accent">every builder.</span>
+          </h2>
+        </Reveal>
 
-              <div>
-                {/* Header Row: Avatar */}
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/[0.1] bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 flex items-center justify-center shrink-0 group-hover:border-cyan-500/40 transition-colors">
-                    {member.pic_url ? (
-                      <img
-                        src={member.pic_url}
-                        alt={member.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                          (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
-                        }}
-                      />
-                    ) : null}
-                    <span
-                      className={`text-xs font-bold text-cyan-400 font-mono ${
-                        member.pic_url ? "hidden" : ""
-                      }`}
-                    >
-                      {getInitials(member.name)}
-                    </span>
-                  </div>
-                </div>
+        <div className="space-y-16 sm:space-y-20">
+          {wings.map((group, gi) => (
+            <div key={group.wing}>
+              <Reveal className="mb-6 flex items-center gap-4 sm:mb-8">
+                <span
+                  aria-hidden="true"
+                  className="h-3 w-3 shrink-0 rounded-[3px]"
+                  style={{ background: gi === 0 ? "#FF9900" : "#AF8CFF" }}
+                />
+                <h3 className="t-display text-[clamp(24px,3vw,36px)] text-sbg-ink">{wingTitle(group.wing)}</h3>
+                <span className="h-px flex-1 bg-[color:var(--line)]" />
+                <span className="t-eyebrow">{group.members.length}</span>
+              </Reveal>
 
-                {/* Identity: Full Width Name & Role */}
-                <div className="mt-3 min-w-0">
-                  <h3 className="text-[14.5px] sm:text-[15px] font-semibold text-white tracking-tight group-hover:text-cyan-300 transition-colors truncate">
-                    {member.name}
-                  </h3>
-                  <div className="mt-1">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 max-w-full">
-                      <Briefcase className="w-2.5 h-2.5 shrink-0" />
-                      <span className="truncate">{member.role}</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Academic Metadata */}
-                <div className="pt-3 mt-3 border-t border-white/[0.04] space-y-1 text-xs text-[#A1A1AA]">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <GraduationCap className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
-                    <span className="truncate text-[11.5px]">
-                      {member.course} · {member.branch}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-[#71717A] shrink-0" />
-                    <span className="truncate text-[11px] text-[#71717A] font-mono">{member.year}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Subtle Brand Watermark */}
-              <div className="mt-3 pt-2.5 border-t border-white/[0.03] flex items-center justify-between text-[10px] font-mono text-[#52525B]">
-                <span>AWS SBG</span>
-                <span>Builder #{member.display_order ?? 0}</span>
-              </div>
+              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {group.members.map((m, i) => {
+                  const lead = Boolean(m.role?.trim());
+                  const detail = [m.course, m.branch].filter(Boolean).join(" · ");
+                  return (
+                    <li key={m.id} className={lead ? "sm:col-span-2" : undefined}>
+                      <Reveal index={i % 4} className="h-full">
+                        {lead ? (
+                          // Wing lead: the Leadership card treatment (role chip, bigger avatar, rounder card), plus a lilac border.
+                          <article
+                            className="surface lift flex h-full items-center gap-5 rounded-[28px] border-2 border-sbg-lilac-300 p-5 sm:p-6"
+                            style={{ backgroundImage: `linear-gradient(155deg, ${LEAD_TINT} 0%, var(--wash-80) 58%)` }}
+                          >
+                            <TeamAvatar src={m.picture_url} name={m.name} className="h-24 w-24 shrink-0 rounded-full" />
+                            <div className="min-w-0">
+                              <span className="inline-flex max-w-full items-center truncate rounded-full bg-[var(--chip-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-sbg-accent-strong">
+                                {m.role}
+                              </span>
+                              <h4 className="t-display mt-2 truncate text-[22px] text-sbg-ink sm:text-[24px]">{m.name}</h4>
+                              {detail && <p className="mt-1 truncate text-[13px] text-sbg-ink-3">{detail}</p>}
+                            </div>
+                          </article>
+                        ) : (
+                          <article
+                            className="surface lift flex h-full items-center gap-4 rounded-[24px] p-4"
+                            style={{
+                              backgroundImage: `linear-gradient(155deg, ${TINTS[(gi + i) % TINTS.length]} 0%, var(--wash-80) 58%)`,
+                            }}
+                          >
+                            <TeamAvatar src={m.picture_url} name={m.name} className="h-16 w-16 shrink-0 rounded-2xl border-2" />
+                            <div className="min-w-0">
+                              <p className="t-eyebrow truncate text-sbg-accent-strong">{memberLabel(group.wing)}</p>
+                              <h4 className="t-display truncate text-[18px] text-sbg-ink">{m.name}</h4>
+                              {detail && <p className="mt-1 truncate text-[12px] text-sbg-ink-3">{detail}</p>}
+                            </div>
+                          </article>
+                        )}
+                      </Reveal>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           ))}
         </div>
-      )}
+      </div>
     </section>
   );
 }

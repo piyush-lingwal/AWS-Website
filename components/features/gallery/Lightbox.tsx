@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, ExternalLink, Play, X } from "lucide-react";
 import { formatDuration } from "@/lib/media/format";
 import { isDriveUrl } from "@/lib/media/drive";
@@ -58,9 +59,12 @@ export function MediaGrid({ items }: { items: LightboxItem[] }) {
         </ul>
       </div>
 
-      {index !== null && (
-        <LightboxOverlay items={items} index={index} onClose={() => setIndex(null)} onNavigate={setIndex} />
-      )}
+      {/* In document.body so the overlay sits above the page's fixed navigation (page content has its own stacking context). */}
+      {index !== null &&
+        createPortal(
+          <LightboxOverlay items={items} index={index} onClose={() => setIndex(null)} onNavigate={setIndex} />,
+          document.body
+        )}
     </>
   );
 }
@@ -90,7 +94,7 @@ function MasonryTile({
         type="button"
         onClick={onOpen}
         aria-label={item.caption ?? (item.kind === "video" ? `Play video ${position}` : `View photo ${position}`)}
-        className="group relative block h-full w-full overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8B5CF6]"
+        className="group relative block h-full w-full overflow-hidden rounded-[18px] border border-[var(--surface-line)] bg-sbg-lilac-100 shadow-[0_10px_30px_-18px_var(--tile-shadow)] transition-shadow duration-300 hover:shadow-[0_24px_44px_-20px_rgba(76,29,149,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sbg-accent"
         // The grid row span sets the height; the aspect ratio only takes effect in the fallback column layout.
         style={{ aspectRatio: String(ratio) }}
       >
@@ -121,7 +125,7 @@ function MasonryTile({
         )}
 
         {/* Hover: darken a little and show the caption, so photos can be told apart without opening them. */}
-        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1B1140]/70 via-[#1B1140]/0 to-[#1B1140]/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         {item.caption && (
           <span className="pointer-events-none absolute inset-x-2 bottom-2 line-clamp-2 text-left text-xs text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
             {item.caption}
@@ -245,7 +249,7 @@ function LightboxOverlay({
       role="dialog"
       aria-modal="true"
       aria-label={item.caption ?? (item.kind === "video" ? "Video" : "Photo")}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--scrim)] p-4 backdrop-blur-md"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -255,7 +259,7 @@ function LightboxOverlay({
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+        className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 transition-colors hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
       >
         <X className="h-5 w-5" aria-hidden="true" />
       </button>
@@ -266,7 +270,7 @@ function LightboxOverlay({
             type="button"
             onClick={prev}
             aria-label="Previous"
-            className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:left-4"
+            className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 transition-colors hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white sm:left-4"
           >
             <ChevronLeft className="h-6 w-6" aria-hidden="true" />
           </button>
@@ -274,7 +278,7 @@ function LightboxOverlay({
             type="button"
             onClick={next}
             aria-label="Next"
-            className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:right-4"
+            className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/20 transition-colors hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white sm:right-4"
           >
             <ChevronRight className="h-6 w-6" aria-hidden="true" />
           </button>
@@ -309,7 +313,7 @@ function LightboxOverlay({
         )}
 
         {item.caption && <p className="max-w-xl text-center text-sm text-white/80">{item.caption}</p>}
-        <div className="flex items-center gap-3 font-mono text-xs text-white/50">
+        <div className="flex items-center gap-3 font-mono text-xs text-[#D9C8FF]">
           {items.length > 1 && (
             <span>
               {index + 1} / {items.length}
@@ -325,7 +329,7 @@ function LightboxOverlay({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-white/70 hover:text-white"
+              className="inline-flex items-center gap-1 text-white/90 underline-offset-4 hover:text-white hover:underline"
             >
               Open full size <ExternalLink className="h-3 w-3" aria-hidden="true" />
             </a>

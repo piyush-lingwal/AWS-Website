@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { motion, useInView, animate } from "framer-motion";
-import { PixelHeading } from "@/components/ui/pixel-heading-character";
 
 type Stat = { label: string; value: number; suffix?: string };
 
@@ -36,13 +35,8 @@ function Counter({ value, suffix = "" }: { value: number; suffix?: string }) {
 
 export function AboutStats() {
   return (
-    <section className="bg-noise relative overflow-hidden bg-bg border-y border-border">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 h-[300px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-[120px]"
-      />
-
-      <div className="relative mx-auto max-w-content px-4 sm:px-6 py-20 md:py-24">
+    <section data-tone="bloom" className="relative overflow-hidden">
+      <div className="relative mx-auto max-w-[1240px] px-[var(--gutter)] py-24 md:py-28">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -50,12 +44,9 @@ export function AboutStats() {
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-12"
         >
-          <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
-            Community Impact
-          </p>
-          <h2 className="mt-4 font-display text-[28px] sm:text-[32px] md:text-[40px] font-semibold leading-[1.1] tracking-tight text-text-primary">
-            Growing{" "}
-            <PixelHeading mode="uniform" className="text-gradient">together.</PixelHeading>
+          <p className="t-eyebrow">Community Impact</p>
+          <h2 className="t-display mt-5 text-[clamp(34px,5vw,68px)] text-sbg-ink">
+            Growing <span className="t-serif text-sbg-accent">together.</span>
           </h2>
         </motion.div>
 
@@ -64,17 +55,17 @@ export function AboutStats() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: false, amount: 0.5 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px overflow-hidden rounded-xl border border-border bg-border"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-[var(--line)]"
         >
           {STATS.map((stat) => (
             <div
               key={stat.label}
-              className="flex flex-col items-center gap-2 bg-bg px-4 py-8 sm:py-10 transition-colors duration-200 hover:bg-white/[0.02]"
+              className="flex flex-col items-center gap-2 px-4 py-8 sm:py-10"
             >
-              <span className="font-display text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-gradient">
+              <span className="t-display text-[clamp(40px,5vw,72px)] leading-[0.9] text-sbg-ink tabular-nums">
                 <Counter value={stat.value} suffix={stat.suffix} />
               </span>
-              <span className="text-[13px] sm:text-[14px] text-text-secondary text-center">
+              <span className="t-eyebrow text-center">
                 {stat.label}
               </span>
             </div>

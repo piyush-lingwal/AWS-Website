@@ -105,11 +105,11 @@ export function DriveImport({
   };
 
   return (
-    <section aria-labelledby="drive-heading" className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+    <section aria-labelledby="drive-heading" className="surface rounded-[28px] p-5">
       <h3 id="drive-heading" className="flex items-center gap-2 text-sm font-semibold">
-        <Link2 className="h-4 w-4 text-[#8B5CF6]" aria-hidden="true" /> Add from a Google Drive link
+        <Link2 className="h-4 w-4 text-sbg-lilac-700" aria-hidden="true" /> Add from a Google Drive link
       </h3>
-      <p className="mt-1 text-xs text-[#A1A1AA]">
+      <p className="mt-1 text-xs text-sbg-ink-2">
         Nothing is uploaded: the site shows the files straight from Drive. Set the folder to
         &ldquo;Anyone with the link&rdquo; (Viewer) first. If you remove or unshare a file in Drive, it disappears from the site.
       </p>
@@ -122,43 +122,43 @@ export function DriveImport({
           onChange={(e) => setLink(e.target.value)}
           placeholder="https://drive.google.com/drive/folders/…"
           disabled={busy || removing}
-          className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-[#8B5CF6] focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-sbg-ink/15 bg-white px-3.5 py-2.5 text-sm text-sbg-ink placeholder:text-sbg-ink-3 focus:border-sbg-lilac-600 focus:outline-none"
         />
         <button
           type="submit"
           disabled={busy || removing || link.trim() === ""}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#8B5CF6] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-sbg-lilac-600 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {busy ? "Importing…" : "Import"}
         </button>
       </form>
       {error && (
-        <p role="alert" className="mt-3 flex items-start gap-2 text-xs text-red-400">
+        <p role="alert" className="mt-3 flex items-start gap-2 text-xs text-red-700">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {error}
         </p>
       )}
       {message && (
-        <p role="status" className="mt-3 flex items-start gap-2 text-xs text-emerald-400">
+        <p role="status" className="mt-3 flex items-start gap-2 text-xs text-emerald-700">
           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {message}
         </p>
       )}
 
       {removableCount > 0 && (
-        <div className="mt-4 flex flex-col gap-3 border-t border-white/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-[#A1A1AA]">
+        <div className="mt-4 flex flex-col gap-3 border-t border-sbg-ink/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-sbg-ink-2">
             {filesLabel(removableCount)} linked from Drive{ownOnly ? " by you" : ""} on this event.
           </p>
           {confirmingRemove ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-red-300">
+              <span className="text-xs text-red-700">
                 Remove {removableCount === 1 ? "it" : `all ${removableCount}`} from the site? Your Google Drive is not changed.
               </span>
               <button
                 type="button"
                 onClick={removeAll}
                 disabled={busy || removing}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-500/90 px-3.5 py-2 text-xs font-medium text-white hover:bg-red-500 disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3.5 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {removing && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
                 {removing ? "Removing…" : "Remove all"}
@@ -167,7 +167,7 @@ export function DriveImport({
                 type="button"
                 onClick={() => setConfirmingRemove(false)}
                 disabled={removing}
-                className="rounded-lg px-3 py-2 text-xs font-medium text-[#A1A1AA] hover:bg-white/[0.06] hover:text-white disabled:opacity-50"
+                className="rounded-lg px-3 py-2 text-xs font-medium text-sbg-ink-2 hover:bg-sbg-lilac-50 hover:text-sbg-ink disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -181,7 +181,7 @@ export function DriveImport({
                 setConfirmingRemove(true);
               }}
               disabled={busy || removing}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/30 px-3.5 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-300 px-3.5 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               Remove all Drive files

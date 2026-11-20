@@ -1,15 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "framer-motion";
-import type { Variants } from "framer-motion";
+
 import { ExternalLink } from "@/components/ui/animate-ui/icons/external-link";
 import { BadgeCheck } from "@/components/ui/animate-ui/icons/badge-check";
 import { Layers } from "@/components/ui/animate-ui/icons/layers";
 import { Play } from "@/components/ui/animate-ui/icons/play";
 import { Terminal } from "@/components/ui/animate-ui/icons/terminal";
-import { PixelHeading } from "@/components/ui/pixel-heading-character";
-import { Spotlight } from "@/components/ui/spotlight";
+
+import { Reveal } from "@/components/design/Reveal";
 
 type Resource = {
   icon: React.ElementType;
@@ -17,7 +16,9 @@ type Resource = {
   description: string;
   link: string;
   linkLabel: string;
-  accent: string;
+  tint: string;
+  span: string;
+  featured?: boolean;
 };
 
 const RESOURCES: Resource[] = [
@@ -28,7 +29,9 @@ const RESOURCES: Resource[] = [
       "Explore official AWS Certification paths, exam guides, and preparation resources for Practitioner, Associate, and Specialty credentials.",
     link: "https://aws.amazon.com/certification/",
     linkLabel: "Explore certifications",
-    accent: "bg-primary/10 text-primary-light",
+    tint: "var(--card-lilac)",
+    span: "md:col-span-7",
+    featured: true,
   },
   {
     icon: Play,
@@ -37,7 +40,8 @@ const RESOURCES: Resource[] = [
       "Access hundreds of free digital training courses, hands-on labs, and official learning plans designed by AWS experts.",
     link: "https://aws.amazon.com/training/",
     linkLabel: "Start AWS training",
-    accent: "bg-success/10 text-success",
+    tint: "var(--card-mint)",
+    span: "md:col-span-5",
   },
   {
     icon: BadgeCheck,
@@ -46,7 +50,8 @@ const RESOURCES: Resource[] = [
       "Official AWS Certified Cloud Practitioner (CLF-C02) exam guide, domain breakdown, sample questions, and preparation resources.",
     link: "https://aws.amazon.com/certification/certified-cloud-practitioner/",
     linkLabel: "Cloud Practitioner guide",
-    accent: "bg-accent/10 text-accent",
+    tint: "var(--card-peach)",
+    span: "md:col-span-5",
   },
   {
     icon: Terminal,
@@ -55,7 +60,8 @@ const RESOURCES: Resource[] = [
       "Boilerplates for common AWS patterns — REST APIs with Lambda, static sites on S3 + CloudFront, CI/CD with CodePipeline, and more.",
     link: "#",
     linkLabel: "Clone a starter",
-    accent: "bg-info/10 text-info",
+    tint: "var(--card-sky)",
+    span: "md:col-span-7",
   },
   {
     icon: BadgeCheck,
@@ -64,7 +70,8 @@ const RESOURCES: Resource[] = [
       "Members get access to free AWS Educate courses and promotional credits for hands-on practice building real cloud applications.",
     link: "https://aws.amazon.com/education/awseducate/",
     linkLabel: "Explore AWS Educate",
-    accent: "bg-warning/10 text-warning",
+    tint: "var(--card-blush)",
+    span: "md:col-span-6",
   },
   {
     icon: Layers,
@@ -73,115 +80,69 @@ const RESOURCES: Resource[] = [
       "Technical write-ups, project deep-dives, and certification journeys written by our members. Learn from real builder experiences.",
     link: "#",
     linkLabel: "Read posts",
-    accent: "bg-secondary/10 text-secondary",
+    tint: "var(--card-rose)",
+    span: "md:col-span-6",
   },
 ];
 
-const containerVariants: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 18 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
-  },
-};
-
+/** The Learning Hub in the light "Daylight Cloud" theme (DESIGN.md). */
 export function LearningHub() {
   return (
-    <section id="learning-hub" className="bg-grid bg-noise relative overflow-hidden bg-bg min-h-screen">
-      <Spotlight className="-top-24 left-32 md:-top-20 md:left-60" fill="#A78BFA" />
-      {/* Headline ambient glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/4 top-0 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]"
-      />
-      {/* Secondary glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-1/4 bottom-0 h-[420px] w-[420px] translate-y-1/3 rounded-full bg-accent/6 blur-[130px]"
-      />
-
-      <div className="relative mx-auto max-w-content px-4 sm:px-6 pt-28 pb-16 md:pt-32 md:pb-24 lg:pt-32 lg:pb-32">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.3 }}
-        >
-          <motion.p
-            variants={itemVariants}
-            className="text-[11px] uppercase tracking-[0.16em] text-muted"
-          >
+    <section id="top" data-tone="dawn" aria-label="Learning Hub" className="relative min-h-screen pb-24 pt-32 sm:pb-36 sm:pt-40">
+      <div className="mx-auto max-w-[1240px] px-[var(--gutter)]">
+        <Reveal className="grid items-end gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+          <div>
+          <p className="t-eyebrow mb-5 flex items-center gap-3">
+            <span className="t-pixel text-sbg-accent">01</span>
+            <span className="h-px w-10 bg-sbg-lilac-300" />
             Learning Hub
-          </motion.p>
-          <motion.h2
-            variants={itemVariants}
-            className="mt-4 font-display text-[32px] sm:text-[36px] md:text-[44px] font-semibold leading-[1.1] tracking-tight text-text-primary flex items-center justify-start flex-wrap gap-2"
-          >
-            <span>Resources to</span>{" "}
-            <PixelHeading mode="uniform" className="text-gradient">level up.</PixelHeading>
-          </motion.h2>
-          <motion.p
-            variants={itemVariants}
-            className="mt-4 sm:mt-5 max-w-lg text-[15px] sm:text-[16px] leading-relaxed text-text-secondary"
-          >
+          </p>
+          <h1 className="t-display text-[clamp(38px,5.8vw,84px)] text-sbg-ink">
+            Resources to <span className="t-serif text-sbg-accent">level up.</span>
+          </h1>
+          </div>
+          <p className="t-lead max-w-md border-l border-sbg-lilac-300 pl-5 lg:pb-3">
             Everything you need to go from cloud-curious to cloud-certified —
             free workshops, starter kits, credits, and a community to learn with.
-          </motion.p>
-        </motion.div>
+          </p>
+        </Reveal>
 
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.1 }}
-          className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {RESOURCES.map((resource) => {
+        <ul className="mt-14 grid gap-4 sm:mt-20 md:grid-cols-12 md:gap-5">
+          {RESOURCES.map((resource, i) => {
             const Icon = resource.icon;
             const isExternal = resource.link.startsWith("http");
             return (
-              <motion.a
-                key={resource.title}
-                href={resource.link}
-                target={isExternal ? "_blank" : undefined}
-                rel={isExternal ? "noopener noreferrer" : undefined}
-                variants={itemVariants}
-                className="group flex flex-col gap-4 rounded-xl border border-border bg-bg p-6 transition-colors transition-shadow duration-300 hover:border-primary-light/30 hover:bg-white/[0.02]"
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${resource.accent} transition-colors duration-200`}
-                  >
-                    <Icon size={20} strokeWidth={1.75} animateOnHover />
+              <Reveal as="li" key={resource.title} index={i % 2} className={resource.span}>
+                <a
+                  href={resource.link}
+                  target={isExternal ? "_blank" : undefined}
+                  rel={isExternal ? "noopener noreferrer" : undefined}
+                  className={`surface lift group flex h-full flex-col gap-4 rounded-[26px] p-6 ${resource.featured ? "md:gap-6 md:rounded-[32px] md:p-10" : "md:p-7"}`}
+                  style={{ backgroundImage: `linear-gradient(155deg, ${resource.tint} 0%, var(--wash-80) 58%)` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--chip-bg)] text-sbg-accent-strong">
+                      <Icon size={20} strokeWidth={1.75} animateOnHover />
+                    </span>
+                    <ExternalLink
+                      size={14}
+                      animateOnHover
+                      className="text-sbg-ink-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                    />
+                  </div>
+
+                  <h2 className={`t-display text-sbg-ink ${resource.featured ? "text-[26px] md:text-[40px]" : "text-[22px] md:text-[26px]"}`}>{resource.title}</h2>
+
+                  <p className={`leading-relaxed text-sbg-ink-2 ${resource.featured ? "text-[15px] md:max-w-lg md:text-[17px]" : "text-[15px]"}`}>{resource.description}</p>
+
+                  <span className="mt-auto text-[14px] font-medium text-sbg-accent-strong transition-colors group-hover:text-sbg-accent">
+                    {resource.linkLabel} →
                   </span>
-                  <ExternalLink
-                    size={14}
-                    animateOnHover
-                    className="text-muted opacity-0 transition-opacity transition-colors duration-200 group-hover:opacity-100 group-hover:text-primary-light"
-                  />
-                </div>
-
-                <h3 className="font-display text-[16px] font-semibold tracking-tight text-text-primary">
-                  {resource.title}
-                </h3>
-
-                <p className="text-sm leading-relaxed text-text-secondary">
-                  {resource.description}
-                </p>
-
-                <span className="mt-auto text-[13px] font-medium text-primary-light transition-colors group-hover:text-primary">
-                  {resource.linkLabel} →
-                </span>
-              </motion.a>
+                </a>
+              </Reveal>
             );
           })}
-        </motion.div>
+        </ul>
       </div>
     </section>
   );

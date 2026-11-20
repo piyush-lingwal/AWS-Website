@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss";
 
+const sbgVar = (name: string) => `rgb(var(--sbg-${name}) / <alpha-value>)`;
+
 const config: Config = {
   darkMode: "class",
   content: [
@@ -53,23 +55,28 @@ const config: Config = {
         // "Daylight Cloud" light theme (see DESIGN.md). A separate namespace, so
         // the existing dark pages are untouched until the theme is adopted.
         sbg: {
-          paper: "#FBF9FF",
-          mist: "#F4EFFF",
-          ink: "#1B1140",
-          "ink-2": "#4D4470",
-          "ink-3": "#6A6190",
-          spark: "#FF9900",
+          // Every value is an RGB triplet CSS variable (app/(light)/daylight.css), so
+          // the classes flip in dark mode and still take an alpha (bg-sbg-lilac-100/60).
+          paper: sbgVar("paper"),
+          mist: sbgVar("mist"),
+          ink: sbgVar("ink"),
+          "ink-2": sbgVar("ink-2"),
+          "ink-3": sbgVar("ink-3"),
+          "on-ink": sbgVar("on-ink"),
+          spark: sbgVar("spark"),
+          accent: sbgVar("accent"),
+          "accent-strong": sbgVar("accent-strong"),
           lilac: {
-            50: "#F7F3FF",
-            100: "#EFE8FF",
-            200: "#E1D4FF",
-            300: "#CBB5FF",
-            400: "#AF8CFF",
-            500: "#9461FA",
-            600: "#7C3AED",
-            700: "#6428D4",
-            800: "#4A1D9E",
-            900: "#2E1170",
+            50: sbgVar("lilac-50"),
+            100: sbgVar("lilac-100"),
+            200: sbgVar("lilac-200"),
+            300: sbgVar("lilac-300"),
+            400: sbgVar("lilac-400"),
+            500: sbgVar("lilac-500"),
+            600: sbgVar("lilac-600"),
+            700: sbgVar("lilac-700"),
+            800: sbgVar("lilac-800"),
+            900: sbgVar("lilac-900"),
           },
         },
       },

@@ -2,10 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  ALL_TEAM_BATCHES,
   BULK_DELETE_CONFIRMATION,
   BULK_DELETE_SECTIONS,
-  DEFAULT_TEAM_BATCH,
   chunk,
   isBulkDeleteSection,
   validateBulkDelete,
@@ -50,15 +48,9 @@ test("event sections need a valid event id, which is trimmed and lower-cased", (
   }
 });
 
-test("team needs a batch name or ALL", () => {
-  assert.deepEqual(ok({ section: "team", batch: "2026-27", confirm: "DELETE" }), { section: "team", batch: "2026-27" });
-  assert.deepEqual(ok({ section: "team", batch: " 2025-26 ", confirm: "DELETE" }), { section: "team", batch: "2025-26" });
-  assert.deepEqual(ok({ section: "team", batch: ALL_TEAM_BATCHES, confirm: "DELETE" }), { section: "team", batch: "ALL" });
-  bad({ section: "team", confirm: "DELETE" }, /batch/);
-  bad({ section: "team", batch: "", confirm: "DELETE" }, /batch/);
-  bad({ section: "team", batch: "2026,batch.is.null", confirm: "DELETE" }, /batch/);
-  bad({ section: "team", batch: "x".repeat(41), confirm: "DELETE" }, /batch/);
-  assert.equal(DEFAULT_TEAM_BATCH, "2026-27");
+test("team needs only the confirmation", () => {
+  assert.deepEqual(ok({ section: "team", confirm: "DELETE" }), { section: "team" });
+  bad({ section: "team" }, /Type DELETE/);
 });
 
 test("unknown sections and bodies are refused", () => {

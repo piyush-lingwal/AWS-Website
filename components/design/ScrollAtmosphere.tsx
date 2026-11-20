@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { clamp01, isToneName, rgbTriplet, toneAtY, type ToneStop } from "@/lib/design/atmosphere";
+import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
+import { clamp01, isToneName, rgbTriplet, toneAtY, toneSet, type ThemeName, type ToneStop } from "@/lib/design/atmosphere";
+import { isDarkCapablePath } from "@/lib/design/theme";
 import { mulberry32 } from "@/lib/design/pixel-cloud";
 import { cssVars } from "./use-scroll-var";
 
@@ -16,6 +19,13 @@ import { cssVars } from "./use-scroll-var";
 export function ScrollAtmosphere() {
   const layer = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
+
+  // Dark palette only on a dark-capable page (the chrome is shared with /community etc.).
+  const { resolvedTheme } = useTheme();
+  const pathname = usePathname();
+  const theme: ThemeName = resolvedTheme === "dark" && isDarkCapablePath(pathname) ? "dark" : "light";
+  const themeRef = useRef<ThemeName>(theme);
+  const repaint = useRef<() => void>(() => {});
 
   // 26 pixels, placed once from a seed (the same on server and client).
   const pixels = useMemo(() => {
@@ -57,7 +67,7 @@ export function ScrollAtmosphere() {
       frame = 0;
       const y = window.scrollY;
       const p = clamp01(y / maxScroll);
-      const tone = toneAtY(stops, y + window.innerHeight * 0.5);
+      const tone = toneAtY(stops, y + window.innerHeight * 0.5, toneSet(themeRef.current));
       el.style.setProperty("--bg", rgbTriplet(tone.base));
       el.style.setProperty("--a", rgbTriplet(tone.a));
       el.style.setProperty("--b", rgbTriplet(tone.b));
@@ -74,6 +84,7 @@ export function ScrollAtmosphere() {
       schedule();
     };
 
+    repaint.current = schedule;
     remeasure();
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", remeasure);
@@ -90,6 +101,12 @@ export function ScrollAtmosphere() {
       if (frame) cancelAnimationFrame(frame);
     };
   }, []);
+
+  // The palette lives in a ref (no re-render per scroll); repaint right away when the theme changes.
+  useEffect(() => {
+    themeRef.current = theme;
+    repaint.current();
+  }, [theme]);
 
   return (
     <>

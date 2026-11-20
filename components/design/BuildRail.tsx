@@ -13,42 +13,42 @@ const CARDS = [
     text: "Build scalable full-stack applications with serverless architecture and global CDN distribution across AWS edge locations.",
     tech: ["Next.js", "Lambda", "S3", "CloudFront"],
     icon: icon("Networking-Content-Delivery/CloudFront.png"),
-    tint: "#EFE8FF",
+    tint: "var(--card-lilac)",
   },
   {
     title: "AI & Machine Learning",
     text: "Integrate intelligent features with AWS AI services: chatbots, computer vision and predictive analytics.",
     tech: ["SageMaker", "Bedrock", "Rekognition"],
     icon: icon("Machine-Learning/SageMaker.png"),
-    tint: "#FFE7F1",
+    tint: "var(--card-rose)",
   },
   {
     title: "Real-Time Analytics",
     text: "Process millions of events per second with streaming data pipelines and live dashboards.",
     tech: ["Kinesis", "Athena", "QuickSight"],
     icon: icon("Management-Governance/CloudWatch.png"),
-    tint: "#FFEBD3",
+    tint: "var(--card-peach)",
   },
   {
     title: "Mobile Backends",
     text: "Complete backend infrastructure for mobile apps: auth, real-time sync and push notifications.",
     tech: ["Amplify", "Cognito", "AppSync"],
     icon: icon("Front-End-Web-Mobile/Amplify.png"),
-    tint: "#DDF3E6",
+    tint: "var(--card-mint)",
   },
   {
     title: "Cloud Security",
     text: "Enterprise-grade security with identity management, threat detection and compliance automation.",
     tech: ["IAM", "GuardDuty", "WAF"],
     icon: icon("Security-Identity-Compliance/Identity-and-Access-Management.png"),
-    tint: "#FFE1E1",
+    tint: "var(--card-blush)",
   },
   {
     title: "DevOps & Infrastructure",
     text: "Automate deployments with CI/CD pipelines, container orchestration and infrastructure as code.",
     tech: ["CloudFormation", "CodePipeline", "ECS"],
     icon: icon("Containers/Elastic-Container-Service.png"),
-    tint: "#DCEBFF",
+    tint: "var(--card-sky)",
   },
 ] as const;
 
@@ -98,12 +98,12 @@ export function BuildRail() {
         <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 px-[var(--gutter)] pt-20 sm:pt-24 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="t-eyebrow mb-4 flex items-center gap-3">
-              <span className="t-pixel text-sbg-lilac-600">02</span>
+              <span className="t-pixel text-sbg-accent">03</span>
               <span className="h-px w-10 bg-sbg-lilac-300" />
               What you can build
             </p>
             <h2 className="t-display text-[clamp(34px,5.4vw,76px)] text-sbg-ink">
-              Ship real things <span className="t-serif text-sbg-lilac-600">on AWS.</span>
+              Ship real things <span className="t-serif text-sbg-accent">on AWS.</span>
             </h2>
           </div>
           <p className="t-lead max-w-md">Six kinds of project our builders take from idea to deployed, with mentors and the AWS services behind them.</p>
@@ -115,10 +115,10 @@ export function BuildRail() {
               <li key={card.title} className="rail-card">
                 <article
                   className="surface lift relative flex h-full min-h-[330px] flex-col justify-between gap-10 overflow-hidden rounded-[28px] p-6 sm:min-h-[360px] sm:p-7"
-                  style={{ backgroundImage: `linear-gradient(160deg, ${card.tint} 0%, rgba(255,255,255,0.78) 52%)` }}
+                  style={{ backgroundImage: `linear-gradient(160deg, ${card.tint} 0%, var(--wash-78) 52%)` }}
                 >
                   <div className="flex items-start justify-between">
-                    <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white shadow-[0_8px_24px_-10px_rgba(76,29,149,0.45)]">
+                    <span className="grid h-14 w-14 place-items-center rounded-2xl tile">
                       <Image src={card.icon} alt="" width={40} height={40} className="h-10 w-10" />
                     </span>
                     <span className="t-pixel text-[15px] text-sbg-ink-3">{pad(i + 1)}</span>
@@ -128,7 +128,7 @@ export function BuildRail() {
                     <p className="mt-3 text-[15px] leading-relaxed text-sbg-ink-2">{card.text}</p>
                     <ul className="mt-5 flex flex-wrap gap-2">
                       {card.tech.map((t) => (
-                        <li key={t} className="rounded-full border border-[var(--line)] bg-white/80 px-3 py-1 font-lt-mono text-[11.5px] text-sbg-ink-2">
+                        <li key={t} className="rounded-full border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-1 font-lt-mono text-[11.5px] text-sbg-ink-2">
                           {t}
                         </li>
                       ))}

@@ -18,7 +18,7 @@ const BENEFITS = [
 ];
 
 export function TeamCTA() {
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const cardContainerRef = useRef<HTMLDivElement>(null);
   const pillsRef = useRef<HTMLDivElement>(null);
   const memberCardRef = useRef<HTMLDivElement>(null);
@@ -90,127 +90,97 @@ export function TeamCTA() {
   }, { scope: sectionRef });
 
   return (
-    <section ref={sectionRef} className="py-16 sm:py-24 px-3.5 sm:px-6 lg:px-8 max-w-content mx-auto">
-      <div
-        ref={cardContainerRef}
-        className="relative rounded-3xl overflow-hidden border border-primary/30 shadow-[0_0_50px_-15px_rgba(124,58,237,0.35)]"
-      >
-        {/* Background layers */}
-        <div className="absolute inset-0 bg-bg-card" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-bg-card to-bg-card" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(124,58,237,0.25)_0%,_transparent_65%)]" />
+    <section ref={sectionRef} data-tone="violet" className="relative overflow-hidden px-[var(--gutter)] pb-24 pt-20 sm:pb-32 sm:pt-28">
+      <div className="relative mx-auto max-w-[1100px]">
+        <div
+          ref={cardContainerRef}
+          className="relative overflow-hidden rounded-[36px] cta-card"
+          style={{ backgroundImage: "linear-gradient(135deg, #2E1170 0%, #4A1D9E 52%, #6428D4 100%)", boxShadow: "0 50px 100px -40px rgba(46,17,112,0.7)" }}
+        >
+          <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#AF8CFF]/35 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 right-10 h-64 w-64 rounded-full bg-[#FF9900]/20 blur-3xl" />
 
-        <div className="relative z-10 p-6 sm:p-12 lg:p-16 flex flex-col lg:flex-row items-center gap-10 lg:gap-14">
-          {/* Left — Text content */}
-          <div className="flex-1 text-center lg:text-left">
-            {/* Eyebrow */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/25 text-[10px] sm:text-xs font-mono text-primary-light mb-4 sm:mb-6">
-              <span className="animate-pulse">✦</span>
-              <span>Limited Slots · Cohort 2026</span>
-            </div>
+          <div className="relative z-10 flex flex-col items-center gap-10 p-7 sm:p-12 lg:flex-row lg:gap-14 lg:p-16">
+            {/* Left: Text content */}
+            <div className="flex-1 text-center text-white lg:text-left">
+              {/* Eyebrow */}
+              <p className="t-eyebrow mb-5 inline-flex items-center gap-2 !text-[#D9C8FF] sm:mb-6">
+                <span className="animate-pulse text-sbg-spark">✦</span>
+                <span>Limited Slots · Cohort 2026</span>
+              </p>
 
-            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold font-display text-text-primary tracking-tight leading-tight mb-3 sm:mb-4">
-              Your name on the{" "}
-              <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-primary-light via-accent to-purple-300 bg-clip-text text-transparent">
-                  2026 Core Team
-                </span>
-                <svg
-                  className="absolute -bottom-1.5 sm:-bottom-2 left-0 right-0 w-full"
-                  height="8"
-                  viewBox="0 0 300 8"
-                  preserveAspectRatio="none"
-                >
-                  <path
-                    d="M0,5 Q75,0 150,5 Q225,10 300,5"
-                    stroke="url(#underline-gradient)"
-                    strokeWidth="2.5"
-                    fill="none"
-                    strokeLinecap="round"
-                  />
-                  <defs>
-                    <linearGradient id="underline-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#A78BFA" />
-                      <stop offset="100%" stopColor="#C084FC" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </span>{" "}
-              Reveal.
-            </h2>
+              <h2 className="t-display mb-4 text-[clamp(32px,4.6vw,60px)] sm:mb-5">
+                Your name on the{" "}
+                <span className="t-serif text-[#D9C8FF]">2026 Core Team</span>{" "}
+                Reveal.
+              </h2>
 
-            <p className="text-text-secondary text-xs sm:text-base leading-relaxed mb-6 sm:mb-8 max-w-lg mx-auto lg:mx-0">
-              Builder Wing slots are limited. Don&apos;t wait for the reveal to wish you had applied. Claim your spot today.
-            </p>
+              <p className="mx-auto mb-7 max-w-lg text-[15px] leading-relaxed text-white/80 sm:mb-8 sm:text-[17px] lg:mx-0">
+                Builder Wing slots are limited. Don&apos;t wait for the reveal to wish you had applied. Claim your spot today.
+              </p>
 
-            {/* Benefit pills */}
-            <div ref={pillsRef} className="flex flex-wrap gap-2 justify-center lg:justify-start mb-6 sm:mb-8">
-              {BENEFITS.map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  className="gsap-cta-pill flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-bg-surface/80 border border-border text-[10px] sm:text-xs font-mono text-text-secondary"
-                >
-                  <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary-light shrink-0" />
-                  <span>{label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start w-full">
-              <Link
-                href="/register"
-                className="w-full sm:w-auto group inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-primary hover:bg-primary-hover text-white font-bold text-xs sm:text-sm shadow-[0_0_35px_-5px_rgba(124,58,237,0.7)] hover:shadow-[0_0_50px_-5px_rgba(124,58,237,0.9)] hover:scale-[1.02] transition-all duration-300 text-center"
-              >
-                <span>Submit Your Application</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <a
-                href="#wings"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-bg-surface border border-border hover:border-primary/40 text-text-secondary hover:text-text-primary font-bold text-xs sm:text-sm transition-all duration-300 hover:scale-[1.02] text-center"
-              >
-                <span>View Builder Wings</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Right — Holographic Pass Card */}
-          <div ref={memberCardRef} className="w-full sm:w-auto shrink-0 lg:w-72 flex justify-center">
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              className="relative w-full max-w-[280px] rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/20 via-bg-card to-bg-card p-5 sm:p-6 shadow-[0_0_50px_-12px_rgba(124,58,237,0.4)] backdrop-blur-xl"
-            >
-              {/* Card glow */}
-              <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_top_left,_rgba(124,58,237,0.25)_0%,_transparent_60%)] pointer-events-none" />
-
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-1.5">
-                    <Terminal className="w-3.5 h-3.5 text-primary-light" />
-                    <span className="text-[9px] font-mono text-primary-light tracking-widest uppercase">AWS SBG Tulas</span>
+              {/* Benefit pills */}
+              <div ref={pillsRef} className="mb-8 flex flex-wrap justify-center gap-2 lg:justify-start">
+                {BENEFITS.map(({ icon: Icon, label }) => (
+                  <div
+                    key={label}
+                    className="gsap-cta-pill flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-medium text-white/90 ring-1 ring-white/15 sm:text-xs"
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-[#D9C8FF]" />
+                    <span>{label}</span>
                   </div>
-                  <span className="text-[9px] font-mono text-muted">2026</span>
+                ))}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex w-full flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+                <Link href="/register" className="btn btn-light group w-full sm:w-auto">
+                  <span>Submit Your Application</span>
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+                <a
+                  href="#wings"
+                  className="btn w-full text-white ring-1 ring-white/30 transition-colors hover:bg-white/10 sm:w-auto"
+                >
+                  <span>View Builder Wings</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Right: Pass Card */}
+            <div ref={memberCardRef} className="flex w-full shrink-0 justify-center sm:w-auto lg:w-72">
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                className="relative w-full max-w-[280px] rounded-[26px] bg-[var(--tile-bg)] p-6 shadow-[0_40px_70px_-30px_rgba(0,0,0,0.6)]"
+                style={{ backgroundImage: "linear-gradient(155deg, var(--card-lilac) 0%, var(--wash-90) 58%)" }}
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Terminal className="h-3.5 w-3.5 text-sbg-accent-strong" />
+                    <span className="t-eyebrow !text-sbg-accent-strong">AWS SBG Tulas</span>
+                  </div>
+                  <span className="t-eyebrow">2026</span>
                 </div>
 
                 {/* Avatar placeholder */}
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center mb-3.5 shadow-inner">
-                  <span className="text-xl font-bold text-primary-light font-mono">?</span>
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sbg-lilac-100">
+                  <span className="t-pixel text-xl text-sbg-accent-strong">?</span>
                 </div>
 
-                <div className="h-2.5 w-24 bg-white/10 rounded-full mb-1.5" />
-                <div className="h-2 w-16 bg-white/5 rounded-full mb-4" />
+                <div className="mb-2 h-2.5 w-24 rounded-full bg-sbg-lilac-200" />
+                <div className="mb-5 h-2 w-16 rounded-full bg-sbg-lilac-100" />
 
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-primary/15 border border-primary/25">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[9px] font-mono text-primary-light font-medium">Core Member · 2026</span>
+                <div className="flex items-center gap-2 rounded-xl bg-[var(--tile-bg)] px-3 py-2 ring-1 ring-[color:var(--line)]">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                  <span className="text-[11px] font-semibold text-sbg-accent-strong">Core Member · 2026</span>
                 </div>
 
-                <p className="text-[9px] text-muted font-mono mt-3.5 text-center">
+                <p className="t-eyebrow mt-4 text-center text-[10px]">
                   Your slot is waiting.
                 </p>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
         </div>
       </div>
