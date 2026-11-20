@@ -19,11 +19,8 @@ export default async function Image() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#09090B",
-          backgroundImage:
-            "radial-gradient(circle at 25px 25px, #333 2%, transparent 0%), radial-gradient(circle at 75px 75px, #333 2%, transparent 0%)",
-          backgroundSize: "100px 100px",
-          color: "white",
+          backgroundColor: "#FBF9FF",
+          color: "#1B1140",
           fontFamily: "sans-serif",
           padding: "40px",
           textAlign: "center",
@@ -32,39 +29,34 @@ export default async function Image() {
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(0,0,0,0.8)",
-            padding: "60px",
-            borderRadius: "24px",
-            border: "1px solid rgba(255,255,255,0.1)",
+            width: "96px",
+            height: "8px",
+            borderRadius: "4px",
+            backgroundColor: "#FF9900",
+            marginBottom: "36px",
+          }}
+        />
+        <h1
+          style={{
+            fontSize: "72px",
+            fontWeight: 800,
+            color: "#1B1140",
+            margin: "0 0 20px 0",
+            letterSpacing: "-0.02em",
           }}
         >
-          <h1
-            style={{
-              fontSize: "64px",
-              fontWeight: 800,
-              background: "linear-gradient(to right, #fff, #a1a1aa)",
-              backgroundClip: "text",
-              color: "transparent",
-              margin: "0 0 20px 0",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            AWS Student Builder Group
-          </h1>
-          <p
-            style={{
-              fontSize: "32px",
-              color: "#a1a1aa",
-              margin: 0,
-              fontWeight: 500,
-            }}
-          >
-            Tulas University, Dehradun
-          </p>
-        </div>
+          AWS Student Builder Group
+        </h1>
+        <p
+          style={{
+            fontSize: "36px",
+            color: "#7C3AED",
+            margin: 0,
+            fontWeight: 600,
+          }}
+        >
+          Tulas University, Dehradun
+        </p>
       </div>
     ),
     {

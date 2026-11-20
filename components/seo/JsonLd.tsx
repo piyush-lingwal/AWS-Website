@@ -1,68 +1,20 @@
 import React from "react";
+import { organizationNode, serializeJsonLd, websiteNode } from "@/lib/seo/json-ld";
+import { getSiteUrl } from "@/lib/seo/site";
 
-export function OrganizationJsonLd() {
-  const data = {
-    "@context": "https://schema.org",
-    "@type": ["Organization", "EducationalOrganization"],
-    name: "AWS Student Builder Group at Tulas University",
-    alternateName: ["AWS SBG Tulas", "AWS Cloud Club Tulas University"],
-    url: "https://awstulas.org",
-    logo: "https://awstulas.org/icon.png",
-    description:
-      "Official AWS Student Builder Group at Tulas University, Dehradun. A student community focused on AWS cloud computing, technical workshops, and hackathons.",
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: "Dehradun",
-      addressRegion: "Uttarakhand",
-      addressCountry: "IN",
-    },
-    parentOrganization: {
-      "@type": "CollegeOrUniversity",
-      name: "Tulas University",
-      location: {
-        "@type": "Place",
-        address: {
-          "@type": "PostalAddress",
-          addressLocality: "Dehradun",
-          addressRegion: "Uttarakhand",
-          addressCountry: "IN",
-        },
-      },
-    },
-    sameAs: [
-      "https://github.com/Piyush-codez0/AWS-SBG-Website", // Placeholder, user can update with actual social links
-    ],
-  };
-
+export function JsonLd({ data }: { data: unknown }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
     />
   );
 }
 
-export function WebSiteJsonLd() {
-  const data = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "AWS Student Builder Group at Tulas University",
-    alternateName: ["AWS SBG Tulas", "AWS Cloud Club Dehradun"],
-    url: "https://awstulas.org",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: "https://awstulas.org/search?q={search_term_string}",
-      },
-      "query-input": "required name=search_term_string",
-    },
-  };
+export function OrganizationJsonLd() {
+  return <JsonLd data={organizationNode(getSiteUrl())} />;
+}
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-    />
-  );
+export function WebSiteJsonLd() {
+  return <JsonLd data={websiteNode(getSiteUrl())} />;
 }

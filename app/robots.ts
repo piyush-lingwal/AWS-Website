@@ -1,18 +1,7 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
+import { buildRobots } from "@/lib/seo/routes";
+import { getSiteUrl } from "@/lib/seo/site";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://awstulas.org";
-
-  return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: [
-        "/api/",
-      ],
-    },
-
-    sitemap: `${baseUrl}/sitemap.xml`,
-    host: baseUrl,
-  };
+  return buildRobots(getSiteUrl());
 }

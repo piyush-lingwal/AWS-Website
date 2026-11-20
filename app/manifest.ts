@@ -1,17 +1,17 @@
 import { MetadataRoute } from "next";
+import { SITE_DESCRIPTION } from "@/lib/seo/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "AWS Student Builder Group Tulas University",
     short_name: "AWS SBG Tulas",
-    description:
-      "Official AWS Student Builder Group at Tulas University.",
+    description: SITE_DESCRIPTION,
 
     start_url: "/",
 
     display: "standalone",
 
-    background_color: "#09090B",
+    background_color: "#FBF9FF",
 
     theme_color: "#7C3AED",
 
