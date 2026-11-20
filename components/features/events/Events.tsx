@@ -16,8 +16,6 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { SquareArrowOutUpRight } from "@/components/ui/animate-ui/icons/square-arrow-out-up-right";
-import { PixelHeading } from "@/components/ui/pixel-heading-character";
-import { Spotlight } from "@/components/ui/spotlight";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { AnimatedCountdown } from "@/components/ui/animated-countdown";
 import {
@@ -130,23 +128,23 @@ function getTimelineDotStatus(status: EventStatus) {
 function StatusIndicator({ status }: { status: EventStatus }) {
   if (status === "past") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium text-muted ring-1 ring-inset ring-white/10">
-        <CheckCircle2 className="h-3 w-3 text-muted" />
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-sbg-ink/[0.05] px-2.5 py-1 text-[11px] font-medium text-sbg-ink-3 ring-1 ring-inset ring-sbg-ink/10">
+        <CheckCircle2 className="h-3 w-3 text-sbg-ink-3" />
         Concluded
       </span>
     );
   }
   if (status === "current") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-1 text-[11px] font-semibold text-primary-light ring-1 ring-inset ring-primary/30 shadow-[0_0_12px_rgba(124,58,237,0.3)]">
-        <span className="h-1.5 w-1.5 rounded-full bg-primary-light animate-pulse" />
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-sbg-lilac-100 px-2.5 py-1 text-[11px] font-semibold text-sbg-lilac-700 ring-1 ring-inset ring-sbg-lilac-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-sbg-lilac-600 animate-pulse" />
         Up Next
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-text-secondary ring-1 ring-inset ring-white/10">
-      <span className="h-1.5 w-1.5 rounded-full bg-text-secondary/60" />
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium text-sbg-ink-2 ring-1 ring-inset ring-sbg-ink/10">
+      <span className="h-1.5 w-1.5 rounded-full bg-sbg-ink-3/60" />
       Upcoming
     </span>
   );
@@ -159,38 +157,38 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
   return (
     <SpotlightCard
       className={cn(
-        "group relative overflow-hidden rounded-2xl border transition-all duration-300 flex flex-col h-full",
+        "group relative overflow-hidden rounded-[24px] border backdrop-blur-xl transition-all duration-300 flex flex-col h-full",
         isCurrent
-          ? "border-primary/40 bg-bg-card/90 shadow-[0_12px_40px_-15px_rgba(124,58,237,0.25)] ring-1 ring-primary/20"
+          ? "border-sbg-lilac-300 bg-white/80 bg-gradient-to-br from-sbg-lilac-100 to-white/85 hover:bg-white/90 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_24px_50px_-24px_rgba(76,29,149,0.35)] ring-1 ring-sbg-lilac-200"
           : isPast
-          ? "border-border/60 bg-bg-card/50 hover:border-border hover:bg-bg-card/70"
-          : "border-border/80 bg-bg-card/75 hover:border-primary/30 hover:shadow-lg",
+          ? "border-white/80 bg-white/55 hover:border-white hover:bg-white/75 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_16px_40px_-28px_rgba(76,29,149,0.22)]"
+          : "border-white/90 bg-white/75 hover:border-sbg-lilac-300 hover:bg-white/90 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_20px_50px_-24px_rgba(76,29,149,0.28),0_2px_6px_-2px_rgba(76,29,149,0.08)] hover:shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_30px_60px_-24px_rgba(76,29,149,0.38)]",
         className
       )}
       contentClassName="h-full flex flex-col flex-1"
       spotlightColor={
         isCurrent
-          ? "rgba(167, 139, 250, 0.025)"
+          ? "rgba(124, 58, 237, 0.06)"
           : isPast
-          ? "rgba(113, 113, 122, 0.01)"
-          : "rgba(192, 132, 252, 0.015)"
+          ? "rgba(27, 17, 64, 0.025)"
+          : "rgba(124, 58, 237, 0.04)"
       }
       borderColor={
         isCurrent
-          ? "rgba(167, 139, 250, 0.08)"
+          ? "rgba(124, 58, 237, 0.14)"
           : isPast
-          ? "rgba(113, 113, 122, 0.03)"
-          : "rgba(192, 132, 252, 0.05)"
+          ? "rgba(27, 17, 64, 0.05)"
+          : "rgba(124, 58, 237, 0.1)"
       }
     >
       {/* Top ambient glow for Up Next event */}
       {isCurrent && (
-        <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 h-32 w-64 rounded-full bg-primary/20 blur-2xl" />
+        <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 h-32 w-64 rounded-full bg-sbg-lilac-300/45 blur-2xl" />
       )}
 
       {/* Cover photo uploaded via the Media Portal, when one exists */}
       {event.coverUrl && (
-        <div className="relative aspect-[16/9] w-full overflow-hidden border-b border-white/[0.06]">
+        <div className="relative aspect-[16/9] w-full overflow-hidden border-b border-[var(--line)]">
           <Image
             src={event.coverUrl}
             alt=""
@@ -200,7 +198,7 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-bg-card/90 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-transparent to-transparent" />
         </div>
       )}
 
@@ -219,8 +217,8 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
 
             {/* Registrations Open indicator for active/upcoming event */}
             {!isPast && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10.5px] font-mono font-semibold uppercase tracking-wider text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#DDF3E6] border border-[#9AD6B1] px-2.5 py-0.5 text-[10.5px] font-lt-mono font-semibold uppercase tracking-wider text-[#166534]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                 Registrations Open
               </span>
             )}
@@ -228,10 +226,10 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
 
           {/* Title */}
           <h3
-            className={`font-display text-[19px] sm:text-[21px] font-semibold leading-snug tracking-tight transition-colors duration-200 ${
+            className={`font-lt-display text-[20px] sm:text-[23px] font-semibold leading-[1.15] tracking-[-0.025em] transition-colors duration-200 ${
               isPast
-                ? "text-text-primary/80 group-hover:text-text-primary"
-                : "text-text-primary group-hover:text-primary-light"
+                ? "text-sbg-ink/80 group-hover:text-sbg-ink"
+                : "text-sbg-ink group-hover:text-sbg-lilac-600"
             }`}
           >
             {event.title}
@@ -239,42 +237,42 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
 
           {/* Description */}
           {event.description ? (
-            <p className="mt-2.5 text-[14px] leading-relaxed text-text-secondary/90 line-clamp-3">
+            <p className="mt-2.5 text-[14.5px] leading-relaxed text-sbg-ink-2 line-clamp-3">
               {event.description}
             </p>
           ) : (
-            <p className="mt-2.5 text-[14px] leading-relaxed text-text-secondary/50 italic line-clamp-3">
+            <p className="mt-2.5 text-[14.5px] leading-relaxed text-sbg-ink-3 italic line-clamp-3">
               Official community session & workshop.
             </p>
           )}
 
           {/* Metadata Chips: Date, Timing, Speaker */}
-          <div className="mt-auto pt-5 border-t border-white/[0.05] grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="mt-auto pt-5 border-t border-[var(--line)] grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {/* Date Chip */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-text-secondary">
-              <Calendar className="w-3.5 h-3.5 text-primary-light shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-[var(--line)] text-xs text-sbg-ink-2">
+              <Calendar className="w-3.5 h-3.5 text-sbg-lilac-600 shrink-0" />
               <span className="font-medium truncate">{event.date}</span>
             </div>
 
             {/* Timing Chip */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-text-secondary">
-              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-[var(--line)] text-xs text-sbg-ink-2">
+              <Clock className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
               <span className="font-medium truncate">{event.timing || "Schedule TBA"}</span>
             </div>
 
             {/* Speaker Chip */}
             {event.speakerName ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-text-secondary sm:col-span-2">
-                <User className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-[var(--line)] text-xs text-sbg-ink-2 sm:col-span-2">
+                <User className="w-3.5 h-3.5 text-[#16A34A] shrink-0" />
                 <span className="font-medium truncate">
-                  Keynote: <strong className="text-white font-semibold">{event.speakerName}</strong>
+                  Keynote: <strong className="text-sbg-ink font-semibold">{event.speakerName}</strong>
                 </span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-text-secondary sm:col-span-2">
-                <User className="w-3.5 h-3.5 text-primary-light/80 shrink-0" />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-[var(--line)] text-xs text-sbg-ink-2 sm:col-span-2">
+                <User className="w-3.5 h-3.5 text-sbg-lilac-600/80 shrink-0" />
                 <span className="font-medium truncate">
-                  Host: <strong className="text-white font-semibold">AWS Student Builder Group</strong>
+                  Host: <strong className="text-sbg-ink font-semibold">AWS Student Builder Group</strong>
                 </span>
               </div>
             )}
@@ -282,7 +280,7 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
         </div>
 
         {/* Action Strip (Footer) */}
-        <div className="mt-5 pt-4 border-t border-white/[0.05]">
+        <div className="mt-5 pt-4 border-t border-[var(--line)]">
           {!isPast ? (
             /* Upcoming / Up Next: Prominent CTA to Meetup Registration */
             <div className="flex items-center justify-between gap-3">
@@ -290,27 +288,27 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
                 href={MEETUP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-[#6C63FF] to-[#8B5CF6] hover:brightness-110 text-white shadow-lg shadow-[#6C63FF]/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="btn btn-primary !min-h-[44px] !px-5 !text-[14px] cursor-pointer"
               >
                 <span>Register Now</span>
                 <SquareArrowOutUpRight size={14} animateOnHover />
               </a>
-              <span className="text-[11px] font-mono text-[#A1A1AA] hidden sm:inline">
+              <span className="t-eyebrow !text-[10.5px] hidden sm:inline">
                 RSVP on Meetup
               </span>
             </div>
           ) : (
             /* Concluded Event: View the Moments in Gallery */
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[11px] font-mono text-muted flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/70" />
+              <span className="t-eyebrow !text-[10.5px] flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]/80" />
                 Session Concluded
               </span>
               <Link
                 href="/gallery"
-                className="group/btn inline-flex items-center gap-1.5 text-xs text-primary-light hover:text-white transition-colors font-medium cursor-pointer"
+                className="group/btn inline-flex items-center gap-1.5 text-[13px] text-sbg-lilac-700 hover:text-sbg-lilac-600 transition-colors font-semibold cursor-pointer"
               >
-                <Camera className="w-3.5 h-3.5 text-primary-light/80 group-hover/btn:text-white transition-colors" />
+                <Camera className="w-3.5 h-3.5 text-sbg-lilac-600/80 group-hover/btn:text-sbg-lilac-600 transition-colors" />
                 <span>View the Moments</span>
                 <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
               </Link>
@@ -325,26 +323,26 @@ function EventCard({ event, className }: { event: Event; className?: string }) {
 /** Animated placeholder shown while data loads */
 function EventCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-border bg-bg-card/40 p-5 sm:p-6 animate-pulse flex flex-col justify-between h-full space-y-4">
+    <div className="rounded-[24px] border border-white/90 bg-white/60 p-5 sm:p-6 animate-pulse flex flex-col justify-between h-full space-y-4 shadow-[0_20px_50px_-28px_rgba(76,29,149,0.25)]">
       <div className="space-y-3 flex-1">
         <div className="flex gap-2">
-          <div className="h-5 w-16 rounded-full bg-white/[0.06]" />
-          <div className="h-5 w-20 rounded-full bg-white/[0.06]" />
+          <div className="h-5 w-16 rounded-full bg-sbg-lilac-200/70" />
+          <div className="h-5 w-20 rounded-full bg-sbg-lilac-200/70" />
         </div>
-        <div className="h-6 w-3/4 rounded bg-white/[0.06]" />
+        <div className="h-6 w-3/4 rounded bg-sbg-lilac-200/70" />
         <div className="space-y-2">
-          <div className="h-4 w-full rounded bg-white/[0.04]" />
-          <div className="h-4 w-5/6 rounded bg-white/[0.04]" />
+          <div className="h-4 w-full rounded bg-sbg-lilac-100" />
+          <div className="h-4 w-5/6 rounded bg-sbg-lilac-100" />
         </div>
         <div className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <div className="h-8 rounded-xl bg-white/[0.04]" />
-          <div className="h-8 rounded-xl bg-white/[0.04]" />
-          <div className="h-8 rounded-xl bg-white/[0.04] sm:col-span-2" />
+          <div className="h-8 rounded-xl bg-sbg-lilac-100" />
+          <div className="h-8 rounded-xl bg-sbg-lilac-100" />
+          <div className="h-8 rounded-xl bg-sbg-lilac-100 sm:col-span-2" />
         </div>
       </div>
-      <div className="pt-4 border-t border-white/[0.05] flex justify-between items-center">
-        <div className="h-4 w-28 rounded bg-white/[0.04]" />
-        <div className="h-4 w-24 rounded bg-white/[0.04]" />
+      <div className="pt-4 border-t border-[var(--line)] flex justify-between items-center">
+        <div className="h-4 w-28 rounded bg-sbg-lilac-100" />
+        <div className="h-4 w-24 rounded bg-sbg-lilac-100" />
       </div>
     </div>
   );
@@ -396,18 +394,21 @@ export function Events() {
           const eventDate = row.event_date ?? "";
           const status = computeStatus(eventDate, firstFutureId, row.id);
           const eventTag = row.event_type || "Event";
+          // Pastel tints from the Daylight Cloud palette (same hues as the preview's event cards).
+          // Concluded events share one muted neutral so they recede.
+          const pastTag = "bg-sbg-ink/[0.05] text-sbg-ink-3";
           const tagColorMap: Record<string, string> = {
-            Workshop:  status === "past" ? "bg-violet-500/10 text-violet-400/60"  : status === "current" ? "bg-violet-500/20 text-violet-300 border border-violet-400/30" : "bg-violet-500/10 text-violet-300",
-            Hackathon: status === "past" ? "bg-amber-500/10 text-amber-400/60"    : status === "current" ? "bg-amber-500/20 text-amber-300 border border-amber-400/30"    : "bg-amber-500/10 text-amber-300",
-            Quiz:      status === "past" ? "bg-sky-500/10 text-sky-400/60"        : status === "current" ? "bg-sky-500/20 text-sky-300 border border-sky-400/30"          : "bg-sky-500/10 text-sky-300",
-            Event:     status === "past" ? "bg-emerald-500/10 text-emerald-400/60": status === "current" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30" : "bg-emerald-500/10 text-emerald-300",
+            Workshop:  status === "past" ? pastTag : status === "current" ? "bg-sbg-lilac-100 text-sbg-lilac-700 border border-sbg-lilac-300" : "bg-sbg-lilac-100 text-sbg-lilac-700",
+            Hackathon: status === "past" ? pastTag : status === "current" ? "bg-[#FFEBD3] text-[#9A5300] border border-[#F5C48A]"             : "bg-[#FFEBD3] text-[#9A5300]",
+            Quiz:      status === "past" ? pastTag : status === "current" ? "bg-[#DCEBFF] text-[#1D4ED8] border border-[#A9C8F5]"             : "bg-[#DCEBFF] text-[#1D4ED8]",
+            Event:     status === "past" ? pastTag : status === "current" ? "bg-[#DDF3E6] text-[#166534] border border-[#9AD6B1]"             : "bg-[#DDF3E6] text-[#166534]",
           };
           const tagColor = tagColorMap[eventTag] ?? (
             status === "past"
-              ? "bg-muted/10 text-muted"
+              ? pastTag
               : status === "current"
-              ? "bg-primary/20 text-primary-light border border-primary/30"
-              : "bg-primary/10 text-primary-light"
+              ? "bg-sbg-lilac-100 text-sbg-lilac-700 border border-sbg-lilac-300"
+              : "bg-sbg-lilac-100 text-sbg-lilac-700"
           );
           return {
             id: row.id,
@@ -420,7 +421,7 @@ export function Events() {
             attendanceOpen: row.attendance_open,
             tag: eventTag,
             tagColor,
-            dotColor: status === "past" ? "text-muted" : "text-primary-light",
+            dotColor: status === "past" ? "text-sbg-ink-3" : "text-sbg-lilac-600",
             description: row.description ?? "",
             status,
             coverUrl: row.cover_url,
@@ -512,60 +513,42 @@ export function Events() {
     <section
       ref={containerRef}
       id="events"
-      className="bg-grid bg-noise relative overflow-hidden bg-bg min-h-screen"
+      className="relative min-h-screen"
     >
-      <Spotlight className="-top-40 left-0 md:-top-20 md:left-32 max-h-[800px]" fill="#A78BFA" />
-
-      {/* Ambient glows */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/3 -top-16 h-[420px] w-[500px] -translate-x-1/2 rounded-full bg-primary/8 blur-[140px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-0 top-[35%] h-[450px] w-[450px] translate-x-1/4 rounded-full bg-secondary/8 blur-[160px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 bottom-0 h-[300px] w-[500px] -translate-x-1/2 rounded-full bg-accent/5 blur-[180px]"
-      />
-
-      <div className="relative mx-auto max-w-content px-4 sm:px-6 pt-28 pb-16 md:pt-36 md:pb-24 lg:pt-36 lg:pb-32">
+      <div className="relative mx-auto max-w-[1240px] px-[var(--gutter)] pt-28 pb-16 md:pt-36 md:pb-24 lg:pt-36 lg:pb-32">
 
         {/* ══════════════════════════════════════════════════════ */}
         {/* ── HIGH-IMPACT 2-COLUMN HERO SECTION ────────────────── */}
         {/* ══════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div data-tone="dawn" className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Headlines & Community Value */}
           <div className="events-hero-left lg:col-span-6 xl:col-span-7 space-y-5">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-[10.5px] font-mono uppercase tracking-wider text-primary-light">
-              <Sparkles className="w-3.5 h-3.5 text-primary-light" />
+            <div className="t-eyebrow inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white/80 px-3.5 py-1.5 !text-[10.5px] !text-sbg-ink-2 backdrop-blur">
+              <Sparkles className="w-3.5 h-3.5 text-sbg-lilac-600" />
               <span>Official Community Calendar</span>
             </div>
 
-            <h1 className="font-display text-[34px] sm:text-[42px] md:text-[50px] font-semibold leading-[1.08] tracking-tight text-text-primary">
+            <h1 className="t-display text-[clamp(38px,5.2vw,72px)] text-sbg-ink">
               What&apos;s on the{" "}
-              <PixelHeading mode="uniform" className="text-gradient">
-                schedule.
-              </PixelHeading>
+              <span className="t-serif text-sbg-lilac-600">schedule.</span>
             </h1>
 
-            <p className="max-w-xl text-[15px] sm:text-[16px] leading-relaxed text-text-secondary">
+            <p className="t-lead max-w-xl">
               Hands-on cloud workshops, live architectural teardowns, hackathons, and certification study sprints hosted by the AWS Student Builder Group at Tulas University.
             </p>
 
             {/* Quick Value Points */}
-            <div className="flex flex-wrap items-center gap-2.5 pt-2 text-xs text-[#D4D4D8]">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07]">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <div className="flex flex-wrap items-center gap-2.5 pt-2 text-[13px] font-medium text-sbg-ink">
+              <div className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-white/80 px-4 py-2 backdrop-blur">
+                <Zap className="w-3.5 h-3.5 text-[#EA8A00]" />
                 <span>Hands-on Cloud Labs</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07]">
-                <Award className="w-3.5 h-3.5 text-primary-light" />
+              <div className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-white/80 px-4 py-2 backdrop-blur">
+                <Award className="w-3.5 h-3.5 text-sbg-lilac-600" />
                 <span>Verified Credentials</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07]">
-                <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-white/80 px-4 py-2 backdrop-blur">
+                <Layers className="w-3.5 h-3.5 text-[#16A34A]" />
                 <span>Free Student Access</span>
               </div>
             </div>
@@ -575,19 +558,19 @@ export function Events() {
           <div className="events-hero-right lg:col-span-6 xl:col-span-5 w-full">
             {nextEvent && hasConcreteDate(nextEvent) ? (
               <SpotlightCard
-                className="relative overflow-hidden rounded-[2rem] border border-primary/30 bg-gradient-to-b from-[#12111A]/90 to-[#0A0A0F]/90 p-6 sm:p-7 shadow-[0_20px_60px_-15px_rgba(108,99,255,0.25)] backdrop-blur-xl ring-1 ring-white/10"
-                spotlightColor="rgba(167, 139, 250, 0.03)"
-                borderColor="rgba(192, 132, 252, 0.08)"
+                className="relative overflow-hidden rounded-[2rem] border border-white/90 bg-white/80 bg-gradient-to-b from-sbg-lilac-100/90 to-white/80 hover:bg-white/90 p-6 sm:p-7 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_30px_60px_-24px_rgba(76,29,149,0.35),0_2px_6px_-2px_rgba(76,29,149,0.08)] backdrop-blur-xl ring-1 ring-sbg-lilac-200"
+                spotlightColor="rgba(124, 58, 237, 0.05)"
+                borderColor="rgba(124, 58, 237, 0.12)"
               >
                 {/* Ambient Top Glow */}
-                <div className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 h-28 w-60 rounded-full bg-primary/30 blur-3xl" />
+                <div className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 h-28 w-60 rounded-full bg-sbg-lilac-300/50 blur-3xl" />
 
                 <div className="relative space-y-5">
                   {/* Stage Top Bar */}
-                  <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] pb-3.5">
+                  <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] pb-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="text-[10.5px] font-mono uppercase tracking-wider font-semibold text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10.5px] font-lt-mono uppercase tracking-wider font-semibold text-[#166534]">
                         Next Upcoming Event
                       </span>
                       <span
@@ -597,25 +580,25 @@ export function Events() {
                       </span>
                     </div>
 
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-lt-mono uppercase font-bold tracking-wider bg-[#DDF3E6] border border-[#9AD6B1] text-[#166534]">
                       Registrations Open
                     </span>
                   </div>
 
                   {/* Event Title Preview */}
                   <div>
-                    <h2 className="font-display text-lg sm:text-xl font-bold text-white tracking-tight line-clamp-2">
+                    <h2 className="font-lt-display text-xl sm:text-2xl font-semibold text-sbg-ink tracking-[-0.025em] leading-[1.15] line-clamp-2">
                       {nextEvent.title}
                     </h2>
 
-                    <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-text-secondary">
+                    <div className="flex flex-wrap items-center gap-3 mt-2 text-[13px] text-sbg-ink-2">
                       <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-primary-light" />
+                        <Calendar className="w-3.5 h-3.5 text-sbg-lilac-600" />
                         <span>{nextEvent.date}</span>
                       </div>
                       {nextEvent.timing && (
                         <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-amber-400" />
+                          <Clock className="w-3.5 h-3.5 text-[#D97706]" />
                           <span>{nextEvent.timing}</span>
                         </div>
                       )}
@@ -624,7 +607,7 @@ export function Events() {
 
                   {/* ── BIGGER, STYLISH COUNTDOWN DISPLAY ── */}
                   <div className="py-2">
-                    <p className="text-[10.5px] font-mono uppercase tracking-wider text-muted mb-2.5 flex items-center gap-1.5">
+                    <p className="t-eyebrow !text-[10.5px] mb-2.5 flex items-center gap-1.5">
                       <span>Event starts in:</span>
                     </p>
                     <AnimatedCountdown
@@ -632,21 +615,21 @@ export function Events() {
                       variant="modern"
                       size="md"
                       completionMessage="🎉 The event is live now!"
-                      containerClassName="w-full bg-black/40 border-white/[0.08] backdrop-blur-md p-2 sm:p-2.5"
-                      unitClassName="bg-white/[0.035] border-white/10 hover:border-primary/40 hover:bg-white/[0.06] min-w-0 flex-1 py-2.5 sm:py-3 px-1 sm:px-2"
-                      numberClassName="text-2xl sm:text-3xl lg:text-4xl font-bold font-mono tracking-tight text-white"
-                      labelClassName="text-[8.5px] sm:text-[9.5px] uppercase font-mono tracking-wider text-muted font-semibold"
-                      accentClassName="via-primary/50"
+                      containerClassName="w-full bg-white/60 border-white/90 shadow-none backdrop-blur-md p-2 sm:p-2.5"
+                      unitClassName="bg-white/80 border-[var(--line)] shadow-none hover:border-sbg-lilac-300 hover:bg-white min-w-0 flex-1 py-2.5 sm:py-3 px-1 sm:px-2"
+                      numberClassName="text-2xl sm:text-3xl lg:text-4xl font-semibold font-lt-display tracking-[-0.03em] text-sbg-ink"
+                      labelClassName="text-[8.5px] sm:text-[9.5px] uppercase font-lt-mono tracking-wider text-sbg-ink-3 font-medium"
+                      accentClassName="via-sbg-lilac-400/60"
                     />
                   </div>
 
                   {/* ── CTA BUTTON TO MEETUP ── */}
-                  <div className="pt-2 border-t border-white/[0.06]">
+                  <div className="pt-2 border-t border-[var(--line)]">
                     <a
                       href={MEETUP_URL}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full h-11 px-5 rounded-xl text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-[#6C63FF] via-[#7C3AED] to-[#8B5CF6] hover:brightness-110 text-white shadow-lg shadow-[#6C63FF]/30 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+                      className="btn btn-primary w-full cursor-pointer"
                     >
                       <span>Register Now on Meetup</span>
                       <SquareArrowOutUpRight size={14} animateOnHover />
@@ -657,25 +640,25 @@ export function Events() {
             ) : (
               /* Fallback Stage when no future countdown target is set */
               <SpotlightCard
-                className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-bg-card/70 p-6 sm:p-8 backdrop-blur-xl"
-                spotlightColor="rgba(167, 139, 250, 0.02)"
-                borderColor="rgba(192, 132, 252, 0.05)"
+                className="relative overflow-hidden rounded-[2rem] border border-white/90 bg-white/75 hover:bg-white/90 p-6 sm:p-8 backdrop-blur-xl shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_30px_60px_-24px_rgba(76,29,149,0.3)]"
+                spotlightColor="rgba(124, 58, 237, 0.04)"
+                borderColor="rgba(124, 58, 237, 0.1)"
               >
                 <div className="space-y-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary-light">
+                  <div className="w-10 h-10 rounded-xl bg-sbg-lilac-100 border border-sbg-lilac-200 flex items-center justify-center text-sbg-lilac-600">
                     <Sparkles className="w-5 h-5" />
                   </div>
-                  <h3 className="font-display text-xl font-bold text-white">
+                  <h3 className="font-lt-display text-2xl font-semibold tracking-[-0.025em] text-sbg-ink">
                     Stay Connected With Us
                   </h3>
-                  <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+                  <p className="text-sm text-sbg-ink-2 leading-relaxed">
                     Join our active community on Meetup to get notified first as soon as our next hands-on cloud workshop drops.
                   </p>
                   <a
                     href={MEETUP_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-semibold bg-primary hover:bg-primary-hover text-white transition-all cursor-pointer"
+                    className="btn btn-primary !min-h-[44px] !px-5 !text-[14px] cursor-pointer"
                   >
                     <span>Visit Meetup Chapter</span>
                     <SquareArrowOutUpRight size={13} />
@@ -698,10 +681,10 @@ export function Events() {
         {/* ── Error state ──────────────────────────────────────── */}
         {!loading && fetchError && (
           <div className="mt-16 flex flex-col items-center gap-3 text-center py-16">
-            <p className="text-[15px] text-text-secondary font-medium">
+            <p className="text-[15px] text-sbg-ink-2 font-medium">
               Could not load events right now.
             </p>
-            <p className="text-[13px] text-muted max-w-md font-mono bg-white/[0.02] p-3 rounded-xl border border-white/[0.06]">
+            <p className="text-[13px] text-sbg-ink-3 max-w-md font-lt-mono bg-white/70 p-3 rounded-xl border border-[var(--line)]">
               {fetchError}
             </p>
           </div>
@@ -710,15 +693,15 @@ export function Events() {
         {/* ── Empty state (No events in DB at all) ─────────────── */}
         {!loading && !fetchError && events.length === 0 && (
           <div className="mt-16 flex flex-col items-center py-20">
-            <div className="inline-flex flex-col items-start gap-3 rounded-2xl border border-border/60 bg-bg-card/60 backdrop-blur-md px-8 py-7 text-center sm:text-left">
-              <p className="text-[12px] uppercase tracking-[0.14em] text-muted flex items-center gap-2 mx-auto sm:mx-0">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary-light animate-pulse" />
+            <div className="inline-flex flex-col items-start gap-3 rounded-[24px] border border-white/90 bg-white/75 backdrop-blur-xl shadow-[0_20px_50px_-24px_rgba(76,29,149,0.28)] px-8 py-7 text-center sm:text-left">
+              <p className="t-eyebrow flex items-center gap-2 mx-auto sm:mx-0">
+                <span className="h-1.5 w-1.5 rounded-full bg-sbg-lilac-600 animate-pulse" />
                 Coming Soon
               </p>
-              <h3 className="font-display text-[22px] sm:text-[26px] font-semibold text-text-primary">
-                Events being planned
+              <h3 className="font-lt-display text-[24px] sm:text-[28px] font-semibold tracking-[-0.025em] text-sbg-ink">
+                Events being <span className="t-serif text-sbg-lilac-600">planned</span>
               </h3>
-              <p className="text-[14px] text-text-secondary max-w-sm">
+              <p className="text-[14.5px] text-sbg-ink-2 max-w-sm">
                 Our next workshop schedule is in the works. Announcements drop here first!
               </p>
             </div>
@@ -729,15 +712,15 @@ export function Events() {
         {/* ── SECTION 1: UPCOMING SESSIONS (TIMELINE) ─────────── */}
         {/* ══════════════════════════════════════════════════════ */}
         {!loading && !fetchError && upcomingEvents.length > 0 && (
-          <div className="mt-20 sm:mt-24">
+          <div data-tone="bloom" className="mt-20 sm:mt-24">
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-primary-light animate-pulse" />
-                <h3 className="font-display text-xl sm:text-2xl font-semibold text-text-primary tracking-tight">
-                  Upcoming Sessions
+                <span className="h-2.5 w-2.5 rounded-full bg-sbg-lilac-600 animate-pulse" />
+                <h3 className="t-display text-[clamp(26px,3.2vw,40px)] text-sbg-ink">
+                  Upcoming <span className="t-serif text-sbg-lilac-600">Sessions</span>
                 </h3>
               </div>
-              <span className="text-xs font-mono text-muted px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+              <span className="t-eyebrow !text-[10.5px] px-3 py-1.5 rounded-full bg-white/70 border border-[var(--line)] backdrop-blur">
                 {upcomingEvents.length} {upcomingEvents.length === 1 ? "Session Scheduled" : "Sessions Scheduled"}
               </span>
             </div>
@@ -752,8 +735,8 @@ export function Events() {
                   <TimelineHeading
                     className={`text-[13px] font-medium ${
                       event.status === "current"
-                        ? "text-primary-light font-semibold"
-                        : "text-text-secondary"
+                        ? "text-sbg-lilac-700 font-semibold"
+                        : "text-sbg-ink-2"
                     }`}
                   >
                     {event.date}
@@ -763,7 +746,7 @@ export function Events() {
                     status={getTimelineDotStatus(event.status)}
                     className={`${event.dotColor} ${
                       event.status === "current"
-                        ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-bg scale-125"
+                        ? "ring-2 ring-sbg-lilac-400/50 ring-offset-2 ring-offset-sbg-paper scale-125"
                         : ""
                     }`}
                   />
@@ -773,8 +756,8 @@ export function Events() {
                       done={event.status === "past"}
                       className={
                         event.status === "current"
-                          ? "bg-gradient-to-b from-primary to-muted"
-                          : ""
+                          ? "bg-gradient-to-b from-sbg-lilac-600 to-sbg-lilac-200"
+                          : "bg-sbg-lilac-200"
                       }
                     />
                   )}
@@ -794,23 +777,23 @@ export function Events() {
         {/* ── SECTION 2: CONCLUDED SESSIONS (ARCHIVE) ──────────── */}
         {/* ══════════════════════════════════════════════════════ */}
         {!loading && !fetchError && pastEvents.length > 0 && (
-          <div className="mt-20 sm:mt-28 pt-12 border-t border-white/[0.08]">
+          <div data-tone="clear" className="mt-20 sm:mt-28 pt-12 border-t border-[var(--line)]">
             {/* Section Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10.5px] font-mono uppercase tracking-wider text-muted mb-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-muted" />
+                <div className="t-eyebrow !text-[10.5px] inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-[var(--line)] backdrop-blur mb-3">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-sbg-ink-3" />
                   <span>Completed Archive</span>
                 </div>
-                <h3 className="font-display text-2xl sm:text-3xl font-semibold text-text-primary tracking-tight">
-                  Concluded Sessions
+                <h3 className="t-display text-[clamp(28px,3.6vw,48px)] text-sbg-ink">
+                  Concluded <span className="t-serif text-sbg-lilac-600">Sessions</span>
                 </h3>
-                <p className="mt-1.5 text-xs sm:text-sm text-text-secondary max-w-lg leading-relaxed">
+                <p className="mt-2 text-sm sm:text-[15px] text-sbg-ink-2 max-w-lg leading-relaxed">
                   Browse previous workshops, webinars, and hackathons completed by the AWS Student Builder Group.
                 </p>
               </div>
 
-              <span className="text-xs font-mono text-muted px-3 py-1.5 rounded-xl bg-white/[0.02] border border-white/[0.06] w-fit">
+              <span className="t-eyebrow !text-[10.5px] px-3 py-1.5 rounded-full bg-white/70 border border-[var(--line)] backdrop-blur w-fit">
                 {pastEvents.length} {pastEvents.length === 1 ? "Session Concluded" : "Sessions Concluded"}
               </span>
             </div>

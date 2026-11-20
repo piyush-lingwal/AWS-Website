@@ -1,0 +1,223 @@
+/* ============================================================
+   /events light theme ("Daylight Cloud").
+   Self-contained: nothing here depends on /preview. Everything is scoped to
+   .events-page, so no other page is affected.
+   Colour and font tokens used as Tailwind classes (sbg-*, font-lt-*) live in tailwind.config.ts.
+   ============================================================ */
+
+html:has(.events-page),
+html:has(.events-page) body {
+  background: #fbf9ff;
+}
+html:has(.events-page) {
+  scrollbar-color: #cbb5ff #f4efff;
+}
+html:has(.events-page)::-webkit-scrollbar-track {
+  background: #f4efff;
+}
+html:has(.events-page)::-webkit-scrollbar-thumb {
+  background: #cbb5ff;
+}
+html:has(.events-page)::-webkit-scrollbar-thumb:hover {
+  background: #af8cff;
+}
+
+.events-page {
+  /* colour */
+  --ink: #1b1140;
+  --ink-2: #4d4470;
+  --ink-3: #6a6190;
+  --paper: #fbf9ff;
+  --lilac-100: #efe8ff;
+  --lilac-200: #e1d4ff;
+  --lilac-300: #cbb5ff;
+  --lilac-400: #af8cff;
+  --lilac-600: #7c3aed;
+  --lilac-700: #6428d4;
+  --spark: #ff9900;
+  --line: rgba(27, 17, 64, 0.1);
+  /* motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  /* layout */
+  --gutter: clamp(20px, 5vw, 40px);
+
+  position: relative;
+  isolation: isolate;
+  color: var(--ink);
+  background: var(--paper);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.events-page ::selection {
+  background: var(--lilac-600);
+  color: #fff;
+}
+.events-page :focus-visible {
+  outline: 2px solid var(--lilac-600);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* ── Typography ─────────────────────────────────────────── */
+.events-page .t-display {
+  font-family: var(--font-lt-display), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+.events-page .t-serif {
+  font-family: var(--font-lt-serif), ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  /* a serif's x-height is smaller: a touch larger to sit level with the sans */
+  font-size: 1.07em;
+}
+.events-page .t-eyebrow {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.events-page .t-lead {
+  font-size: clamp(16px, 1.55vw, 19px);
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.events-page .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out), background-color 220ms var(--ease-out), color 220ms;
+}
+.events-page .btn:active {
+  transform: scale(0.97);
+}
+.events-page .btn-primary {
+  color: #fff;
+  background: linear-gradient(180deg, #8b4ff2 0%, var(--lilac-600) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 10px 28px -8px rgba(124, 58, 237, 0.65);
+}
+@media (hover: hover) {
+  .events-page .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 16px 34px -8px rgba(124, 58, 237, 0.75);
+  }
+}
+
+/* ── Dynamic background (EventsAtmosphere) ──────────────── */
+.events-page .atmos {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --p: 0;
+  --bg: 251 249 255;
+  --a: 228 216 255;
+  --b: 255 224 188;
+  --c: 212 229 255;
+  background: rgb(var(--bg));
+}
+.events-page .atmos-blob {
+  position: absolute;
+  width: 78vmax;
+  height: 78vmax;
+  border-radius: 50%;
+  will-change: transform;
+}
+.events-page .atmos-a {
+  top: -26vmax;
+  left: -22vmax;
+  background: radial-gradient(closest-side, rgb(var(--a) / 0.95), rgb(var(--a) / 0));
+  transform: translate3d(calc(var(--p) * 58vw), calc(var(--p) * 120vh), 0) rotate(calc(var(--p) * 120deg));
+}
+.events-page .atmos-b {
+  top: 8vh;
+  right: -30vmax;
+  background: radial-gradient(closest-side, rgb(var(--b) / 0.8), rgb(var(--b) / 0));
+  transform: translate3d(calc(var(--p) * -72vw), calc(var(--p) * 70vh), 0) rotate(calc(var(--p) * -90deg));
+}
+.events-page .atmos-c {
+  bottom: -34vmax;
+  left: 12vw;
+  background: radial-gradient(closest-side, rgb(var(--c) / 0.9), rgb(var(--c) / 0));
+  transform: translate3d(calc(var(--p) * 34vw), calc(var(--p) * -80vh), 0) rotate(calc(var(--p) * 60deg));
+}
+/* the brand's pixel motif, drifting at different speeds */
+.events-page .atmos-px {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 22%;
+  background: rgb(var(--a) / 0.9);
+  opacity: var(--o);
+  transform: translate3d(calc(sin(var(--p) * var(--f)) * var(--amp) * 1px), calc(var(--p) * var(--v) * 1vh), 0);
+}
+.events-page .atmos-px[data-spark="true"] {
+  background: var(--spark);
+}
+.events-page .atmos-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0 0.5  0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.events-page .atmos-fade {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 80% at 50% 0%, transparent 40%, rgb(var(--bg) / 0.55) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .events-page .atmos-blob,
+  .events-page .atmos-px {
+    transform: none;
+  }
+}
+
+/* ── Native form controls ───────────────────────────────────
+   globals.css styles autofill and <select> options for the dark site; restyle them light here. */
+.events-page input:-webkit-autofill,
+.events-page input:-webkit-autofill:hover,
+.events-page input:-webkit-autofill:focus,
+.events-page textarea:-webkit-autofill,
+.events-page textarea:-webkit-autofill:hover,
+.events-page textarea:-webkit-autofill:focus,
+.events-page select:-webkit-autofill,
+.events-page select:-webkit-autofill:hover,
+.events-page select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #1b1140 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  border-color: rgba(27, 17, 64, 0.16) !important;
+}
+.events-page select option {
+  background-color: #ffffff !important;
+  color: #1b1140 !important;
+}
+.events-page select option:hover,
+.events-page select option:focus,
+.events-page select option:active,
+.events-page select option:checked {
+  background-color: #efe8ff !important;
+  color: #6428d4 !important;
+}

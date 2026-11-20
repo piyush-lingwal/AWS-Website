@@ -19,6 +19,11 @@ const CATEGORIES = [
   { id: "community", label: "Community Networking / Social" },
 ];
 
+// Daylight Cloud form styling (shared by every text field below).
+const FIELD_CLASS =
+  "rounded-xl border border-sbg-ink/15 bg-white/80 px-3.5 py-2.5 text-sm font-medium text-sbg-ink placeholder:text-sbg-ink-3/70 placeholder:font-normal focus:border-sbg-lilac-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sbg-lilac-300 transition-all";
+const LABEL_CLASS = "t-eyebrow !text-sbg-ink-2";
+
 export function SuggestEventSection() {
   const [formData, setFormData] = useState({
     name: "",
@@ -64,59 +69,59 @@ export function SuggestEventSection() {
   };
 
   return (
-    <section className="suggest-event-container mt-16 sm:mt-20 w-full max-w-2xl mx-auto">
+    <section data-tone="dusk" className="suggest-event-container mt-16 sm:mt-20 w-full max-w-2xl mx-auto">
       <SpotlightCard
-        className="border-primary/20 bg-bg-card/70 backdrop-blur-xl shadow-2xl"
-        spotlightColor="rgba(167, 139, 250, 0.02)"
-        borderColor="rgba(192, 132, 252, 0.05)"
+        className="rounded-[28px] border-white/90 bg-white/75 hover:bg-white/90 backdrop-blur-xl shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_30px_60px_-24px_rgba(76,29,149,0.3),0_2px_6px_-2px_rgba(76,29,149,0.08)]"
+        spotlightColor="rgba(124, 58, 237, 0.04)"
+        borderColor="rgba(124, 58, 237, 0.1)"
       >
         <div className="p-5 sm:p-8 lg:p-10">
           {/* Header */}
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary-light ring-1 ring-inset ring-primary/20">
-                <Lightbulb size={13} className="text-primary-light" animateOnHover />
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-sbg-lilac-100 px-3 py-1 text-[11px] font-medium text-sbg-lilac-700 ring-1 ring-inset ring-sbg-lilac-300">
+                <Lightbulb size={13} className="text-sbg-lilac-600" animateOnHover />
                 <span>Community Driven</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 px-3 py-1 text-[11px] font-medium text-cyan-300 ring-1 ring-inset ring-cyan-500/20">
-                <Globe size={13} className="text-cyan-400" />
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#DCEBFF] px-3 py-1 text-[11px] font-medium text-[#1D4ED8] ring-1 ring-inset ring-[#A9C8F5]">
+                <Globe size={13} className="text-[#2563EB]" />
                 <span>Open to Everyone</span>
               </div>
             </div>
 
-            <h3 className="font-display text-[22px] sm:text-[26px] font-semibold tracking-tight text-text-primary">
+            <h3 className="font-lt-display text-[24px] sm:text-[30px] font-semibold leading-[1.1] tracking-[-0.03em] text-sbg-ink">
               Have an event idea?{" "}
               <SparklesText
                 text="Suggest it to the team."
                 sparkleCount={5}
-                colors={{ first: "#C084FC", second: "#38BDF8" }}
-                className="text-primary-light font-semibold"
+                colors={{ first: "#AF8CFF", second: "#FF9900" }}
+                className="t-serif text-sbg-lilac-600 !font-normal"
               />
             </h3>
 
             {/* Prompt for Outsiders & Everyone */}
-            <div className="mt-3.5 flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-xs sm:text-sm text-text-secondary">
-              <Users size={18} className="shrink-0 text-primary-light mt-0.5" />
+            <div className="mt-3.5 flex items-start gap-2.5 rounded-2xl border border-sbg-lilac-200 bg-sbg-lilac-50 p-3.5 text-xs sm:text-sm text-sbg-ink-2">
+              <Users size={18} className="shrink-0 text-sbg-lilac-600 mt-0.5" />
               <p className="leading-relaxed">
-                <strong className="text-text-primary font-medium">Open to Everyone:</strong> You don&apos;t have to be a Tulas student! External students, developers, industry professionals, and tech enthusiasts from anywhere can suggest or request an event.
+                <strong className="text-sbg-ink font-semibold">Open to Everyone:</strong> You don&apos;t have to be a Tulas student! External students, developers, industry professionals, and tech enthusiasts from anywhere can suggest or request an event.
               </p>
             </div>
           </div>
 
           {/* Form / Success State */}
           {submitted ? (
-            <div className="mt-6 rounded-xl border border-success/30 bg-success/10 p-6 text-center flex flex-col items-center justify-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/20 text-success mb-3">
+            <div className="mt-6 rounded-2xl border border-[#9AD6B1] bg-[#DDF3E6] p-6 text-center flex flex-col items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#16A34A] mb-3">
                 <Check size={24} />
               </div>
-              <h4 className="text-lg font-semibold text-white">Suggestion Received!</h4>
-              <p className="mt-1 text-sm text-text-secondary max-w-md">
+              <h4 className="font-lt-display text-xl font-semibold tracking-[-0.02em] text-sbg-ink">Suggestion Received!</h4>
+              <p className="mt-1 text-sm text-sbg-ink-2 max-w-md">
                 Thanks for helping shape the AWS Student Builder Group roadmap. We review suggestions weekly.
               </p>
               <button
                 type="button"
                 onClick={() => setSubmitted(false)}
-                className="mt-5 text-xs font-semibold text-primary-light hover:underline cursor-pointer"
+                className="mt-5 text-[13px] font-semibold text-sbg-lilac-700 hover:text-sbg-lilac-600 hover:underline cursor-pointer"
               >
                 Submit another suggestion
               </button>
@@ -125,8 +130,8 @@ export function SuggestEventSection() {
             <form onSubmit={handleSubmit} className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Name */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="suggest-name" className="text-[11px] font-semibold uppercase tracking-wider text-purple-300/90">
-                  Your Name <span className="text-primary-light font-bold">*</span>
+                <label htmlFor="suggest-name" className={LABEL_CLASS}>
+                  Your Name <span className="text-sbg-lilac-600 font-bold">*</span>
                 </label>
                 <input
                   id="suggest-name"
@@ -135,14 +140,14 @@ export function SuggestEventSection() {
                   placeholder="e.g. Alex Morgan"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="rounded-lg border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm font-medium text-white placeholder:text-zinc-500 placeholder:font-normal focus:border-primary-light focus:bg-black/60 focus:outline-none focus:ring-1 focus:ring-primary-light transition-all"
+                  className={FIELD_CLASS}
                 />
               </div>
 
               {/* Email */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="suggest-email" className="text-[11px] font-semibold uppercase tracking-wider text-purple-300/90">
-                  Your Email <span className="text-primary-light font-bold">*</span>
+                <label htmlFor="suggest-email" className={LABEL_CLASS}>
+                  Your Email <span className="text-sbg-lilac-600 font-bold">*</span>
                 </label>
                 <input
                   id="suggest-email"
@@ -151,14 +156,14 @@ export function SuggestEventSection() {
                   placeholder="alex@gmail.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="rounded-lg border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm font-medium text-white placeholder:text-zinc-500 placeholder:font-normal focus:border-primary-light focus:bg-black/60 focus:outline-none focus:ring-1 focus:ring-primary-light transition-all"
+                  className={FIELD_CLASS}
                 />
               </div>
 
               {/* Event Title / Topic */}
               <div className="sm:col-span-2 flex flex-col gap-1.5">
-                <label htmlFor="suggest-title" className="text-[11px] font-semibold uppercase tracking-wider text-purple-300/90">
-                  Event Topic / Title <span className="text-primary-light font-bold">*</span>
+                <label htmlFor="suggest-title" className={LABEL_CLASS}>
+                  Event Topic / Title <span className="text-sbg-lilac-600 font-bold">*</span>
                 </label>
                 <input
                   id="suggest-title"
@@ -167,13 +172,13 @@ export function SuggestEventSection() {
                   placeholder="e.g. Serverless Microservices with AWS Lambda & DynamoDB"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="rounded-lg border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm font-medium text-white placeholder:text-zinc-500 placeholder:font-normal focus:border-primary-light focus:bg-black/60 focus:outline-none focus:ring-1 focus:ring-primary-light transition-all"
+                  className={FIELD_CLASS}
                 />
               </div>
 
               {/* Category */}
               <div className="sm:col-span-2 flex flex-col gap-1.5">
-                <label htmlFor="suggest-category" className="text-[11px] font-semibold uppercase tracking-wider text-purple-300/90">
+                <label htmlFor="suggest-category" className={LABEL_CLASS}>
                   Event Type
                 </label>
                 <div className="relative w-full">
@@ -181,15 +186,15 @@ export function SuggestEventSection() {
                     id="suggest-category"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full appearance-none rounded-lg border border-white/15 bg-black/40 px-3.5 py-2.5 pr-10 text-sm font-medium text-white focus:border-primary-light focus:bg-black/60 focus:outline-none focus:ring-1 focus:ring-primary-light hover:border-white/30 transition-all cursor-pointer"
+                    className={`${FIELD_CLASS} w-full appearance-none pr-10 hover:border-sbg-ink/30 cursor-pointer`}
                   >
                     {CATEGORIES.map((cat) => (
-                      <option key={cat.id} value={cat.id} className="bg-zinc-900 text-white py-2">
+                      <option key={cat.id} value={cat.id} className="bg-white text-sbg-ink py-2">
                         {cat.label}
                       </option>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-primary-light">
+                  <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sbg-lilac-600">
                     <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
@@ -199,8 +204,8 @@ export function SuggestEventSection() {
 
               {/* Description */}
               <div className="sm:col-span-2 flex flex-col gap-1.5">
-                <label htmlFor="suggest-description" className="text-[11px] font-semibold uppercase tracking-wider text-purple-300/90">
-                  Why should we host this? / Details <span className="text-primary-light font-bold">*</span>
+                <label htmlFor="suggest-description" className={LABEL_CLASS}>
+                  Why should we host this? / Details <span className="text-sbg-lilac-600 font-bold">*</span>
                 </label>
                 <textarea
                   id="suggest-description"
@@ -209,7 +214,7 @@ export function SuggestEventSection() {
                   placeholder="Briefly describe what attendees will learn, target prerequisites, or speaker suggestions..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="rounded-lg border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm font-medium text-white placeholder:text-zinc-500 placeholder:font-normal focus:border-primary-light focus:bg-black/60 focus:outline-none focus:ring-1 focus:ring-primary-light transition-all resize-none"
+                  className={`${FIELD_CLASS} resize-none`}
                 />
               </div>
 
@@ -218,7 +223,7 @@ export function SuggestEventSection() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white shadow-[0_0_20px_rgba(124,58,237,0.4)] transition-all duration-300 hover:bg-primary-hover hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="btn btn-primary group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -240,4 +245,3 @@ export function SuggestEventSection() {
     </section>
   );
 }
-
