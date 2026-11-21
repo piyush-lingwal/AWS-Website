@@ -7,7 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { SPARK, buildCloud } from "@/lib/design/pixel-cloud";
 import { cssVars, useScrollVar } from "./use-scroll-var";
 
-const icon = (path: string) => encodeURI(`/assets/AWS services icons/${path}`);
+const icon = (path: string) => encodeURI(`/assets/aws-service-icons/${path}`);
 
 const SERVICE_CHIPS = [
   { name: "EC2", note: "Compute", src: icon("Compute/EC2.png"), x: "0%", y: "16%", at: 0.4, bob: "0s" },

@@ -148,6 +148,29 @@ body:has(.admin-daylight) {
 }
 .ad-btn-danger:hover:not(:disabled) { background: #ffd0d0; }
 
+/* ── Scrollbar ──
+   app/globals.css sets a dark ::-webkit-scrollbar site-wide (old theme default).
+   Override it inside the admin panel so scrollable areas (the page body, and modal
+   content like the Add/Edit Team Member dialog) get a light, on-brand scrollbar
+   instead of the old near-black one bleeding into this theme. */
+.admin-daylight ::-webkit-scrollbar,
+body:has(.admin-daylight) ::-webkit-scrollbar {
+  width: 10px;
+}
+.admin-daylight ::-webkit-scrollbar-track,
+body:has(.admin-daylight) ::-webkit-scrollbar-track {
+  background: rgb(var(--sbg-mist));
+}
+.admin-daylight ::-webkit-scrollbar-thumb,
+body:has(.admin-daylight) ::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.35);
+  border-radius: 999px;
+}
+.admin-daylight ::-webkit-scrollbar-thumb:hover,
+body:has(.admin-daylight) ::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.55);
+}
+
 /* ── Form controls ── */
 .ad-label {
   display: block;

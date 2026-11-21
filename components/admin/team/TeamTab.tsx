@@ -12,7 +12,7 @@
 
 import { useMemo, useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Briefcase, Camera, Edit3, GraduationCap, Layers, Loader2, Mail, Plus, Search, Table2, Trash2, Upload, UserPlus, Users, X } from "lucide-react";
+import { Briefcase, Camera, Download, Edit3, GraduationCap, Info, Layers, Loader2, Mail, Plus, Search, Table2, Trash2, Upload, UserPlus, Users, X } from "lucide-react";
 import { DeleteAllButton } from "@/components/admin/DeleteAllButton";
 import { TeamGridSkeleton } from "@/components/admin/Skeletons";
 import { TEAM_PLACEHOLDER_PICTURE, type TeamMemberRow } from "@/lib/team/types";
@@ -62,6 +62,7 @@ export function TeamTab({ members, loading, onChanged, showConfirm }: TeamTabPro
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [showImport, setShowImport] = useState(false);
+  const [showColumnInfo, setShowColumnInfo] = useState(false);
   const [importRows, setImportRows] = useState<ImportRow[]>([]);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importFileName, setImportFileName] = useState("");
@@ -220,7 +221,26 @@ export function TeamTab({ members, loading, onChanged, showConfirm }: TeamTabPro
     setImportErrors([]);
     setImportFileName("");
     setImportMode("append");
+    setShowColumnInfo(false);
     if (importInputRef.current) importInputRef.current.value = "";
+  };
+
+  const downloadTemplate = async () => {
+    const XLSX = await import("xlsx");
+    const header = ["Name", "Email", "Mobile No.", "Roll No.", "Course", "Branch", "Year", "Wing", "Role"];
+    const data = [
+      ["Piyush Lingwal", "piyush.202304205@tulas.edu.in", "8630473112", "230120101102", "B.Tech", "CSE", "4th Year", "", "Leader"],
+      ["Oskar Rana", "oskar.202304170@tulas.edu.in", "8630369690", "230120101098", "B.Tech", "", "4th Year", "", "Vice - Leader"],
+      ["Anubhav Kumar Singh", "anubhavsinghh07@gmail.com", "9065629588", "250120101054", "B.Tech", "CSE", "2nd Year", "", "Secretary"],
+      ["Rishanshu Tripathi", "rishanshu.202304058@tulas.edu.in", "6206066630", "230120101123", "B.Tech", "CSE", "4th Year", "Tech", "Event Lead"],
+      ["Khurshid Alam", "khurshid.202504257@tulas.edu.in", "6201315698", "250120101105", "B.Tech", "CSE", "2nd Year", "Event", ""],
+      ["Vidhi Garg", "vidhi.202404220@tulas.edu.in", "7895972054", "240120101280", "B.Tech", "CSE", "3rd Year", "Tech", ""],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+    ws["!cols"] = header.map((h) => ({ wch: Math.max(h.length, 14) + 6 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "SBG Member Details");
+    XLSX.writeFile(wb, "team-members-template.xlsx");
   };
 
   const parseImportFile = (file: File) => {
@@ -248,6 +268,7 @@ export function TeamTab({ members, loading, onChanged, showConfirm }: TeamTabPro
           Object.keys(row).forEach((key) => {
             k[key.toLowerCase().trim().replace(/\s+/g, "_")] = row[key];
           });
+          // "Mobile No.", "Roll No." and "Year" may be present in the sheet but have no DB columns; they are never picked, so they are ignored.
           const pick = (...keys: string[]) => {
             for (const key of keys) if (k[key] !== undefined && String(k[key]).trim()) return String(k[key]).trim();
             return "";
@@ -718,19 +739,58 @@ export function TeamTab({ members, loading, onChanged, showConfirm }: TeamTabPro
                 onWheel={(e) => e.stopPropagation()}
               >
                 <div className="p-4 rounded-2xl bg-sbg-mist border border-sbg-ink/10 space-y-3">
-                  <p className="ad-eyebrow">Columns in your spreadsheet</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="ad-eyebrow">Columns in your spreadsheet</p>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowColumnInfo((v) => !v)}
+                        aria-expanded={showColumnInfo}
+                        aria-label="What do Role and Wing mean?"
+                        className="grid h-5 w-5 place-items-center rounded-full text-sbg-ink-3 hover:text-sbg-lilac-700 hover:bg-sbg-lilac-100 transition-colors cursor-pointer"
+                      >
+                        <Info className="w-3.5 h-3.5" />
+                      </button>
+                      {showColumnInfo && (
+                        <div className="absolute right-0 top-7 z-20 w-[min(18rem,calc(100vw-4rem))] rounded-xl border border-sbg-ink/10 bg-white p-3.5 text-xs leading-relaxed text-sbg-ink-2 shadow-lg">
+                          <p className="mb-1.5">
+                            <strong className="text-sbg-ink">Role</strong> is only for leads — a title like &quot;Leader&quot; or &quot;Tech Lead&quot;. Leave it blank for a plain wing member.
+                          </p>
+                          <p>
+                            <strong className="text-sbg-ink">Wing</strong> applies to everyone in that wing, both its leads and its plain members.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    {["name", "email", "course"].map((c) => (
+                    {["Name", "Email", "Course"].map((c) => (
                       <span key={c} className="ad-chip ad-chip-ok font-lt-mono">
                         {c}
                       </span>
                     ))}
-                    {["branch", "wing", "picture_url"].map((c) => (
+                    {["Branch (optional)", "Wing (optional)", "Role (optional)"].map((c) => (
                       <span key={c} className="ad-chip font-lt-mono">
-                        {c} <span className="text-sbg-ink-3">(optional)</span>
+                        {c}
+                      </span>
+                    ))}
+                    {["Mobile No.", "Roll No.", "Year"].map((c) => (
+                      <span
+                        key={c}
+                        title="Fine to keep in your sheet, but not imported"
+                        className="ad-chip font-lt-mono border-dashed opacity-60 line-through decoration-sbg-ink-3/50"
+                      >
+                        {c} <span className="text-sbg-ink-3 no-underline">(not imported)</span>
                       </span>
                     ))}
                   </div>
+                  <button
+                    type="button"
+                    onClick={downloadTemplate}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-sbg-ink underline underline-offset-4 hover:text-sbg-ink-2 cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" /> Download template
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

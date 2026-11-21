@@ -6,18 +6,18 @@ import { Reveal } from "@/components/design/Reveal";
 import { cssVars, useScrollVar } from "@/components/design/use-scroll-var";
 
 const TECHNOLOGIES = [
-  { src: "/assets/AWS services icons/Compute/EC2.png", name: "EC2", description: "Compute" },
-  { src: "/assets/AWS services icons/Storage/Simple-Storage-Service.png", name: "S3", description: "Storage" },
-  { src: "/assets/AWS services icons/Compute/Lambda.png", name: "Lambda", description: "Serverless" },
-  { src: "/assets/AWS services icons/Networking-Content-Delivery/CloudFront.png", name: "CloudFront", description: "CDN" },
-  { src: "/assets/AWS services icons/Security-Identity-Compliance/Identity-and-Access-Management.png", name: "IAM", description: "Security" },
-  { src: "/assets/AWS services icons/Database/DynamoDB.png", name: "DynamoDB", description: "NoSQL" },
-  { src: "/assets/AWS services icons/Containers/Elastic-Container-Service.png", name: "ECS", description: "Containers" },
-  { src: "/assets/AWS services icons/Containers/Elastic-Kubernetes-Service.png", name: "EKS", description: "Kubernetes" },
-  { src: "/assets/AWS services icons/Front-End-Web-Mobile/Amplify.png", name: "Amplify", description: "Full-Stack" },
-  { src: "/assets/AWS services icons/Machine-Learning/SageMaker.png", name: "SageMaker", description: "AI/ML" },
-  { src: "/assets/AWS services icons/Management-Governance/CloudWatch.png", name: "CloudWatch", description: "Monitoring" },
-  { src: "/assets/AWS services icons/App-Integration/API-Gateway.png", name: "API Gateway", description: "APIs" },
+  { src: "/assets/aws-service-icons/Compute/EC2.png", name: "EC2", description: "Compute" },
+  { src: "/assets/aws-service-icons/Storage/Simple-Storage-Service.png", name: "S3", description: "Storage" },
+  { src: "/assets/aws-service-icons/Compute/Lambda.png", name: "Lambda", description: "Serverless" },
+  { src: "/assets/aws-service-icons/Networking-Content-Delivery/CloudFront.png", name: "CloudFront", description: "CDN" },
+  { src: "/assets/aws-service-icons/Security-Identity-Compliance/Identity-and-Access-Management.png", name: "IAM", description: "Security" },
+  { src: "/assets/aws-service-icons/Database/DynamoDB.png", name: "DynamoDB", description: "NoSQL" },
+  { src: "/assets/aws-service-icons/Containers/Elastic-Container-Service.png", name: "ECS", description: "Containers" },
+  { src: "/assets/aws-service-icons/Containers/Elastic-Kubernetes-Service.png", name: "EKS", description: "Kubernetes" },
+  { src: "/assets/aws-service-icons/Front-End-Web-Mobile/Amplify.png", name: "Amplify", description: "Full-Stack" },
+  { src: "/assets/aws-service-icons/Machine-Learning/SageMaker.png", name: "SageMaker", description: "AI/ML" },
+  { src: "/assets/aws-service-icons/Management-Governance/CloudWatch.png", name: "CloudWatch", description: "Monitoring" },
+  { src: "/assets/aws-service-icons/App-Integration/API-Gateway.png", name: "API Gateway", description: "APIs" },
 ];
 
 const ROWS = [

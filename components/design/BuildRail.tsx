@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import { cssVars, useScrollVar } from "./use-scroll-var";
 import { useMotionValueEvent } from "framer-motion";
 
-const icon = (path: string) => encodeURI(`/assets/AWS services icons/${path}`);
+const icon = (path: string) => encodeURI(`/assets/aws-service-icons/${path}`);
 
 const CARDS = [
   {
