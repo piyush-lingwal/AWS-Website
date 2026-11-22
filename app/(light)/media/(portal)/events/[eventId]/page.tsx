@@ -121,7 +121,7 @@ export default async function EventMediaPage({
           Could not load the uploaded items. Please try again shortly.
         </p>
       ) : (
-        <MediaList items={items} />
+        <MediaList items={items} eventId={event.id} canDeleteAll={session.role === "super_admin"} />
       )}
     </div>
   );

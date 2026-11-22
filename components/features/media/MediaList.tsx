@@ -54,7 +54,17 @@ async function deleteItem(id: string): Promise<{ ok: true } | { ok: false; error
     return { ok: false, error: "Network error. Check your connection." };
   }
 }
-export function MediaList({ items }: { items: MediaListItem[] }) {
+export function MediaList({
+  items,
+  eventId,
+  canDeleteAll = false,
+}: {
+  items: MediaListItem[];
+  /** Needed for "Delete all". */
+  eventId?: string;
+  /** Only ever true for super_admin (the API enforces it too). */
+  canDeleteAll?: boolean;
+}) {
   if (items.length === 0) {
     return (
       <p className="surface rounded-[28px] p-6 text-sm text-sbg-ink-2">
@@ -65,12 +75,13 @@ export function MediaList({ items }: { items: MediaListItem[] }) {
   const live = items.filter((i) => i.status === "ready").length;
   return (
     <section aria-labelledby="uploaded-heading" className="space-y-3">
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 id="uploaded-heading" className="text-lg font-semibold">Uploaded</h2>
         <p className="text-xs text-sbg-ink-2">
           {items.length} item{items.length === 1 ? "" : "s"} · {live} live
         </p>
       </div>
+      {canDeleteAll && eventId && <DeleteAll eventId={eventId} count={items.length} />}
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
         {items.map((item) => (
           <MediaRow key={item.id} item={item} />
@@ -79,6 +90,106 @@ export function MediaList({ items }: { items: MediaListItem[] }) {
     </section>
   );
 }
+async function deleteAllItems(eventId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`/api/media/events/${eventId}/items`, { method: "DELETE" });
+    const json = await res.json().catch(() => null);
+    if (res.ok && json?.success) return { ok: true };
+    return { ok: false, error: typeof json?.error === "string" ? json.error : "Something went wrong." };
+  } catch {
+    return { ok: false, error: "Network error. Check your connection." };
+  }
+}
+
+const DELETE_ALL_PHRASE = "delete all";
+
+/** Super admin only: step 1 is the button, step 2 is a typed "delete all" + confirm/cancel. */
+function DeleteAll({ eventId, count }: { eventId: string; count: number }) {
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const matched = typed.trim().toLowerCase() === DELETE_ALL_PHRASE;
+
+  const reset = () => {
+    setConfirming(false);
+    setTyped("");
+    setError(null);
+  };
+
+  const run = async () => {
+    if (!matched) return;
+    setBusy(true);
+    setError(null);
+    const result = await deleteAllItems(eventId);
+    setBusy(false);
+    if (result.ok) {
+      reset();
+      router.refresh();
+    } else {
+      setError(result.error);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {confirming ? (
+        <>
+          <div className="mr-auto flex flex-col gap-1.5 text-xs">
+            <p role="alert" className="font-medium text-red-700">
+              Delete all {count} item{count === 1 ? "" : "s"}? This cannot be undone.
+            </p>
+            <label className="flex items-center gap-1.5 text-sbg-ink-2">
+              Type <span className="font-mono font-semibold text-sbg-ink">{DELETE_ALL_PHRASE}</span> to confirm:
+              <input
+                type="text"
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                disabled={busy}
+                autoFocus
+                autoComplete="off"
+                aria-label={`Type "${DELETE_ALL_PHRASE}" to confirm`}
+                className="w-32 rounded-lg border border-sbg-ink/15 bg-white px-2 py-1 text-xs text-sbg-ink focus:border-red-500 focus:outline-none disabled:opacity-50"
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={run}
+            disabled={busy || !matched}
+            className="flex h-8 items-center gap-1.5 rounded-lg bg-red-600 px-3 text-xs font-medium text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+            {busy ? "Deleting…" : "Confirm"}
+          </button>
+          <button
+            type="button"
+            onClick={reset}
+            disabled={busy}
+            className="flex h-8 items-center rounded-lg border border-sbg-ink/15 px-3 text-xs text-sbg-ink-2 hover:bg-sbg-lilac-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-red-200 px-3 text-xs font-medium text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+        >
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Delete all
+        </button>
+      )}
+      {error && (
+        <p role="alert" className="flex basis-full items-start justify-end gap-1.5 text-xs text-red-700">
+          <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 const ACTION_BTN =
   "flex h-8 w-8 items-center justify-center rounded-lg text-sbg-ink-3 transition-colors hover:bg-sbg-lilac-50 hover:text-sbg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sbg-lilac-600 disabled:opacity-50";
 function MediaRow({ item }: { item: MediaListItem }) {

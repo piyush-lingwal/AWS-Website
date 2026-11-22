@@ -31,7 +31,9 @@ const STATUS_LABEL: Record<string, string> = {
   signing: "Preparing…",
   waiting: "Waiting for a free slot…",
   uploading: "Uploading…",
-  verifying: "Checking the file…",
+  // Server-side verification is part of the same "send" step from the user's
+  // point of view; it must never read as a separate, unexplained delay.
+  verifying: "Uploading…",
   processing: "Uploaded · being prepared for the site",
   live: "Uploaded · live",
 };
@@ -94,7 +96,9 @@ export function Uploader({ eventId }: { eventId: string }) {
   /** Photos still being compressed to WebP in the browser (shown as a message). */
   const [compressing, setCompressing] = useState(0);
   /** Sub-step of the photo being prepared right now (drives the flow diagram); null when idle. */
-  const [prep, setPrep] = useState<{ stage: "convert" | "compress"; heic: boolean } | null>(null);
+  const [prep, setPrep] = useState<{ stage: "convert" | "compress" | "upload"; heic: boolean } | null>(null);
+  const reduceRef = useRef(reduce);
+  reduceRef.current = reduce;
 
   // Non-state bookkeeping: the File objects, signed forms, previews, and
   // "already started" guards (so React StrictMode's double effects cannot
@@ -212,6 +216,7 @@ export function Uploader({ eventId }: { eventId: string }) {
     const needsWork = (f: File) => isHeicFile(f) || canCompressImage(f);
     const workCount = files.filter(needsWork).length;
     const prepared: Array<{ file: File; originalSize: number; heic: boolean }> = [];
+    let lastHeic = false;
     if (workCount > 0) setCompressing((n) => n + workCount);
     for (const original of files) {
       if (!needsWork(original)) {
@@ -220,12 +225,21 @@ export function Uploader({ eventId }: { eventId: string }) {
       }
       let file = original;
       const heic = isHeicFile(file);
+      lastHeic = heic;
       try {
         if (heic) {
           setPrep({ stage: "convert", heic });
           file = await convertHeicToJpeg(file);
         }
+        // Flip to "compress" (this is what marks Convert as done) and hold one tick-animation
+        // frame before the real compression work starts — otherwise, for a fast HEIC convert,
+        // the state goes convert-active -> compress-active with no frame where Convert reads as
+        // done, so its checkmark is never actually painted.
         setPrep({ stage: "compress", heic });
+        if (heic) {
+          await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+          if (!reduceRef.current) await new Promise<void>((r) => setTimeout(r, 350));
+        }
         file = await compressToWebp(file);
       } catch {
         // keep whatever we have; the pre-check decides
@@ -234,7 +248,13 @@ export function Uploader({ eventId }: { eventId: string }) {
       }
       prepared.push({ file, originalSize: original.size, heic });
     }
-    setPrep(null);
+    if (workCount > 0) {
+      // Same diagram instance moves on to "Upload" so the Compress tick is seen, then the block closes.
+      // Hold ~400ms (tick animation only, not the real work); reduced motion skips the hold.
+      setPrep({ stage: "upload", heic: lastHeic });
+      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+      if (!reduceRef.current) await new Promise<void>((r) => setTimeout(r, 400));
+    }
 
     const built = prepared.map(({ file, originalSize, heic }) => {
       const id = crypto.randomUUID();
@@ -252,6 +272,7 @@ export function Uploader({ eventId }: { eventId: string }) {
       return item;
     });
     dispatch({ type: "add", items: built });
+    setPrep(null);
   }, []);
 
   const forget = (id: string) => {
@@ -356,7 +377,7 @@ export function Uploader({ eventId }: { eventId: string }) {
       </label>
 
       <AnimatePresence initial={false}>
-        {compressing > 0 && (
+        {prep !== null && (
           <motion.div
             key="prep"
             initial={reduce ? false : { opacity: 0, height: 0 }}
@@ -364,7 +385,7 @@ export function Uploader({ eventId }: { eventId: string }) {
             exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, height: 0, transition: { duration: 0.25 } }}
             className="overflow-hidden"
           >
-            <PrepFlow count={compressing} stage={prep?.stage ?? null} heic={prep?.heic ?? false} />
+            <PrepFlow count={compressing} stage={prep.stage} heic={prep.heic} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -417,12 +438,12 @@ const PREP_NODES = [
  * Pre-upload pipeline: Convert (HEIC only) → Compress → Upload. Shown while photos
  * are prepared in the browser. Upload is always the next step, never active here.
  */
-function PrepFlow({ count, stage, heic }: { count: number; stage: "convert" | "compress" | null; heic: boolean }) {
+function PrepFlow({ count, stage, heic }: { count: number; stage: "convert" | "compress" | "upload"; heic: boolean }) {
   return (
     <div role="status" className="rounded-2xl border border-sbg-lilac-200 bg-white/70 p-4">
       <p className="mb-3 text-xs font-medium text-sbg-ink-2">
-        Preparing {count} {count === 1 ? "photo" : "photos"}…
-        <span className="sr-only">{stage ? ` Step: ${stage === "convert" ? "converting HEIC" : "compressing to WebP"}` : ""}</span>
+        {stage === "upload" ? "Ready to upload…" : `Preparing ${count} ${count === 1 ? "photo" : "photos"}…`}
+        <span className="sr-only">{` Step: ${stage === "convert" ? "converting HEIC" : stage === "compress" ? "compressing to WebP" : "uploading"}`}</span>
       </p>
       <PipelineDiagram stage={stage} heic={heic} />
     </div>
@@ -434,12 +455,12 @@ function PrepFlow({ count, stage, heic }: { count: number; stage: "convert" | "c
  * waiting for a slot): Convert/Compress are finished and the Upload node pulses. `compact` is the
  * smaller always-horizontal version used inside a queue row.
  */
-function PipelineDiagram({ stage, heic, compact = false }: { stage: "convert" | "compress" | "upload" | null; heic: boolean; compact?: boolean }) {
+function PipelineDiagram({ stage, heic, compact = false, upload }: { stage: "convert" | "compress" | "upload" | null; heic: boolean; compact?: boolean; upload?: { progress: number; sent: boolean; sending: boolean } }) {
   const reduce = useReducedMotion();
   const status = (key: (typeof PREP_NODES)[number]["key"]): "done" | "active" | "pending" | "skipped" => {
     if (key === "convert") return stage === "convert" ? "active" : (stage === "compress" || stage === "upload") && heic ? "done" : stage === "compress" || stage === "upload" ? "skipped" : "pending";
     if (key === "compress") return stage === "compress" ? "active" : stage === "upload" ? "done" : "pending";
-    return stage === "upload" ? "active" : "pending";
+    return stage === "upload" ? (upload?.sent ? "done" : "active") : "pending";
   };
   const fill = (from: "convert" | "compress") => {
     if (from === "convert") return stage === "compress" || stage === "upload" ? 1 : stage === "convert" ? 0.5 : 0;
@@ -458,7 +479,7 @@ function PipelineDiagram({ stage, heic, compact = false }: { stage: "convert" | 
                   {isActive && !reduce && (
                     <motion.span
                       aria-hidden="true"
-                      className="absolute inset-0 rounded-full border-2 border-[var(--sbg-lilac-400)]"
+                      className="absolute inset-0 rounded-full border-2 border-[rgb(var(--sbg-lilac-400))]"
                       initial={{ scale: 1, opacity: 0.7 }}
                       animate={{ scale: 1.5, opacity: 0 }}
                       transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
@@ -469,37 +490,56 @@ function PipelineDiagram({ stage, heic, compact = false }: { stage: "convert" | 
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     className={`relative flex ${node} items-center justify-center rounded-full border-2 ${
                       s === "done"
-                        ? "border-[var(--sbg-lilac-600)] bg-[var(--sbg-lilac-600)] text-white"
+                        ? "border-[rgb(var(--sbg-lilac-600))] bg-[rgb(var(--sbg-lilac-600))] text-white"
                         : isActive
-                          ? "border-[var(--sbg-lilac-500)] bg-white text-[var(--sbg-lilac-600)] shadow-[0_0_14px_var(--sbg-lilac-400)]"
-                          : `border-[var(--sbg-lilac-400)]/40 bg-white text-sbg-ink-2 ${s === "skipped" ? "border-dashed" : ""}`
+                          ? "border-[rgb(var(--sbg-lilac-500))] bg-white text-[rgb(var(--sbg-lilac-600))] shadow-[0_0_14px_rgb(var(--sbg-lilac-400))]"
+                          : `border-[rgb(var(--sbg-lilac-400))]/40 bg-white text-sbg-ink-2 ${s === "skipped" ? "border-dashed" : ""}`
                     }`}
                   >
+                    {n.key === "upload" && isActive && upload?.sending && (
+                      // Live transfer fill: left-to-right, width = real progress; shimmer sweeps over it.
+                      <span aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
+                        <motion.span
+                          className="absolute inset-0 origin-left"
+                          style={{
+                            backgroundColor: "rgb(var(--sbg-lilac-300) / 0.55)",
+                            backgroundImage: reduce ? undefined : "linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.85) 50%, transparent 70%)",
+                            backgroundSize: "250% 100%",
+                          }}
+                          initial={false}
+                          animate={{ scaleX: Math.min(100, Math.max(0, upload.progress)) / 100, ...(reduce ? {} : { backgroundPosition: ["130% 0%", "-30% 0%"] }) }}
+                          transition={{
+                            scaleX: { duration: reduce ? 0 : 0.3, ease: "easeOut" },
+                            backgroundPosition: { duration: 1.2, repeat: Infinity, ease: "linear" },
+                          }}
+                        />
+                      </span>
+                    )}
                     <AnimatePresence mode="wait" initial={false}>
                       <motion.span
                         key={s === "done" ? "check" : "icon"}
                         initial={reduce ? false : { scale: 0.4, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={reduce ? { opacity: 0 } : { scale: 0.4, opacity: 0 }}
-                        transition={{ duration: reduce ? 0 : 0.18 }}
-                        className="flex"
+                        transition={reduce ? { duration: 0 } : s === "done" ? { type: "spring", stiffness: 420, damping: 16 } : { duration: 0.18 }}
+                        className="relative flex"
                       >
                         {s === "done" ? <Check className={compact ? "h-4 w-4" : "h-5 w-5"} aria-hidden="true" /> : <n.Icon className={compact ? "h-4 w-4" : "h-5 w-5"} aria-hidden="true" />}
                       </motion.span>
                     </AnimatePresence>
                   </motion.div>
                 </div>
-                <span className={`${compact ? "text-[11px]" : "text-xs"} ${isActive ? "font-semibold text-[var(--sbg-lilac-800)]" : "text-sbg-ink-2"}`}>
+                <span className={`${compact ? "text-[11px]" : "text-xs"} ${isActive ? "font-semibold text-[rgb(var(--sbg-lilac-800))]" : "text-sbg-ink-2"}`}>
                   {n.label}
                   {s === "skipped" && !compact && <span className="ml-1 text-[10px]">(not needed)</span>}
                 </span>
               </div>
               {i < PREP_NODES.length - 1 && (
-                <div aria-hidden="true" className={`relative overflow-hidden rounded-full bg-[var(--sbg-lilac-400)]/25 ${compact ? "mb-5 h-0.5 min-w-4 flex-1" : "ml-[1.3rem] h-5 w-0.5 sm:mx-0 sm:mb-6 sm:ml-0 sm:h-0.5 sm:w-auto sm:flex-1"}`}>
+                <div aria-hidden="true" className={`relative overflow-hidden rounded-full bg-[rgb(var(--sbg-lilac-400))]/25 ${compact ? "mb-5 h-0.5 min-w-4 flex-1" : "ml-[1.3rem] h-5 w-0.5 sm:mx-0 sm:mb-6 sm:ml-0 sm:h-0.5 sm:w-auto sm:flex-1"}`}>
                   {((compact ? ["origin-left"] : ["sm:hidden origin-top", "hidden sm:block origin-left"]) as string[]).map((cls, k, arr) => (
                     <motion.div
                       key={cls}
-                      className={`absolute inset-0 bg-[var(--sbg-lilac-500)] ${cls}`}
+                      className={`absolute inset-0 bg-[rgb(var(--sbg-lilac-500))] ${cls}`}
                       initial={false}
                       animate={k === 0 && arr.length > 1 ? { scaleY: fill(PREP_NODES[i].key as "convert" | "compress") } : { scaleX: fill(PREP_NODES[i].key as "convert" | "compress") }}
                       transition={{ duration: reduce ? 0 : 0.5, ease: "easeInOut" }}
@@ -703,7 +743,9 @@ function UploadRow({
               {status} · <span className="tabular-nums">{sizeText}</span>
             </span>
           </p>
-          {pendingSend && <PipelineDiagram stage="upload" heic={heic} compact />}
+          {/* The tick only means "actually confirmed live" — stay active through verifying too, since the row
+              is removed the instant the server confirms it, so there is no later moment left to show a tick here. */}
+          {pendingSend && <PipelineDiagram stage="upload" heic={heic} compact upload={{ progress: item.progress, sent: false, sending: uploading }} />}
         </div>
         {failed && item.retryable && (
           <button
