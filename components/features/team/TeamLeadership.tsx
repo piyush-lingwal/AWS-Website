@@ -47,8 +47,12 @@ export function TeamLeadership({ core }: { core: PublicTeamMember[] }) {
                       className={featured(i, core.length) ? "h-36 w-36 rounded-full" : "h-28 w-28 rounded-full"}
                     />
                     <div>
-                      <span className="inline-flex items-center rounded-full bg-[var(--chip-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-sbg-accent-strong">
-                        {m.role}
+                      <span
+                        className="badge-shimmer relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_6px_16px_-6px_rgba(124,58,237,0.55)]"
+                        style={{ backgroundImage: "linear-gradient(135deg, #8b4ff2 0%, var(--lilac-600) 100%)" }}
+                      >
+                        <span aria-hidden="true" className="relative z-[2] h-1.5 w-1.5 rounded-full bg-white/80" />
+                        <span className="relative z-[2]">{m.role}</span>
                       </span>
                       <h3 className="t-display mt-3 text-[24px] text-sbg-ink sm:text-[28px]">{m.name}</h3>
                       {detail(m) && <p className="mt-1.5 text-[13px] text-sbg-ink-3">{detail(m)}</p>}

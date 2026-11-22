@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 import Image from "next/image";
@@ -23,6 +24,7 @@ export default function MediaLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -98,6 +100,7 @@ export default function MediaLoginPage() {
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                    placeholder="you@tulas.edu.in"
                     required
                     autoComplete="email"
                     className={FIELD}
@@ -105,15 +108,28 @@ export default function MediaLoginPage() {
                 </div>
                 <div className="grid gap-2">
                   <label htmlFor="password" className="text-sm font-medium text-sbg-ink">Password</label>
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                    required
-                    autoComplete="current-password"
-                    className={FIELD}
-                  />
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                      placeholder="Enter your password"
+                      required
+                      autoComplete="current-password"
+                      className={`${FIELD} pr-12`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showPassword}
+                      tabIndex={-1}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-lg text-sbg-ink-3 transition-colors hover:text-sbg-ink hover:bg-sbg-lilac-50 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                    </button>
+                  </div>
                 </div>
                 {error && (
                   <p

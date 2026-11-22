@@ -25,7 +25,10 @@ export function TeamFaculty() {
           >
             <TeamAvatar src={HOD.picture} name={HOD.name} className="h-32 w-32 rounded-full sm:h-40 sm:w-40" />
             <div>
-              <p className="t-eyebrow">{HOD.title}</p>
+              <span className="badge-shimmer relative inline-flex items-center gap-1.5 rounded-full bg-[#FF9900] px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_6px_16px_-6px_rgba(234,138,0,0.55)]">
+                <span aria-hidden="true" className="relative z-[2] h-1.5 w-1.5 rounded-full bg-white/80" />
+                <span className="relative z-[2]">{HOD.title}</span>
+              </span>
               <h3 className="t-display mt-3 text-[clamp(28px,3.6vw,42px)] text-sbg-ink">{HOD.name}</h3>
             </div>
           </article>
@@ -43,7 +46,10 @@ export function TeamFaculty() {
               >
                 <TeamAvatar src={f.picture} name={f.name} className="h-20 w-20 rounded-full sm:h-24 sm:w-24" />
                 <div className="min-w-0">
-                  <p className="t-eyebrow">{f.title}</p>
+                  <span className="badge-shimmer relative inline-flex items-center gap-1.5 rounded-full bg-[#FF9900] px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_6px_16px_-6px_rgba(234,138,0,0.5)]">
+                    <span aria-hidden="true" className="relative z-[2] h-1.5 w-1.5 rounded-full bg-white/80" />
+                    <span className="relative z-[2]">{f.title}</span>
+                  </span>
                   <h3 className="t-display mt-1.5 text-[24px] text-sbg-ink sm:text-[26px]">{f.name}</h3>
                 </div>
               </article>

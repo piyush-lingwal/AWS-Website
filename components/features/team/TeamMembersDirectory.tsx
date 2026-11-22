@@ -59,8 +59,12 @@ export function TeamMembersDirectory({ wings }: { wings: WingGroup[] }) {
                           >
                             <TeamAvatar src={m.picture_url} name={m.name} className="h-24 w-24 shrink-0 rounded-full" />
                             <div className="min-w-0">
-                              <span className="inline-flex max-w-full items-center truncate rounded-full bg-[var(--chip-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-sbg-accent-strong">
-                                {m.role}
+                              <span
+                                className="badge-shimmer relative inline-flex max-w-full items-center gap-1.5 truncate rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_6px_16px_-6px_rgba(124,58,237,0.55)]"
+                                style={{ backgroundImage: "linear-gradient(135deg, #8b4ff2 0%, var(--lilac-600) 100%)" }}
+                              >
+                                <span aria-hidden="true" className="relative z-[2] h-1.5 w-1.5 shrink-0 rounded-full bg-white/80" />
+                                <span className="relative z-[2] truncate">{m.role}</span>
                               </span>
                               <h4 className="t-display mt-2 truncate text-[22px] text-sbg-ink sm:text-[24px]">{m.name}</h4>
                               {detail && <p className="mt-1 truncate text-[13px] text-sbg-ink-3">{detail}</p>}

@@ -791,6 +791,33 @@ html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .cta-ca
   animation-delay: calc(var(--d) * 6s);
 }
 
+/* ── Badge shimmer ──────────────────────────────────────── */
+/* A continuous light sweep across a solid-colour badge (leadership/faculty
+   designations), the same motif as the navbar logo's shimmer. CSS-only so it
+   works in server components without pulling in Framer Motion. */
+@keyframes sbg-badge-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(120%);
+  }
+}
+.sbg-light .badge-shimmer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sbg-light .badge-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.55) 48%, rgba(255, 255, 255, 0.55) 52%, transparent 70%);
+  animation: sbg-badge-shimmer 2.6s linear infinite;
+  pointer-events: none;
+}
+
 /* ── Reveal on enter ────────────────────────────────────── */
 .sbg-light .reveal {
   opacity: 0;
@@ -812,27 +839,20 @@ html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .cta-ca
 }
 
 /* ── Cards that lift ────────────────────────────────────── */
-/* Micro-interactions (pass B): cursor-tracked spotlight (--mx/--my from PointerFx), optional tilt, avatar zoom. */
+/* Micro-interactions (pass B): optional tilt, avatar zoom. The cursor-tracked
+   purple spotlight (radial-gradient ::before keyed to --mx/--my from PointerFx)
+   was removed: it read as muddy rather than polished, per user feedback. */
 .sbg-light .lift {
   position: relative;
 }
-.sbg-light .lift::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--lilac-400) 22%, transparent), transparent 70%);
-  transition: opacity 300ms var(--ease-out);
-}
-html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift::before {
-  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), var(--lift-line), transparent 70%);
-  opacity: 0;
+.sbg-light .team-avatar {
+  /* Hover ring: a thin outline inside the 4px border instead of recolouring the whole border. */
+  outline: 1.5px solid transparent;
+  outline-offset: -2.75px;
+  transition: outline-color 450ms var(--ease-out);
 }
 .sbg-light .team-avatar img {
-  transition: scale 400ms var(--ease-out);
+  transition: scale 450ms var(--ease-out);
 }
 @media (hover: hover) {
   .sbg-light .lift {
@@ -847,10 +867,6 @@ html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift::
   }
 }
 @media (hover: hover) and (pointer: fine) {
-  .sbg-light .lift:hover::before,
-  html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift:hover::before {
-    opacity: 1;
-  }
   .sbg-light .lift[data-tilt]:hover {
     transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-6px);
   }
@@ -858,8 +874,12 @@ html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift::
     scale: 1.06;
   }
   .sbg-light .lift:hover .team-avatar {
-    border-color: var(--lilac-300);
+    outline-color: color-mix(in srgb, var(--lilac-400) 70%, transparent);
   }
+  html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift:hover .team-avatar {
+    outline-color: color-mix(in srgb, var(--lilac-400) 70%, transparent);
+  }
+
 }
 
 /* Micro-interactions (pass C): form focus icon, field messages, pop-in marks, toast icon. */
@@ -905,15 +925,15 @@ body:has(.sbg-light) [data-sonner-toast] [data-icon] {
     transition: none;
     animation: none;
   }
+  .sbg-light .badge-shimmer::after {
+    animation: none;
+    opacity: 0;
+  }
   .sbg-light .lift[data-tilt]:hover {
     transform: translateY(-6px);
   }
   .sbg-light .lift:hover .team-avatar img {
     scale: none;
-  }
-  .sbg-light .lift::before,
-  html[data-theme="dark"]:has(.sbg-light[data-themable="true"]) .sbg-light .lift:hover::before {
-    display: none;
   }
   .sbg-light .rise,
   .sbg-light .kio {

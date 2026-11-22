@@ -51,8 +51,12 @@ export async function TeamTeaser() {
                   >
                     <TeamAvatar src={m.picture_url} name={m.name} className="h-24 w-24 rounded-full sm:h-28 sm:w-28" />
                     <div>
-                      <span className="inline-flex items-center rounded-full bg-[var(--chip-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-sbg-accent-strong">
-                        {m.role}
+                      <span
+                        className="badge-shimmer relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_6px_16px_-6px_rgba(124,58,237,0.55)]"
+                        style={{ backgroundImage: "linear-gradient(135deg, #8b4ff2 0%, var(--lilac-600) 100%)" }}
+                      >
+                        <span aria-hidden="true" className="relative z-[2] h-1.5 w-1.5 rounded-full bg-white/80" />
+                        <span className="relative z-[2]">{m.role}</span>
                       </span>
                       <h3 className="t-display mt-3 text-[20px] text-sbg-ink sm:text-[26px]">{m.name}</h3>
                     </div>

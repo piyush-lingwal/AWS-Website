@@ -43,9 +43,11 @@ export default async function MediaHomePage() {
   }
 
   return (
-    <section aria-labelledby="events-heading" className="space-y-4">
+    <section aria-labelledby="events-heading" className="space-y-5">
       <div>
-        <h2 id="events-heading" className="text-lg font-semibold text-sbg-ink">Events</h2>
+        <h2 id="events-heading" className="t-display text-2xl text-sbg-ink sm:text-3xl">
+          Pick an <span className="t-serif text-sbg-accent">event.</span>
+        </h2>
         <p className="mt-1 text-sm text-sbg-ink-2">
           Events created by the super admin appear here. Pick one to upload its
           photos and videos.
@@ -61,21 +63,37 @@ export default async function MediaHomePage() {
           No events yet. Ask a super admin to create one.
         </p>
       ) : (
-        <ul className="surface divide-y divide-sbg-ink/10 overflow-hidden rounded-[28px]">
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/media/events/${event.id}`}
-                className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-sbg-lilac-50 focus-visible:bg-sbg-lilac-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sbg-lilac-600"
-              >
-                <span className="font-medium text-sbg-ink">{event.name}</span>
-                <span className="flex shrink-0 items-center gap-2 text-xs font-mono text-sbg-ink-2">
-                  {formatDate(event.event_date)}
-                  <ChevronRight className="h-4 w-4 text-sbg-lilac-600" aria-hidden="true" />
-                </span>
-              </Link>
-            </li>
-          ))}
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {events.map((event) => {
+            const d = event.event_date ? new Date(event.event_date + "T00:00:00") : null;
+            const valid = d && !Number.isNaN(d.getTime());
+            return (
+              <li key={event.id}>
+                <Link
+                  href={`/media/events/${event.id}`}
+                  className="surface lift group flex h-full items-center gap-4 rounded-[22px] p-4 transition-colors hover:bg-sbg-lilac-50 focus-visible:bg-sbg-lilac-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sbg-lilac-600"
+                >
+                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-sbg-lilac-100 text-center leading-tight text-sbg-lilac-700">
+                    {valid ? (
+                      <span>
+                        <span className="block text-lg font-bold">{d!.getDate()}</span>
+                        <span className="block text-[10px] font-semibold uppercase tracking-wide">
+                          {d!.toLocaleDateString("en-IN", { month: "short" })}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide">TBA</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-sbg-ink">{event.name}</p>
+                    <p className="truncate text-xs text-sbg-ink-2">{formatDate(event.event_date)}</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 shrink-0 text-sbg-lilac-600 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

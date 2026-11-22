@@ -425,7 +425,7 @@ export function CertificatePreview({
           visible; the buttons zoom in, and a finger (or the scroll bars) moves around. */}
       {isFullscreen && (
         <div
-          className="fixed inset-0 z-[100] flex flex-col bg-black/90 backdrop-blur-md"
+          className="fixed inset-0 z-[100] flex flex-col bg-sbg-paper/85 backdrop-blur-xl"
           role="dialog"
           aria-modal="true"
           aria-label="Certificate, full size"
@@ -438,11 +438,11 @@ export function CertificatePreview({
                 onClick={() => setZoom((z) => stepZoom(z, -1))}
                 disabled={zoom <= ZOOM_STEPS[0]}
                 aria-label="Zoom out"
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-800/90 text-white transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-sbg-ink/15 bg-white text-sbg-ink shadow-sm transition-colors hover:bg-sbg-lilac-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sbg-lilac-600 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="M5 12h14" /></svg>
               </button>
-              <span className="min-w-[3.25rem] text-center font-mono text-xs text-slate-300" aria-live="polite">
+              <span className="min-w-[3.25rem] text-center font-mono text-xs text-sbg-ink-2" aria-live="polite">
                 {Math.round(zoom * 100)}%
               </span>
               <button
@@ -450,7 +450,7 @@ export function CertificatePreview({
                 onClick={() => setZoom((z) => stepZoom(z, 1))}
                 disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
                 aria-label="Zoom in"
-                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-slate-800/90 text-white transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-sbg-ink/15 bg-white text-sbg-ink shadow-sm transition-colors hover:bg-sbg-lilac-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sbg-lilac-600 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
               </button>
@@ -459,7 +459,7 @@ export function CertificatePreview({
               type="button"
               onClick={() => setIsFullscreen(false)}
               autoFocus
-              className="inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-white/20 bg-slate-800/90 px-5 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              className="inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-sbg-ink/15 bg-white px-5 text-sm font-semibold text-sbg-ink shadow-sm transition-colors hover:bg-sbg-lilac-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sbg-lilac-600"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -481,8 +481,8 @@ export function CertificatePreview({
               dangerouslySetInnerHTML={{ __html: renderedSvg }}
             />
           </div>
-          <p className="shrink-0 px-4 pb-3 text-center text-[11px] text-slate-400" onClick={(e) => e.stopPropagation()}>
-            {zoom > 1 ? "Drag to move around" : "Use + to zoom in"} · Esc or tap outside to close
+          <p className="shrink-0 px-4 pb-3 text-center text-[11px] text-sbg-ink-3" onClick={(e) => e.stopPropagation()}>
+            {zoom > 1 ? "Drag to move the certificate around" : "Tap + to zoom in"}. Tap outside or press Esc to close.
           </p>
         </div>
       )}

@@ -250,7 +250,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
                 </div>
 
                 <footer className="flex flex-col items-center justify-between gap-3 border-t border-[var(--line)] pt-6 text-center text-xs text-sbg-ink-2 sm:flex-row sm:text-left">
-                  <p>Does something look wrong? Compare this page with the certificate you were given.</p>
+                  <p>This page confirms the certificate is genuine. If any detail here doesn&apos;t match your copy, contact AWS SBG.</p>
                   <Link href="/verify" className="btn btn-ghost">
                     Verify another certificate
                   </Link>

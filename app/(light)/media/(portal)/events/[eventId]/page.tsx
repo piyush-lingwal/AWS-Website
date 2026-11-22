@@ -5,6 +5,9 @@ import { requirePortalPage } from "@/lib/auth/require-portal-page";
 import { isUuid } from "@/lib/auth/roles";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { canManageAllUploads } from "@/lib/media/access";
+import { toPublicView } from "@/lib/media/public-view";
+import type { PublicMediaItem } from "@/lib/media/types";
+import { getStorage } from "@/lib/storage/s3";
 import { DriveImport } from "@/components/features/media/DriveImport";
 import { Uploader } from "@/components/features/media/Uploader";
 import { MediaList, type MediaListItem } from "@/components/features/media/MediaList";
@@ -58,7 +61,7 @@ export default async function EventMediaPage({
   // Unfinished (pending) and failed uploads are noise here: show real items only.
   const mediaRes = await db
     .from("media_items")
-    .select("id, uploaded_by, kind, purpose, status, size_bytes, caption, source, created_at")
+    .select("id, event_id, uploaded_by, kind, purpose, status, size_bytes, caption, source, created_at, width, height, duration_s, drive_file_id, web_key, thumb_key, poster_key")
     .eq("event_id", event.id)
     .is("deleted_at", null)
     .in("status", ["processing", "ready", "hidden"])
@@ -82,6 +85,10 @@ export default async function EventMediaPage({
   const driveRes = await driveQuery;
   if (driveRes.error) console.error("[media] drive count error:", driveRes.error.message);
   const removableDriveCount = driveRes.count ?? 0;
+  // Thumbnails reuse the public gallery's URL builder (same keys, same buckets).
+  const cdnBase = getStorage()?.config.cdnUrl ?? null;
+  const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const supabaseBase = sbUrl && /^https:\/\//.test(sbUrl) ? sbUrl : null;
   const items: MediaListItem[] = (mediaRes.data ?? []).map((r) => ({
     id: r.id as string,
     kind: r.kind as "image" | "video",
@@ -93,6 +100,7 @@ export default async function EventMediaPage({
     created_at: r.created_at as string,
     mine: r.uploaded_by === session.user.id,
     canManage: isAdmin || r.uploaded_by === session.user.id,
+    thumbUrl: toPublicView(r as unknown as PublicMediaItem, cdnBase, supabaseBase)?.thumbUrl ?? null,
   }));
 
   return (
