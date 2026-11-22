@@ -146,3 +146,81 @@ export async function PATCH(
     { headers: { "Cache-Control": "no-store" } }
   );
 }
+
+// ============================================================
+// DELETE /api/admin/media-users/[id] — permanently remove a media member
+//                                                      (super_admin)
+// ============================================================
+//
+// Deleting the auth user is sufficient: media_members.id references
+// auth.users(id) ON DELETE CASCADE, and media_items.uploaded_by is
+// ON DELETE SET NULL, so uploaded photos/videos are kept.
+// Like PATCH, it refuses ids that are also in admin_users.
+
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireRole(SUPER_ADMIN_ONLY);
+  if (!auth.ok) return auth.response;
+
+  const { id } = await context.params;
+  if (!isUuid(id)) {
+    return NextResponse.json(
+      { success: false, error: "Invalid member id." } satisfies ApiResponse,
+      { status: 400 }
+    );
+  }
+
+  const db = getAdminClient();
+  if (!db) {
+    return NextResponse.json(
+      { success: false, error: "Database not configured." } satisfies ApiResponse,
+      { status: 500 }
+    );
+  }
+
+  const member = await db.from("media_members").select("id").eq("id", id).maybeSingle();
+  if (member.error) {
+    console.error("[API/admin/media-users] lookup error:", member.error.message);
+    return NextResponse.json(
+      { success: false, error: "Could not load the member." } satisfies ApiResponse,
+      { status: 500 }
+    );
+  }
+  if (!member.data) {
+    return NextResponse.json(
+      { success: false, error: "Media member not found." } satisfies ApiResponse,
+      { status: 404 }
+    );
+  }
+
+  const adminRow = await db.from("admin_users").select("id").eq("id", id).maybeSingle();
+  if (adminRow.error) {
+    console.error("[API/admin/media-users] admin check error:", adminRow.error.message);
+    return NextResponse.json(
+      { success: false, error: "Server configuration error." } satisfies ApiResponse,
+      { status: 500 }
+    );
+  }
+  if (adminRow.data) {
+    return NextResponse.json(
+      { success: false, error: "This account is also an admin and cannot be deleted here." } satisfies ApiResponse,
+      { status: 409 }
+    );
+  }
+
+  const { error } = await db.auth.admin.deleteUser(id);
+  if (error) {
+    console.error("[API/admin/media-users] delete error:", error.message);
+    return NextResponse.json(
+      { success: false, error: "Could not delete the member." } satisfies ApiResponse,
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json(
+    { success: true, data: { id } } satisfies ApiResponse,
+    { headers: { "Cache-Control": "no-store" } }
+  );
+}
