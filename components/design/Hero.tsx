@@ -56,7 +56,7 @@ export function Hero() {
               <span className="block whitespace-nowrap">
                 <span className="t-serif text-sbg-accent">builders</span> shape
               </span>
-              <span className="block whitespace-nowrap">the cloud.</span>
+              <span className="block whitespace-nowrap">the World.</span>
             </h1>
 
             <p className="t-lead rise mx-auto mt-5 hidden max-w-[34rem] sm:block lg:mx-0 sm:mt-7" style={cssVars({ "--d": 260 })}>
